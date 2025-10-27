@@ -1,4 +1,4 @@
-function Home() {
+function Dasboard() {
   return (
     <>
       <h1
@@ -18,10 +18,10 @@ function Home() {
         drop-shadow-lg
         mt-10"
       >
-        Hello
+        Đây là trang tổng quan
       </h1>
     </>
   )
 }
 
-export default Home
+export default Dasboard
