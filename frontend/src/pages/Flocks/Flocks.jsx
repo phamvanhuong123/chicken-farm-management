@@ -1,11 +1,11 @@
-import React, { useState } from "react";
-import { Eye, Edit, Trash2 } from "lucide-react";
+import React, { useState } from 'react'
+import { Eye, Edit, Trash2 } from 'lucide-react'
 
 function Flocks() {
   const [flocks] = useState([
     {
       id: 1,
-      code: "DG001",
+      code: 'DG001',
       importDate: "2024-10-15",
       breed: "Gà Ri",
       initialQuantity: 1000,
@@ -66,22 +66,22 @@ function Flocks() {
   ]);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 5;
+  const rowsPerPage = 5
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
+    const date = new Date(dateString)
+    const day = String(date.getDate()).padStart(2, "0")
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const year = date.getFullYear()
+    return `${day}/${month}/${year}`
+  }
 
   const getStatusBadge = (status) => (
     <span
       className={`px-2 py-1 text-xs font-medium rounded ${
-        status === "Đang nuôi"
-          ? "bg-green-100 text-green-800"
-          : "bg-gray-200 text-gray-800"
+        status === 'Đang nuôi'
+          ? 'bg-green-100 text-green-800'
+          : 'bg-gray-200 text-gray-800'
       }`}
     >
       {status}
@@ -92,15 +92,15 @@ function Flocks() {
   const currentFlocks = flocks.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
-  );
+  )
 
-  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1))
   const handleNextPage = () =>
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
 
   return (
-    <div className="max-w-5xl mx-auto mt-8">
-      <h1 className="text-3xl font-bold text-center mb-6">Danh sách đàn gà</h1>
+    <div className="px-8 mt-8">
+      <h1 className="text-3xl font-bold mb-6">Quản lí đàn gà</h1>
 
       <div className="bg-white rounded shadow overflow-x-auto">
         {flocks.length === 0 ? (
@@ -175,7 +175,7 @@ function Flocks() {
               <button
                 onClick={handlePrevPage}
                 disabled={currentPage === 1}
-                className="px-3 py-1 border rounded disabled:opacity-50"
+                className={`px-3 py-1 border rounded disabled:opacity-50  ${currentPage !== 1 ? "hover:bg-amber-200 transition cursor-pointer" : ""}`}
               >
                 Quay lại
               </button>
@@ -185,7 +185,7 @@ function Flocks() {
               <button
                 onClick={handleNextPage}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1 border rounded disabled:opacity-50"
+                className={`px-3 py-1 border rounded disabled:opacity-50 ${currentPage !== totalPages ? "hover:bg-amber-200 transition cursor-pointer" : ""}`}
               >
                 Trang tiếp
               </button>
@@ -197,4 +197,4 @@ function Flocks() {
   );
 }
 
-export default Flocks;
+export default Flocks
