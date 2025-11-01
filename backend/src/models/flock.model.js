@@ -42,29 +42,43 @@ const validateBeforeUpdate = async (data) => {
 // Hàm cập nhật đàn
 const update = async (id, updateData) => {
     try {
+        // 1️⃣ Kiểm tra ID hợp lệ trước khi tạo ObjectId
+        if (!ObjectId.isValid(id)) {
+            const err = new Error('ID không hợp lệ, phải là ObjectId 24 ký tự')
+            err.statusCode = 400 // Bad Request
+            throw err
+        }
+
         const objectId = new ObjectId(String(id).trim())
 
-        // 1. Validate dữ liệu đầu vào
+        // 2️⃣ Validate dữ liệu đầu vào
         const validUpdate = await validateBeforeUpdate(updateData)
 
-        // 2. Thực hiện cập nhật trong DB
+        // 3️⃣ Thực hiện cập nhật trong DB
         const result = await GET_DB()
             .collection(FLOCK_COLLECTION_NAME)
             .updateOne(
                 { _id: objectId },
-                // CHỈ THÊM updatedAt VÀO $set MỘT CÁCH TƯỜNG MINH
                 { $set: { ...validUpdate, updatedAt: new Date() } }
             )
 
+        // 4️⃣ Không tìm thấy bản ghi phù hợp
         if (result.matchedCount === 0) {
-            throw new Error('Không tìm thấy đàn cần cập nhật')
+            const err = new Error('Không tìm thấy đàn cần cập nhật')
+            err.statusCode = 404 // Not Found
+            throw err
         }
 
+        // 5️⃣ Thành công
         return result
     } catch (error) {
-        throw new Error('Không thể cập nhật đàn: ' + error.message)
+        // 6️⃣ Nếu chưa có statusCode, xem như lỗi hệ thống
+        if (!error.statusCode) error.statusCode = 500
+        error.message = 'Không thể cập nhật đàn: ' + error.message
+        throw error
     }
 }
+
 
 // Hàm lấy chi tiết đàn
 const findOneById = async (id) => {
