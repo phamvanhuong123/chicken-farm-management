@@ -21,6 +21,6 @@ function Inventory() {
         Đây là Kho vật tư
       </h1>
     </>
-  )
+  );
 }
-export default Inventory
+export default Inventory;
