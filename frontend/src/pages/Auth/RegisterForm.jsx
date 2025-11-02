@@ -1,15 +1,24 @@
 import { useState } from "react";
 import { Link } from "react-router";
-
+import FieldErrorAlert from "~/components/FieldErrorAlert";
+import { useForm } from "react-hook-form";
+import { LuEye } from "react-icons/lu";
+import { LuEyeClosed } from "react-icons/lu";
+import { EMAIL_RULE, EMAIL_RULE_MESSAGE, FIELD_REQUIRED_MESSAGE, PASSWORD_RULE, PASSWORD_RULE_MESSAGE, PHONE_RULE, PHONE_RULE_MESSAGE } from "~/utils/validators";
 function RegisterForm() {
+  const {register, handleSubmit, formState :  { errors}} = useForm()
   const INPUT_STYLE ="w-full rounded-[6px] px-3 py-2.5 text-[#646464] outline-none border-[#e5e9ec] border-[1px] focus:border-[#80bdff]";
   const [activeEmail,setActiveEmail] = useState(true);
+  const [showPassword,setShowPassword] = useState(false)
+  const registerSubmit = (data) =>{
+    console.log(data)
+  }
   return (
     <>
       <div className="flex justify-center mt-14">
         <div className="w-[70%] py-11">
           <h1 className="font-bold text-2xl mb-3.5">Nhập thông tin đăng ký</h1>
-          <form action="">
+          <form action="" onSubmit={handleSubmit(registerSubmit)}>
             <div className="mb-3">
               <label htmlFor="username" className="block mb-2.5">
                 Họ và tên <span className="text-red-600">*</span>
@@ -20,8 +29,12 @@ function RegisterForm() {
                 id="username"
                 placeholder="Họ và tên"
                 className={INPUT_STYLE}
+                {...register('username',{
+                  required : FIELD_REQUIRED_MESSAGE
+                })}
               />
             </div>
+            <FieldErrorAlert errors={errors} fieldName={'username'}/>
             <div className="mb-3">
               <label htmlFor="phone" className="block mb-2.5">
                 Số điện thoại đăng nhập <span className="text-red-600">*</span>
@@ -32,11 +45,21 @@ function RegisterForm() {
                 id="phone"
                 placeholder="09..."
                 className={INPUT_STYLE}
+                {...register('phone', {
+                  required : FIELD_REQUIRED_MESSAGE,
+                  pattern : {
+                    value : PHONE_RULE,
+                    message : PHONE_RULE_MESSAGE
+                  }
+                })}
               />
+              <FieldErrorAlert errors={errors} fieldName={'phone'}/>
               <p className="text-[11px] mt-3.5">
                 Số điện thoại cần chính xác, sẽ dùng để làm tài khoản đăng nhập.
               </p>
             </div>
+            
+
             <div className="mb-3">
               <label htmlFor="email" className="block mb-2.5">
                 Email
@@ -48,24 +71,43 @@ function RegisterForm() {
                 id="email"
                 placeholder="Email"
                 className={INPUT_STYLE}
+                {...register('email',{
+                  required : FIELD_REQUIRED_MESSAGE,
+                  pattern : {
+                    value : EMAIL_RULE,
+                    message : EMAIL_RULE_MESSAGE
+                  }
+                })}
               />
             </div>
-            <div className="mb-3">
+              <FieldErrorAlert errors={errors} fieldName={'email'}/>
+
+            <div className="mb-3 relative">
               <label htmlFor="" className="block mb-2.5">
                 Mật khẩu <span className="text-red-600">*</span>
               </label>
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 name="password"
                 id="password"
                 placeholder="Nhập mật khẩu"
                 className={INPUT_STYLE}
+                {...register('password',{
+                  required : FIELD_REQUIRED_MESSAGE,
+                  pattern : {
+                    value : PASSWORD_RULE,
+                    message : PASSWORD_RULE_MESSAGE
+                  }
+                })}
               />
+              {!showPassword ? <LuEye onClick={() => {setShowPassword(true)}} className="absolute right-2 top-[50px] cursor-pointer"/> : <LuEyeClosed onClick={() => setShowPassword(false)} className="absolute right-2 top-[50px] cursor-pointer"/>}
               <p className="text-[11px] mt-3.5">
                 Mật khẩu phải có độ dài từ 8 - 50 ký tự, có chữ hoa, chữ thường,
                 số, ký tự đặc biệt.
               </p>
             </div>
+              <FieldErrorAlert errors={errors} fieldName={'password'}/>
+
             <div className="mb-3">
               <div className="flex justify-between mb-2.5 flex-wrap max-[875px]:gap-2.5">
                 <label  className="  w-[220px] max-[875px]:w-full">
@@ -88,8 +130,8 @@ function RegisterForm() {
               </div>
             </div>
             <button
-                disabled
-              className="block mb-3.5 py-1.5 px-4 bg-[#019788] text-[#fff] font-bold text-[1rem] rounded-[6px] cursor-pointer hover:bg-[#027d72] transition-all disabled:cursor-not-allowed"
+              
+              className="block mb-3.5 py-1.5 px-4 bg-[#019788] text-[#fff] font-bold text-[1rem] rounded-[6px] cursor-pointer hover:bg-[#027d72] transition-all "
               type="submit"
             >
                 Tạo tài khoản
