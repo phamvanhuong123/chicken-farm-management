@@ -1,11 +1,13 @@
 /**
- * Flock Model (Phiên bản CRUD rút gọn)
  * TEAM-87: Cập nhật thông tin đàn
  */
 
 import Joi from 'joi'
 import { GET_DB } from '../config/mongodb.js'
 import { ObjectId } from 'mongodb'
+
+// TEAM-93: Cung cấp API chi tiết đàn và nhật ký liên quan
+import { logService } from '../services/log.service.js'
 
 const FLOCK_COLLECTION_NAME = 'flocks'
 
@@ -87,11 +89,46 @@ const findOneById = async (id) => {
         throw new Error('Không thể lấy chi tiết đàn: ' + error.message)
     }
 }
+
+// Hàm lấy chi tiết đàn và nhật ký liên quan
+const findDetailById = async (id) => {
+    try {
+        if (!ObjectId.isValid(id)) {
+            const err = new Error('ID đàn không hợp lệ')
+            err.statusCode = 400
+            throw err
+        }
+
+        const db = GET_DB()
+
+        // Lấy chi tiết đàn
+        const flock = await db
+            .collection(FLOCK_COLLECTION_NAME)
+            .findOne({ _id: new ObjectId(id) })
+
+        if (!flock) {
+            const err = new Error('Không tìm thấy thông tin đàn')
+            err.statusCode = 404
+            throw err
+        }
+
+        // Lấy danh sách nhật ký liên quan
+        const logs = await logService.getLogsByFlockId(id)
+
+        return { flock, logs }
+    } catch (error) {
+        if (!error.statusCode) error.statusCode = 500
+        error.message = 'Không thể tải thông tin đàn: ' + error.message
+        throw error
+    }
+}
+
 export const flockModel = {
     FLOCK_COLLECTION_NAME,
     FLOCK_COLLECTION_SCHEMA,
     validateBeforeCreate,
     validateBeforeUpdate,
     findOneById,
-    update
+    update,
+    findDetailById
 }
