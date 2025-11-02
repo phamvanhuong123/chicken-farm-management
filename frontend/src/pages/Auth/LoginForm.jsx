@@ -2,14 +2,17 @@ import { Link } from "react-router";
 import { useForm } from "react-hook-form";
 import { FIELD_REQUIRED_MESSAGE } from "~/utils/validators";
 import FieldErrorAlert from "~/components/FieldErrorAlert";
+import { useState } from "react";
+import { LuEye, LuEyeClosed } from "react-icons/lu";
 function LoginForm() {
   const {register,handleSubmit, formState : {errors}} = useForm()
   const INPUT_STYLE =
     "w-full rounded-[6px] px-3 py-2.5 text-[#646464] outline-none border-[#e5e9ec] border-[1px] focus:border-[#80bdff]";
-
+    const [showPassword,setShowPassword] = useState(false)
     const submitLogin = (data) =>{
       console.log(data)
     }
+    
   return (
     <>
       <div className="flex justify-center mt-14">
@@ -33,12 +36,12 @@ function LoginForm() {
               />
             </div>
             <FieldErrorAlert errors={errors} fieldName={'idName'}/> 
-            <div className="mb-4">
+            <div className="mb-4 relative">
               <label htmlFor="" className="block mb-2.5">
                 Mật khẩu
               </label>
               <input
-                type="password"
+                type= {showPassword ? 'text' : 'password'}
                 name="password"
                 id="password"
                 {...register('password', {
@@ -48,6 +51,7 @@ function LoginForm() {
                 placeholder="Nhập mật khẩu"
                 className={INPUT_STYLE}
               />
+              {!showPassword ? <LuEye onClick={() => {setShowPassword(true)}} className="absolute right-2 top-[50px] cursor-pointer"/> : <LuEyeClosed  onClick={() => setShowPassword(false)} className="absolute right-2 top-[50px] cursor-pointer"/>}
             </div>
             <FieldErrorAlert errors={errors} fieldName={'password'}/> 
 
