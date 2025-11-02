@@ -3,29 +3,29 @@
 import { flockModel } from '../models/flock.model.js'
 
 const createFlock = async (data) => {
-    try {
-        const createdFlock = await flockModel.create(data)
-        return createdFlock
-    } catch (error) {
-        if (error.statusCode) throw error
+  try {
+    const createdFlock = await flockModel.create(data)
+    return createdFlock
+  } catch (error) {
+    if (error.statusCode) throw error
 
-        const err = new Error('Không thể lưu thông tin đàn: ' + error.message)
-        err.statusCode = 500
-        throw err
-    }
+    const err = new Error('Không thể lưu thông tin đàn: ' + error.message)
+    err.statusCode = 500
+    throw err
+  }
 }
 
 /**
  * Lấy chi tiết 1 đàn theo ID
  */
 const getFlockOnly = async (id) => {
-    const flock = await flockModel.findOneById(id)
-    if (!flock) {
-        const err = new Error('Không tìm thấy đàn')
-        err.statusCode = 404
-        throw err
-    }
-    return flock
+  const flock = await flockModel.findOneById(id)
+  if (!flock) {
+    const err = new Error('Không tìm thấy đàn')
+    err.statusCode = 404
+    throw err
+  }
+  return flock
 }
 
 
@@ -33,14 +33,14 @@ const getFlockOnly = async (id) => {
  * Cập nhật thông tin đàn
  */
 const updateFlock = async (id, updateData) => {
-    try {
-        await flockModel.validateBeforeUpdate(updateData)
-        await flockModel.update(id, updateData)
-        const updatedFlock = await flockModel.findOneById(id)
-        return updatedFlock
-    } catch (error) {
-        throw error
-    }
+  try {
+    await flockModel.validateBeforeUpdate(updateData)
+    await flockModel.update(id, updateData)
+    const updatedFlock = await flockModel.findOneById(id)
+    return updatedFlock
+  } catch (error) {
+    throw error
+  }
 }
 
 /**
@@ -48,11 +48,11 @@ const updateFlock = async (id, updateData) => {
  * TEAM-93
  */
 const getFlockDetail = async (id) => {
-    try {
-        const result = await flockModel.findDetailById(id)
-        return result
-    } catch (error) {
-        throw error
-    }
+  try {
+    const result = await flockModel.findDetailById(id)
+    return result
+  } catch (error) {
+    throw error
+  }
 }
 export const flockService = { getFlockOnly, updateFlock, getFlockDetail, createFlock }
