@@ -1,11 +1,11 @@
-/**
- * TEAM-87: Cập nhật thông tin đàn
- */
 
 import Joi from 'joi'
 import { GET_DB } from '../config/mongodb.js'
 import { ObjectId } from 'mongodb'
 
+const FLOCK_COLLECTION_NAME = 'flocks'
+
+// Định nghĩa schema Joi
 // TEAM-93: Cung cấp API chi tiết đàn và nhật ký liên quan
 import { logService } from '../services/log.service.js'
 
@@ -23,6 +23,8 @@ const FLOCK_COLLECTION_SCHEMA = Joi.object({
     createdAt: Joi.date().default(() => new Date()),
     updatedAt: Joi.date().default(null)
 })
+
+
 // Validate dữ liệu trước khi thêm mới
 const validateBeforeCreate = async (data) => {
     return await FLOCK_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
@@ -41,6 +43,30 @@ const validateBeforeUpdate = async (data) => {
     })
 }
 
+// ✅ Hàm tạo đàn mới
+const create = async (data) => {
+    try {
+        if (data._id) delete data._id
+
+        const validData = await validateBeforeCreate(data)
+
+        const result = await GET_DB().collection(FLOCK_COLLECTION_NAME).insertOne(validData)
+
+        return {
+            _id: result.insertedId,
+            ...validData
+        }
+    } catch (error) {
+        if (error.isJoi) {
+            const err = new Error('Dữ liệu không hợp lệ: ' + error.message)
+            err.statusCode = 400
+            throw err
+        }
+        const err = new Error('Không thể lưu thông tin đàn: ' + error.message)
+        err.statusCode = 500
+        throw err
+    }
+}
 // Hàm cập nhật đàn
 const update = async (id, updateData) => {
     try {
@@ -127,6 +153,7 @@ export const flockModel = {
     FLOCK_COLLECTION_NAME,
     FLOCK_COLLECTION_SCHEMA,
     validateBeforeCreate,
+    create
     validateBeforeUpdate,
     findOneById,
     update,

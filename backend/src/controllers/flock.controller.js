@@ -1,12 +1,21 @@
-/**
- * Flock Controller
- * TEAM-87: Cập nhật thông tin đàn
- * TEAM-93: Cung cấp API chi tiết đàn và nhật ký liên quan
- */
 
 import { flockService } from '../services/flock.service.js'
 
 /**
+ * [POST] /v1/flocks
+ * Lưu thông tin đàn mới
+ */
+export const createFlock = async (req, res, next) => {
+    try {
+        const newFlock = await flockService.createFlock(req.body)
+        res.status(201).json({
+            message: 'Tạo đàn mới thành công',
+            data: newFlock
+        })
+    } catch (error) {
+        next(error)
+    }
+}
  * [PUT] /v1/flocks/:id
  * Cập nhật thông tin đàn
  */

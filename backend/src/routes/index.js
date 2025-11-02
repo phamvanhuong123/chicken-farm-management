@@ -10,6 +10,7 @@ router.get('/status', (req, res) => {
   res.json({ data: 'ok' })
 })
 
+// nhóm route đàn gà
 // nhóm route đàn gà (Chỉ định rõ prefix /flocks)
 router.use('/flocks', flockRoute)
 

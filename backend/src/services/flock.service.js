@@ -1,10 +1,20 @@
-/**
- * Flock Service
- * TEAM-87: Cập nhật thông tin đàn
- * TEAM-93: Cung cấp API chi tiết đàn và nhật ký liên quan
- */
+
 
 import { flockModel } from '../models/flock.model.js'
+
+const createFlock = async (data) => {
+    try {
+        const createdFlock = await flockModel.create(data)
+        return createdFlock
+    } catch (error) {
+        if (error.statusCode) throw error
+
+        const err = new Error('Không thể lưu thông tin đàn: ' + error.message)
+        err.statusCode = 500
+        throw err
+    }
+}
+
 /**
  * Lấy chi tiết 1 đàn theo ID
  */
@@ -45,4 +55,4 @@ const getFlockDetail = async (id) => {
         throw error
     }
 }
-export const flockService = { getFlockOnly, updateFlock, getFlockDetail }
+export const flockService = { getFlockOnly, updateFlock, getFlockDetail, createFlock }
