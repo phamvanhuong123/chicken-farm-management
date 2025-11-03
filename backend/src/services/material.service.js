@@ -1,11 +1,10 @@
 /**
- * material.service.js
  * TEAM-102: Material Service (phân trang + lọc + tìm kiếm)
  */
 
 import { materialModel } from '../models/material.model.js'
 
-export const getAllMaterials = async (query) => {
+const getAllMaterials = async (query) => {
   const {
     page = 1,
     limit = 10,
@@ -25,7 +24,7 @@ export const getAllMaterials = async (query) => {
     ]
   }
 
-  //  Lọc theo loại
+  // Lọc theo loại
   if (type) filters.type = type
 
   // Phân trang
@@ -43,3 +42,5 @@ export const getAllMaterials = async (query) => {
     currentPage: Number(page)
   }
 }
+
+export const materialService = { getAllMaterials }

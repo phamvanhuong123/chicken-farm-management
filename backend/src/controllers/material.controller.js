@@ -19,7 +19,7 @@ export const getAllMaterials = async (req, res, next) => {
     const result = await materialService.getAllMaterials(req.query)
     const { items, totalItems, totalPages, currentPage } = result
 
-    // 🟩 Xuất Excel
+    // Xuất Excel
     if (exportExcel) {
       const workbook = new ExcelJS.Workbook()
       const sheet = workbook.addWorksheet('Danh sách vật tư')
@@ -71,7 +71,7 @@ export const getAllMaterials = async (req, res, next) => {
       })
     }
 
-    // ✅ Thành công
+    // Thành công
     res.status(200).json({
       message: 'Tải danh sách vật tư thành công',
       data: { totalItems, totalPages, currentPage, items }

@@ -1,6 +1,5 @@
 /**
- * material.model.js
- * TEAM-102: Material Model (Hoàn chỉnh)
+ * TEAM-102: Material Model
  */
 
 import Joi from 'joi'
@@ -51,7 +50,7 @@ const findAll = async (filter = {}, sort = 'createdAt', order = 'desc', skip = 0
       .limit(limit)
       .toArray()
 
-    // 🟢 Tính trạng thái vật tư
+    // Tính trạng thái vật tư
     const now = new Date()
     const materials = docs.map((m) => {
       const daysLeft = differenceInDays(new Date(m.expiryDate), now)
@@ -74,9 +73,7 @@ const findAll = async (filter = {}, sort = 'createdAt', order = 'desc', skip = 0
   }
 }
 
-/**
- * Đếm tổng số vật tư theo filter (phục vụ phân trang)
- */
+/** Đếm tổng số vật tư theo filter (phân trang) */
 const count = async (filter = {}) => {
   const db = GET_DB()
   return await db.collection(MATERIAL_COLLECTION_NAME).countDocuments(filter)

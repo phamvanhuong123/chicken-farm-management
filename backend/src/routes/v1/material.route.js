@@ -1,9 +1,8 @@
 /**
- * TEAM-102: Material API Routes
+ * TEAM-102: Material Routes
  */
-
 import express from 'express'
-import { getAllMaterials } from '../../controllers/material.controller.js'
+import { getAllMaterials } from '../../controllers/material.controller'
 
 const router = express.Router()
 
