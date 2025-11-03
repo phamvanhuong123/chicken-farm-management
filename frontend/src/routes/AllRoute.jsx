@@ -7,28 +7,14 @@ import Flocks from '~/pages/Flocks/Flocks'
 import Inventory from '~/pages/Inventory/Inventory'
 
 function AllRoute() {
-  return (
-    <Routes>
-      {/* Trang mặc định chuyển về /dasboard */}
-      <Route path='/' element={<Navigate to='/dasboard' replace={true} />} />
-
-      {/* Layout chính */}
-      <Route path='/dasboard' element={<LayoutDefault />}>
-        {/* Trang tổng quan */}
-        <Route index element={<Dasboard />} />
-
-        {/* Trang đàn gà (hiển thị danh sách + modal thêm đàn) */}
-        <Route path='flocks' element={<Flocks />} />
-
-        {/* Trang kho vật tư */}
-        <Route path='inventory' element={<Inventory />} />
-      </Route>
-
-      {/* Các trang Auth */}
-      <Route path='/login' element={<Auth />} />
-      <Route path='/register' element={<Auth />} />
-    </Routes>
-  )
+  return <Routes>
+    <Route path='/' element={<Navigate to="/dasboard" replace={true} />}/>
+    <Route path='/dasboard' element={<LayoutDefault/>}>
+      <Route index element={<Dasboard/>}/>
+      <Route path='flocks' element={<Flocks/>}/>
+      <Route path='inventory' element={<Inventory/>}/>
+    </Route>
+  </Routes>
 }
 
 export default AllRoute
