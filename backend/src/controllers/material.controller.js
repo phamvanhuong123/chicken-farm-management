@@ -1,17 +1,14 @@
 /**
- * TEAM-102: Material Controller (phân trang, lọc, export Excel)
+ * TEAM-102: Material Controller (phân trang, lọc, import/export Excel)
  */
 
-import { materialService } from '../services/material.service.js'
 import ExcelJS from 'exceljs'
+import fs from 'fs'
+import { materialService } from '~/services/material.service.js'
 
 /**
  * [GET] /v1/materials
- * Query params:
- *  - keyword: tìm theo tên hoặc loại
- *  - type: lọc theo loại
- *  - page, limit, sort, order: phân trang & sắp xếp
- *  - export=true: xuất Excel
+ *  - export=true → Xuất file Excel
  */
 export const getAllMaterials = async (req, res, next) => {
   try {
@@ -19,7 +16,6 @@ export const getAllMaterials = async (req, res, next) => {
     const result = await materialService.getAllMaterials(req.query)
     const { items, totalItems, totalPages, currentPage } = result
 
-    // Xuất Excel
     if (exportExcel) {
       const workbook = new ExcelJS.Workbook()
       const sheet = workbook.addWorksheet('Danh sách vật tư')
@@ -36,8 +32,8 @@ export const getAllMaterials = async (req, res, next) => {
       ]
 
       items.forEach((m) => {
-        const color = m.statusInfo?.color || ''
         const label = m.statusInfo?.label || 'Bình thường'
+        const color = m.statusInfo?.color || ''
         const row = sheet.addRow({
           name: m.name,
           type: m.type,
@@ -49,7 +45,7 @@ export const getAllMaterials = async (req, res, next) => {
           status: label
         })
         if (color === 'red') row.getCell('status').font = { color: { argb: 'FF0000' } }
-        else if (color === 'orange') row.getCell('status').font = { color: { argb: 'FFA500' } }
+        if (color === 'orange') row.getCell('status').font = { color: { argb: 'FFA500' } }
       })
 
       res.setHeader(
@@ -57,24 +53,42 @@ export const getAllMaterials = async (req, res, next) => {
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       )
       res.setHeader('Content-Disposition', 'attachment; filename="materials.xlsx"')
-
       await workbook.xlsx.write(res)
       res.end()
       return
     }
 
     // Không có dữ liệu
-    if (!items || items.length === 0) {
+    if (!items?.length) {
       return res.status(200).json({
         message: 'Chưa có dữ liệu vật tư.',
         data: { totalItems: 0, totalPages: 0, currentPage, items: [] }
       })
     }
 
-    // Thành công
     res.status(200).json({
       message: 'Tải danh sách vật tư thành công',
       data: { totalItems, totalPages, currentPage, items }
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+/**
+ * [POST] /v1/materials/import
+ * Nhập vật tư từ file Excel
+ */
+export const importExcel = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Vui lòng chọn file Excel để nhập.' })
+    }
+
+    const result = await materialService.importFromExcel(req.file.path)
+    res.status(200).json({
+      message: `Đã nhập ${result.successCount} / ${result.totalRows} dòng thành công.`,
+      errors: result.errors
     })
   } catch (error) {
     next(error)

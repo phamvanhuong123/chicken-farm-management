@@ -1,8 +1,9 @@
 /**
- * TEAM-102: Material Service (phân trang + lọc + tìm kiếm)
+ * TEAM-102: Material Service (phân trang + lọc + import Excel)
  */
-
-import { materialModel } from '../models/material.model.js'
+import ExcelJS from 'exceljs'
+import fs from 'fs'
+import { materialModel } from '~/models/material.model.js'
 
 const getAllMaterials = async (query) => {
   const {
@@ -16,7 +17,6 @@ const getAllMaterials = async (query) => {
 
   const filters = {}
 
-  // Tìm kiếm theo tên hoặc loại
   if (keyword) {
     filters.$or = [
       { name: { $regex: keyword, $options: 'i' } },
@@ -24,13 +24,10 @@ const getAllMaterials = async (query) => {
     ]
   }
 
-  // Lọc theo loại
   if (type) filters.type = type
 
-  // Phân trang
   const skip = (Number(page) - 1) * Number(limit)
 
-  // Lấy danh sách vật tư & tổng số
   const items = await materialModel.findAll(filters, sort, order, skip, Number(limit))
   const totalItems = await materialModel.count(filters)
   const totalPages = Math.ceil(totalItems / limit)
@@ -43,4 +40,58 @@ const getAllMaterials = async (query) => {
   }
 }
 
-export const materialService = { getAllMaterials }
+/**
+ * Nhập vật tư từ file Excel (.xlsx)
+ */
+const importFromExcel = async (filePath) => {
+  const workbook = new ExcelJS.Workbook()
+  await workbook.xlsx.readFile(filePath)
+  const sheet = workbook.worksheets[0]
+
+  const errors = []
+  let successCount = 0
+
+  const existing = await materialModel.findAll()
+  const existingNames = new Set(existing.map(m => m.name.toLowerCase()))
+
+  for (let i = 2; i <= sheet.rowCount; i++) {
+    const row = sheet.getRow(i)
+    const [name, type, quantity, unit, expiryDate, threshold, storageLocation] = row.values.slice(1)
+
+    if (!name || !type || !quantity || !unit || !expiryDate || !threshold || !storageLocation) {
+      errors.push({ row: i, message: 'Thiếu dữ liệu bắt buộc.' })
+      continue
+    }
+
+    if (existingNames.has(name.toLowerCase())) {
+      errors.push({ row: i, message: `Vật tư '${name}' đã tồn tại.` })
+      continue
+    }
+
+    const data = {
+      name: String(name).trim(),
+      type: String(type).trim(),
+      quantity: Number(quantity),
+      unit: String(unit).trim(),
+      expiryDate: new Date(expiryDate),
+      threshold: Number(threshold),
+      storageLocation: String(storageLocation).trim(),
+      createdAt: new Date(),
+      updatedAt: null
+    }
+
+    try {
+      await materialModel.create(data)
+      successCount++
+      existingNames.add(name.toLowerCase())
+    } catch (err) {
+      errors.push({ row: i, message: err.message })
+    }
+  }
+
+  fs.unlinkSync(filePath) // xoá file sau khi đọc
+
+  return { successCount, totalRows: sheet.rowCount - 1, errors }
+}
+
+export const materialService = { getAllMaterials, importFromExcel }

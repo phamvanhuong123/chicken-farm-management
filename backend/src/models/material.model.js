@@ -79,10 +79,16 @@ const count = async (filter = {}) => {
   return await db.collection(MATERIAL_COLLECTION_NAME).countDocuments(filter)
 }
 
+const create = async (data) => {
+  const db = GET_DB()
+  return await db.collection(MATERIAL_COLLECTION_NAME).insertOne(data)
+}
+
 export const materialModel = {
   MATERIAL_COLLECTION_NAME,
   MATERIAL_SCHEMA,
   validateBeforeCreateMaterial,
   findAll,
-  count
+  count,
+  create
 }
