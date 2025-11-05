@@ -2,6 +2,49 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Eye, Edit, Trash2 } from "lucide-react";
 
+// ✅ Component con — hiển thị 1 dòng đàn gà
+const FlockRow = ({
+  flock,
+  index,
+  formatDate,
+  getStatusBadge,
+  onView,
+  onEdit,
+  onDelete,
+}) => {
+  return (
+    <tr key={flock._id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+      <td className="px-4 py-2">{flock.code || "-"}</td>
+      <td className="px-4 py-2">
+        {flock.importDate ? formatDate(flock.importDate) : "-"}
+      </td>
+      <td className="px-4 py-2">{flock.speciesId || "-"}</td>
+      <td className="px-4 py-2 text-center">
+        {flock.initialCount?.toLocaleString() || 0}
+      </td>
+      <td className="px-4 py-2 text-center">
+        {flock.currentCount?.toLocaleString() || 0}
+      </td>
+      <td className="px-4 py-2 text-center">
+        {flock.avgWeight?.toFixed(1) || 0}
+      </td>
+      <td className="px-4 py-2 text-center">{getStatusBadge(flock.status)}</td>
+      <td className="px-4 py-2 text-center flex justify-center gap-2">
+        <button title="Xem chi tiết" onClick={() => onView(flock._id)}>
+          <Eye className="w-4 h-4 text-gray-600" />
+        </button>
+        <button title="Chỉnh sửa" onClick={() => onEdit(flock._id)}>
+          <Edit className="w-4 h-4 text-gray-600" />
+        </button>
+        <button title="Xóa" onClick={() => onDelete(flock._id)}>
+          <Trash2 className="w-4 h-4 text-gray-600" />
+        </button>
+      </td>
+    </tr>
+  );
+};
+
+// ✅ Component chính — trang danh sách đàn
 function Flocks() {
   const [flocks, setFlocks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,7 +56,6 @@ function Flocks() {
     const fetchFlocks = async () => {
       try {
         const res = await axios.get("http://localhost:8071/v1/flocks");
-        // Lấy dữ liệu từ backend
         setFlocks(res.data.data || []);
       } catch (error) {
         console.error("Lỗi tải danh sách đàn:", error);
@@ -22,10 +64,10 @@ function Flocks() {
         setLoading(false);
       }
     };
-
     fetchFlocks();
   }, []);
 
+  // Format ngày
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const day = String(date.getDate()).padStart(2, "0");
@@ -34,6 +76,7 @@ function Flocks() {
     return `${day}/${month}/${year}`;
   };
 
+  // Badge trạng thái
   const getStatusBadge = (status) => (
     <span
       className={`px-2 py-1 text-xs font-medium rounded ${
@@ -50,6 +93,7 @@ function Flocks() {
     </span>
   );
 
+  // Phân trang
   const totalPages = Math.ceil(flocks.length / rowsPerPage);
   const currentFlocks = flocks.slice(
     (currentPage - 1) * rowsPerPage,
@@ -59,6 +103,11 @@ function Flocks() {
   const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const handleNextPage = () =>
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+
+  // Xử lý sự kiện
+  const handleView = (id) => console.log("👁️ Xem chi tiết đàn:", id);
+  const handleEdit = (id) => console.log("✏️ Chỉnh sửa đàn:", id);
+  const handleDelete = (id) => console.log("🗑️ Xóa đàn:", id);
 
   return (
     <div className="px-8 mt-8">
@@ -98,41 +147,19 @@ function Flocks() {
                   </th>
                 </tr>
               </thead>
+
               <tbody>
                 {currentFlocks.map((flock, index) => (
-                  <tr
+                  <FlockRow
                     key={flock._id}
-                    className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}
-                  >
-                    <td className="px-4 py-2">{flock.code || "-"}</td>
-                    <td className="px-4 py-2">
-                      {flock.importDate ? formatDate(flock.importDate) : "-"}
-                    </td>
-                    <td className="px-4 py-2">{flock.speciesId || "-"}</td>
-                    <td className="px-4 py-2 text-center">
-                      {flock.initialCount?.toLocaleString() || 0}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {flock.currentCount?.toLocaleString() || 0}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {flock.avgWeight?.toFixed(1) || 0}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {getStatusBadge(flock.status)}
-                    </td>
-                    <td className="px-4 py-2 text-center flex justify-center gap-2">
-                      <button title="Xem chi tiết">
-                        <Eye className="w-4 h-4 text-gray-600" />
-                      </button>
-                      <button title="Chỉnh sửa">
-                        <Edit className="w-4 h-4 text-gray-600" />
-                      </button>
-                      <button title="Xóa">
-                        <Trash2 className="w-4 h-4 text-gray-600" />
-                      </button>
-                    </td>
-                  </tr>
+                    flock={flock}
+                    index={index}
+                    formatDate={formatDate}
+                    getStatusBadge={getStatusBadge}
+                    onView={handleView}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
                 ))}
               </tbody>
             </table>
