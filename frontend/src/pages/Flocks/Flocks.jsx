@@ -100,9 +100,24 @@ function Flocks() {
     currentPage * rowsPerPage
   );
 
-  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
-  const handleNextPage = () =>
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    if (editing.current < 0 || editing.current > editing.initial) {
+      alert("Số lượng hiện tại không hợp lệ!");
+      return;
+    }
+
+    if (!editing.avgWeight || !/^\d+(\.\d+)?kg$/.test(editing.avgWeight)) {
+      alert("Trọng lượng trung bình phải có định dạng số + 'kg' (VD: 2.1kg)");
+      return;
+    }
+
+    // Cập nhật vào danh sách
+    setFlocks((prev) =>
+      prev.map((f) => (f.id === editing.id ? editing : f))
+    );
+
+    alert("Cập nhật thông tin đàn thành công!");
+    setEditing(null);
+  };
 
   // Xử lý sự kiện
   const handleView = (id) => console.log("👁️ Xem chi tiết đàn:", id);
@@ -110,8 +125,28 @@ function Flocks() {
   const handleDelete = (id) => console.log("🗑️ Xóa đàn:", id);
 
   return (
-    <div className="px-8 mt-8">
-      <h1 className="text-3xl font-bold mb-6">Quản lí đàn gà</h1>
+    <div className="p-6 space-y-6">
+      {/* --- Thống kê --- */}
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-green-50 p-4 rounded-2xl shadow-sm">
+          <p className="text-gray-500 text-sm">Tổng số đàn</p>
+          <h2 className="text-2xl font-bold text-green-700">{flocks.length}</h2>
+        </div>
+        <div className="bg-blue-50 p-4 rounded-2xl shadow-sm">
+          <p className="text-gray-500 text-sm">Đàn đang nuôi</p>
+          <h2 className="text-2xl font-bold text-blue-700">
+            {flocks.filter((f) => f.status === "Đang nuôi").length}
+          </h2>
+        </div>
+        <div className="bg-purple-50 p-4 rounded-2xl shadow-sm">
+          <p className="text-gray-500 text-sm">Trọng lượng TB</p>
+          <h2 className="text-2xl font-bold text-purple-700">1.9kg</h2>
+        </div>
+        <div className="bg-orange-50 p-4 rounded-2xl shadow-sm">
+          <p className="text-gray-500 text-sm">Tỷ lệ chết TB</p>
+          <h2 className="text-2xl font-bold text-orange-700">2.1%</h2>
+        </div>
+      </div>
 
       <div className="bg-white rounded shadow overflow-x-auto">
         {loading ? (
@@ -174,28 +209,18 @@ function Flocks() {
                     : ""
                 }`}
               >
-                Quay lại
+                Hủy
               </button>
-              <span>
-                Trang {currentPage} / {totalPages}
-              </span>
               <button
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-                className={`px-3 py-1 border rounded disabled:opacity-50 ${
-                  currentPage !== totalPages
-                    ? "hover:bg-amber-200 transition cursor-pointer"
-                    : ""
-                }`}
+                onClick={handleSave}
+                className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700"
               >
-                Trang tiếp
+                Lưu
               </button>
             </div>
-          </>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-export default Flocks;
