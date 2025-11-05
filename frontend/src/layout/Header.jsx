@@ -4,10 +4,6 @@ function Header(){
     return <>   
     
     <div className="flex flex-row px-6 bg-white border border-gray-200 h-14">
-            <div className="w-64 flex justify-between border-r border-gray-200 items-center">
-                <p>Farm Go</p>
-                
-            </div>
             <div className="px-2 flex flex-1 items-center justify-between">
                 <div className="flex  items-center gap-1.5 ">
                     <button className="cursor-pointer">

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import axios from 'axios'
 
 export default function AddFlockModal({ onClose, onSave }) {
   const {
@@ -12,7 +13,7 @@ export default function AddFlockModal({ onClose, onSave }) {
 
   const [successMessage, setSuccessMessage] = useState('')
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     const today = new Date()
     today.setHours(0, 0, 0, 0) // reset giờ để so sánh chuẩn
     const inputDate = new Date(data.importDate)
@@ -29,6 +30,7 @@ export default function AddFlockModal({ onClose, onSave }) {
     }
 
     try {
+      const response = await axios.post('http://localhost:5000/api/flocks', data)
       console.log('Thêm đàn mới:', data)
       setSuccessMessage('Thêm đàn mới thành công!')
       onSave?.(data)
