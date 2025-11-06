@@ -33,7 +33,7 @@ const validateBeforeUpdate = async (data) => {
   const updateSchema = Joi.object({
     currentCount: Joi.number().integer().min(0).optional(),
     avgWeight: Joi.number().min(0).optional(),
-    status: Joi.string().valid('Raising', 'Sold', 'Closed').optional()
+    status: Joi.string().valid('Raising', 'dSold', 'Closed').optional()
   })
   return await updateSchema.validateAsync(data, {
     abortEarly: false,
@@ -129,7 +129,7 @@ const findDetailById = async (id) => {
     // Lấy chi tiết đàn
     const flock = await db
       .collection(FLOCK_COLLECTION_NAME)
-      .findOne({ _id: new ObjectId(id) })
+      .findOne({ _id: new ObjectId(String(id)) })
 
     if (!flock) {
       const err = new Error('Không tìm thấy thông tin đàn')
@@ -148,6 +148,49 @@ const findDetailById = async (id) => {
   }
 }
 
+// TEAM-81: Cung cấp dữ liệu danh sách đàn
+const getAllFlocks = async () => {
+  try {
+    const flocks = await GET_DB()
+      .collection(FLOCK_COLLECTION_NAME)
+      .find({})
+      .sort({ importDate: -1 }) // sắp xếp giảm dần theo ngày nhập
+      .toArray()
+
+    return flocks
+  } catch (error) {
+    const err = new Error('Không thể tải danh sách đàn: ' + error.message)
+    err.statusCode = 500
+    throw err
+  }
+};
+// TEAM-90: Xóa đàn theo ID
+const deleteById = async (id) => {
+  try {
+    if (!ObjectId.isValid(id)) {
+      const err = new Error("ID không hợp lệ");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const result = await GET_DB()
+      .collection(FLOCK_COLLECTION_NAME)
+      .deleteOne({ _id: new ObjectId(id) });
+
+    if (result.deletedCount === 0) {
+      const err = new Error("Không tìm thấy đàn để xóa");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    return { _id: id, deleted: true };
+  } catch (error) {
+    if (!error.statusCode) error.statusCode = 500;
+    error.message = "Không thể xóa đàn: " + error.message;
+    throw error;
+  }
+};
+
 export const flockModel = {
   FLOCK_COLLECTION_NAME,
   FLOCK_COLLECTION_SCHEMA,
@@ -156,5 +199,7 @@ export const flockModel = {
   validateBeforeUpdate,
   findOneById,
   update,
-  findDetailById
-}
+  findDetailById,
+  getAllFlocks,
+  deleteById,
+};

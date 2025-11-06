@@ -1,28 +1,43 @@
-import React from 'react'
+import { Outlet } from 'react-router-dom'
+import { useState } from 'react'
 import Header from './Header'
 import SideBar from './SideBar'
-import { Outlet } from 'react-router-dom'
+import Footer from './Footer'
 
-export default function LayoutDefault() {
+function LayoutDefault() {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed)
+  }
+
   return (
-    <div className='flex min-h-screen'>
-      {/* Sidebar bên trái */}
-      <aside className='w-64 bg-white border-r shadow-sm'>
-        <SideBar />
-      </aside>
-
-      {/* Khu vực nội dung chính */}
-      <div className='flex-1 flex flex-col bg-gray-50'>
-        {/* Header */}
-        <header className='shadow-sm bg-white'>
-          <Header />
-        </header>
-
-        {/* Nội dung trang */}
-        <main className='flex-1 p-6'>
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      {/* Fixed Header */}
+      <Header 
+        onToggleSidebar={toggleSidebar} 
+        isSidebarCollapsed={isSidebarCollapsed}
+      />
+      
+      {/* Main Content Area */}
+      <div className="flex flex-1 pt-16"> {/* pt-16 để tránh header fixed */}
+        {/* Sidebar */}
+        <SideBar isCollapsed={isSidebarCollapsed} />
+        
+        {/* Main Content */}
+        <main className={`
+          flex-1 transition-all duration-300 ease-in-out
+          ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}
+          min-h-[calc(100vh-4rem)] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900
+        `}>
           <Outlet />
         </main>
       </div>
+      
+      {/* Footer */}
+      <Footer />
     </div>
   )
 }
+
+export default LayoutDefault

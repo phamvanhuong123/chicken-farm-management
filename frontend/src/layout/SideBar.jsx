@@ -1,54 +1,172 @@
-import { NavLink } from 'react-router'
-import { AiOutlineDashboard } from 'react-icons/ai'
-import { HiOutlineHome } from 'react-icons/hi2'
-import { MdMapsHomeWork } from 'react-icons/md'
-function SideBar() {
-  const baseClass ='w-full flex items-center px-3 py-2.5 rounded-xl text-left transition-colors font-semibold'
-  const activeClass = 'bg-[#27A447] text-white font-semibold'
-  const normalClass = 'text-gray-700 hover:bg-gray-100 hover:text-[#27A447]'
+import { useState } from 'react';
+import { Home, Package, BarChart3 } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+
+function SideBar({ isCollapsed }) {
+  const [activeTooltip, setActiveTooltip] = useState(null);
+
+  const menuItems = [
+    {
+      path: "/dashboard",
+      icon: BarChart3,
+      label: "Tổng quan",
+      end: true,
+      badge: null
+    },
+    {
+      path: "/dashboard/flocks",
+      icon: Home,
+      label: "Đàn gà",
+      end: false,
+      badge: "12"
+    },
+    {
+      path: "/dashboard/inventory",
+      icon: Package,
+      label: "Kho vật tư",
+      end: false,
+      badge: "3"
+    }
+  ];
 
   return (
-    <div className="w-64 flex justify-between border-r border-gray-200  pr-3 py-3">
-      <ul className="list-none w-full flex flex-col gap-2">
-        <li>
-          <NavLink
-            to="/dasboard"
-            end
-            className={({ isActive }) =>
-              `${baseClass} ${isActive ? activeClass : normalClass}`
-            }
-          >
-            <AiOutlineDashboard className="mr-2.5" />
-            <span>Tổng quan</span>
-          </NavLink>
-        </li>
+    <aside className={`
+      bg-gradient-to-b from-gray-900 to-gray-800 border-r border-gray-700/50 transition-all duration-300 ease-in-out
+      ${isCollapsed ? 'w-20' : 'w-64'}
+      h-screen fixed left-0 top-0 z-40
+      flex flex-col shadow-2xl
+    `}>
+      {/* Logo Section */}
+      <div className="h-16 border-b border-gray-700/50 flex items-center px-4">
+        {!isCollapsed ? (
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-emerald-500/20">
+              <span className="text-white font-bold text-lg">F</span>
+            </div>
+            <span className="font-bold text-2xl text-white bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              FarmGo
+            </span>
+          </div>
+        ) : (
+          <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-emerald-500/20 mx-auto">
+            <span className="text-white font-bold text-lg">F</span>
+          </div>
+        )}
+      </div>
 
-        <li>
-          <NavLink
-            to="/dasboard/flocks"
-            className={({ isActive }) =>
-              `${baseClass} ${isActive ? activeClass : normalClass}`
-            }
-          >
-            <HiOutlineHome className="mr-2.5" />
-            <span>Đàn gà</span>
-          </NavLink>
-        </li>
+      {/* Navigation Section */}
+      <nav className="flex-1 px-3 py-6">
+        {/* Main Menu */}
+        <div>
+          <div className={`px-4 mb-4 ${isCollapsed ? 'text-center' : ''}`}>
+            {!isCollapsed && (
+              <h3 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
+                Quản lý chính
+              </h3>
+            )}
+          </div>
+          
+          <ul className="space-y-2">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              
+              return (
+                <li key={item.path}>
+                  <NavLink
+                    to={item.path}
+                    end={item.end}
+                    onMouseEnter={() => setActiveTooltip(item.path)}
+                    onMouseLeave={() => setActiveTooltip(null)}
+                    className={({ isActive }) => `
+                      group relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300
+                      ${isActive 
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25' 
+                        : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:shadow-md border border-transparent hover:border-gray-600/50'
+                      }
+                      ${isCollapsed ? 'justify-center' : ''}
+                      hover:scale-105 backdrop-blur-sm
+                    `}
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <div className="relative">
+                          <Icon 
+                            className={`transition-transform duration-200 ${isActive ? 'text-white' : 'text-current'}`} 
+                            size={20} 
+                          />
+                          {item.badge && !isActive && (
+                            <span className={`
+                              absolute -top-2 -right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full
+                              ${isCollapsed ? 'scale-75' : ''}
+                              ${isActive 
+                                ? 'bg-white text-emerald-600' 
+                                : 'bg-emerald-500 text-white shadow-lg'
+                              }
+                            `}>
+                              {item.badge}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {!isCollapsed && (
+                          <div className="flex items-center justify-between flex-1">
+                            <span className="font-medium text-sm">{item.label}</span>
+                            {item.badge && isActive && (
+                              <span className="bg-white/20 text-xs px-2 py-1 rounded-full font-medium">
+                                {item.badge}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Enhanced Tooltip */}
+                        {isCollapsed && activeTooltip === item.path && (
+                          <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-2xl border border-gray-700 animate-in fade-in-0 zoom-in-95">
+                            <div className="font-medium">{item.label}</div>
+                            {item.badge && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                                <span className="text-xs text-emerald-400">{item.badge} mục</span>
+                              </div>
+                            )}
+                            <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-gray-900 rotate-45 border-l border-t border-gray-700"></div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </NavLink>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </nav>
 
-        <li>
-          <NavLink
-            to="/dasboard/inventory"
-            className={({ isActive }) =>
-              `${baseClass} ${isActive ? activeClass : normalClass}`
-            }
-          >
-            <MdMapsHomeWork className="mr-2.5"/>
-            <span>Kho vật tư</span>
-          </NavLink>
-        </li>
-      </ul>
-    </div>
-  )
+      {/* User Section */}
+      <div className="p-4 border-t border-gray-700/50">
+        <div className={`
+          flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-gray-800/50 to-gray-700/30
+          ${isCollapsed ? 'justify-center' : ''}
+          backdrop-blur-sm border border-gray-600/30
+        `}>
+          <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center font-semibold text-white shadow-lg flex-shrink-0">
+            V
+          </div>
+          
+          {!isCollapsed && (
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-white truncate">Vũ FarmGo</p>
+              <p className="text-xs text-gray-400 truncate">Quản lý trang trại</p>
+              <div className="flex items-center gap-1 mt-1">
+                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span className="text-xs text-emerald-400 font-medium">Online</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </aside>
+  );
 }
 
-export default SideBar
+export default SideBar;
