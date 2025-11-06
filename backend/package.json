@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "dev": "npm start",
     "test": "echo \"Error: no test specified\" && exit 1",
     "clean": "rimraf build && mkdir build",
     "lint": "eslint src --ext js --report-unused-disable-directives --max-warnings 0",

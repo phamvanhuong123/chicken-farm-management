@@ -1,5 +1,5 @@
 /**
- * TEAM-102: Material Model
+ * TEAM-102: Material Model (tìm kiếm tiếng Việt, có normalized fields)
  */
 
 import Joi from 'joi'
@@ -10,7 +10,9 @@ export const MATERIAL_COLLECTION_NAME = 'materials'
 
 export const MATERIAL_SCHEMA = Joi.object({
   name: Joi.string().required(),
+  normalizedName: Joi.string().allow(''),
   type: Joi.string().required(),
+  normalizedType: Joi.string().allow(''),
   quantity: Joi.number().integer().min(0).required(),
   unit: Joi.string().required(),
   expiryDate: Joi.date().required(),
@@ -25,8 +27,20 @@ export const validateBeforeCreateMaterial = async (data) => {
 }
 
 /**
- * Lấy danh sách vật tư theo filter, sort, paginate
- * và tính trạng thái hiển thị
+ * 🔠 Chuẩn hóa tiếng Việt (bỏ dấu, chuyển thường)
+ */
+const normalizeVietnamese = (str = '') => {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // bỏ dấu
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .trim()
+}
+
+/**
+ * 📋 Lấy danh sách vật tư (lọc, phân trang, tính trạng thái)
  */
 const findAll = async (filter = {}, sort = 'createdAt', order = 'desc', skip = 0, limit = 10) => {
   try {
@@ -36,7 +50,9 @@ const findAll = async (filter = {}, sort = 'createdAt', order = 'desc', skip = 0
       .find(filter)
       .project({
         name: 1,
+        normalizedName: 1,
         type: 1,
+        normalizedType: 1,
         quantity: 1,
         unit: 1,
         expiryDate: 1,
@@ -50,7 +66,6 @@ const findAll = async (filter = {}, sort = 'createdAt', order = 'desc', skip = 0
       .limit(limit)
       .toArray()
 
-    // Tính trạng thái vật tư
     const now = new Date()
     const materials = docs.map((m) => {
       const daysLeft = differenceInDays(new Date(m.expiryDate), now)
@@ -73,15 +88,25 @@ const findAll = async (filter = {}, sort = 'createdAt', order = 'desc', skip = 0
   }
 }
 
-/** Đếm tổng số vật tư theo filter (phân trang) */
+/**
+ * 🧮 Đếm tổng số vật tư theo filter
+ */
 const count = async (filter = {}) => {
   const db = GET_DB()
   return await db.collection(MATERIAL_COLLECTION_NAME).countDocuments(filter)
 }
 
+/**
+ * ➕ Tạo vật tư mới (tự thêm normalizedName / normalizedType)
+ */
 const create = async (data) => {
   const db = GET_DB()
-  return await db.collection(MATERIAL_COLLECTION_NAME).insertOne(data)
+  const normalizedData = {
+    ...data,
+    normalizedName: normalizeVietnamese(data.name),
+    normalizedType: normalizeVietnamese(data.type)
+  }
+  return await db.collection(MATERIAL_COLLECTION_NAME).insertOne(normalizedData)
 }
 
 export const materialModel = {
