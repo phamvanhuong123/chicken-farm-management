@@ -41,7 +41,7 @@ function ConfirmModal({ open, title, message, onConfirm, onCancel }) {
 }
 
 /** Component xử lý xóa đàn (TEAM-89) */
-export default function FlockDeleteHandler({ flock, onDeleted, onError }) {
+export default function FlockDelete({ flock, onDeleted, onError }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 

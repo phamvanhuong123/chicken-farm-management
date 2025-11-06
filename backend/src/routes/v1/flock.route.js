@@ -3,7 +3,8 @@ import {
   updateFlock,
   getFlockDetail,
   createFlock,
-  getAllFlocks, // 👈 thêm dòng này
+  getAllFlocks,
+  deleteFlock, // 👈 thêm dòng này
 } from "../../controllers/flock.controller.js";
 import {
   validateFlockUpdate,
@@ -26,5 +27,7 @@ router.post("/", validateFlockCreate, createFlock);
 
 // [PUT] /v1/flocks/:id - Cập nhật thông tin đàn
 router.put("/:id", validateFlockUpdate, updateFlock);
+// [DELETE] /v1/flocks/:id - TEAM-90: Xóa đàn
+router.delete("/:id", deleteFlock);
 
 export default router;
