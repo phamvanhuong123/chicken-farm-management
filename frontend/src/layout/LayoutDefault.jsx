@@ -1,18 +1,43 @@
-import { Outlet } from 'react-router'
+import { Outlet } from 'react-router-dom'
+import { useState } from 'react'
 import Header from './Header'
-import SideBar from './sideBar'
+import SideBar from './SideBar'
+import Footer from './Footer'
 
 function LayoutDefault() {
-  return <>
-    <div >
-      <Header/>
-      <div className='flex px-6'>
-        <SideBar/>
-        <div className='flex-1'>
-          <Outlet/>
-        </div>
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed)
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      {/* Fixed Header */}
+      <Header 
+        onToggleSidebar={toggleSidebar} 
+        isSidebarCollapsed={isSidebarCollapsed}
+      />
+      
+      {/* Main Content Area */}
+      <div className="flex flex-1 pt-16"> {/* pt-16 để tránh header fixed */}
+        {/* Sidebar */}
+        <SideBar isCollapsed={isSidebarCollapsed} />
+        
+        {/* Main Content */}
+        <main className={`
+          flex-1 transition-all duration-300 ease-in-out
+          ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}
+          min-h-[calc(100vh-4rem)] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900
+        `}>
+          <Outlet />
+        </main>
       </div>
+      
+      {/* Footer */}
+      <Footer />
     </div>
-  </>
+  )
 }
+
 export default LayoutDefault
