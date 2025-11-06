@@ -1,9 +1,5 @@
 import { flockService } from "../services/flock.service.js";
 
-/**
- * [POST] /v1/flocks
- * Lưu thông tin đàn mới
- */
 export const createFlock = async (req, res, next) => {
   try {
     const newFlock = await flockService.createFlock(req.body);
