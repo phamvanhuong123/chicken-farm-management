@@ -76,3 +76,20 @@ export const getAllFlocks = async (req, res, next) => {
     next(error);
   }
 };
+/**
+ * [DELETE] /v1/flocks/:id
+ * TEAM-90: Xóa đàn gà theo ID
+ */
+export const deleteFlock = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await flockService.deleteFlock(id);
+
+    res.status(200).json({
+      message: "Xóa đàn thành công.",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

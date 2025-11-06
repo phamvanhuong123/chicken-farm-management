@@ -164,6 +164,32 @@ const getAllFlocks = async () => {
     throw err;
   }
 };
+// TEAM-90: Xóa đàn theo ID
+const deleteById = async (id) => {
+  try {
+    if (!ObjectId.isValid(id)) {
+      const err = new Error("ID không hợp lệ");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const result = await GET_DB()
+      .collection(FLOCK_COLLECTION_NAME)
+      .deleteOne({ _id: new ObjectId(id) });
+
+    if (result.deletedCount === 0) {
+      const err = new Error("Không tìm thấy đàn để xóa");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    return { _id: id, deleted: true };
+  } catch (error) {
+    if (!error.statusCode) error.statusCode = 500;
+    error.message = "Không thể xóa đàn: " + error.message;
+    throw error;
+  }
+};
 
 export const flockModel = {
   FLOCK_COLLECTION_NAME,
@@ -175,4 +201,5 @@ export const flockModel = {
   update,
   findDetailById,
   getAllFlocks,
+  deleteById,
 };

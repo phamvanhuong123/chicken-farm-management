@@ -70,10 +70,50 @@ const getAllFlocks = async () => {
     throw error;
   }
 };
+
+/**
+ * TEAM-90: Xóa đàn
+ */
+const deleteFlock = async (id) => {
+  try {
+    const flock = await flockModel.findOneById(id);
+    if (!flock) {
+      const err = new Error("Không tìm thấy đàn.");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    // Không cho xóa đàn đang nuôi
+    const status = (flock.status || "").toLowerCase();
+    if (
+      status.includes("raising") ||
+      status.includes("đang nuôi") ||
+      status.includes("dang nuoi")
+    ) {
+      const err = new Error(
+        "Không thể xóa đàn đang nuôi. Vui lòng hoàn tất xuất chuồng trước khi xóa."
+      );
+      err.statusCode = 400;
+      throw err;
+    }
+
+    // Xóa đàn
+    const result = await flockModel.deleteById(id);
+    return result;
+  } catch (error) {
+    if (!error.statusCode) {
+      error.statusCode = 500;
+      error.message = "Không thể xóa đàn, vui lòng thử lại. " + error.message;
+    }
+    throw error;
+  }
+};
+
 export const flockService = {
   getFlockOnly,
   updateFlock,
   getFlockDetail,
   createFlock,
   getAllFlocks,
+  deleteFlock,
 };
