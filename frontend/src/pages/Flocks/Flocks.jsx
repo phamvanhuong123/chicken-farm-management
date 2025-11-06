@@ -1,326 +1,251 @@
-import React, { useState } from "react";
-import ActionButtons from "../../components/Flock/ActionButtons";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { Eye, Edit, Trash2, X } from "lucide-react";
+import Statistical from "./Statistical";
+// ✅ Component con — hiển thị 1 dòng đàn gà
+const FlockRow = ({
+  flock,
+  index,
+  formatDate,
+  getStatusBadge,
+  onView,
+  onEdit,
+  onDelete,
+}) => {
+  return (
+    <tr key={flock._id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+      <td className="px-4 py-2">{flock.code || "-"}</td>
+      <td className="px-4 py-2">
+        {flock.importDate ? formatDate(flock.importDate) : "-"}
+      </td>
+      <td className="px-4 py-2">{flock.speciesId || "-"}</td>
+      <td className="px-4 py-2 text-center">
+        {flock.initialCount?.toLocaleString() || 0}
+      </td>
+      <td className="px-4 py-2 text-center">
+        {flock.currentCount?.toLocaleString() || 0}
+      </td>
+      <td className="px-4 py-2 text-center">
+        {flock.avgWeight?.toFixed(1) || 0}
+      </td>
+      <td className="px-4 py-2 text-center">{getStatusBadge(flock.status)}</td>
+      <td className="px-4 py-2 text-center flex justify-center gap-2">
+        <button title="Xem chi tiết" onClick={() => onView(flock._id)}>
+          <Eye className="w-4 h-4 text-gray-600" />
+        </button>
+        <button title="Chỉnh sửa" onClick={() => onEdit(flock)}>
+          <Edit className="w-4 h-4 text-gray-600" />
+        </button>
+        <button title="Xóa" onClick={() => onDelete(flock._id)}>
+          <Trash2 className="w-4 h-4 text-gray-600" />
+        </button>
+      </td>
+    </tr>
+  );
+};
 
-export default function Flocks() {
-  const [flocks, setFlocks] = useState([
-    {
-      id: "A001",
-      date: "2024-01-15",
-      breed: "Gà Ri",
-      initial: 1500,
-      current: 1485,
-      avgWeight: "1.8kg",
-      status: "Đang nuôi",
-    },
-    {
-      id: "B002",
-      date: "2024-01-20",
-      breed: "Gà Tam Hoàng",
-      initial: 2000,
-      current: 1950,
-      avgWeight: "2.1kg",
-      status: "Đang nuôi",
-    },
-    {
-      id: "C003",
-      date: "2024-02-01",
-      breed: "Gà Ai Cập",
-      initial: 1200,
-      current: 0,
-      avgWeight: "2.5kg",
-      status: "Đã bán",
-    },
-  ]);
-
-  const [filter, setFilter] = useState({
-    status: "Tất cả",
-    breed: "Tất cả",
-    search: "",
-  });
-
+// ✅ Component chính — trang danh sách đàn
+function Flocks() {
+  const [flocks, setFlocks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 5;
 
-  const filtered = flocks.filter((f) => {
-    return (
-      (filter.status === "Tất cả" || f.status === filter.status) &&
-      (filter.breed === "Tất cả" || f.breed === filter.breed) &&
-      (filter.search === "" ||
-        f.id.toLowerCase().includes(filter.search.toLowerCase()))
-    );
-  });
+  // Format ngày
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
 
-  // Hàm mở form chỉnh sửa
+  // Badge trạng thái
+  const getStatusBadge = (status) => (
+    <span
+      className={`px-2 py-1 text-xs font-medium rounded ${
+        status === "Raising" || status === "Đang nuôi"
+          ? "bg-green-100 text-green-800"
+          : "bg-gray-200 text-gray-800"
+      }`}
+    >
+      {status === "Raising"
+        ? "Đang nuôi"
+        : status === "Sold"
+        ? "Đã bán"
+        : status}
+    </span>
+  );
+
+  // Gọi API lấy danh sách đàn
+  useEffect(() => {
+    const fetchFlocks = async () => {
+      try {
+        const res = await axios.get("http://localhost:8071/v1/flocks");
+        console.log(res)
+        setFlocks(res.data.data || []);
+      } catch (error) {
+        console.error("Lỗi tải danh sách đàn:", error);
+        setFlocks([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFlocks();
+  }, []);
+
+  // Phân trang
+  const totalPages = Math.ceil(flocks.length / rowsPerPage);
+  const currentFlocks = flocks.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
+
+  // ====== XỬ LÝ SỰ KIỆN ======
+  const handleView = (id) => alert(`👁️ Xem chi tiết đàn ID: ${id}`);
+
   const handleEdit = (flock) => {
     setEditing({ ...flock });
   };
 
-  // Hàm xem chi tiết
-  const handleView = (flock) => {
-    alert(
-      `Chi tiết đàn:\n\n` +
-        `Mã lứa: ${flock.id}\n` +
-        `Giống: ${flock.breed}\n` +
-        `Ngày nhập: ${flock.date}\n` +
-        `Số lượng ban đầu: ${flock.initial}\n` +
-        `Số lượng hiện tại: ${flock.current}\n` +
-        `Trọng lượng TB: ${flock.avgWeight}\n` +
-        `Trạng thái: ${flock.status}`
-    );
-  };
-
-  // Hàm xóa đàn
   const handleDelete = (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa đàn này không?")) {
-      setFlocks((prev) => prev.filter((f) => f.id !== id));
+    if (window.confirm("Bạn có chắc muốn xóa đàn này không?")) {
+      setFlocks((prev) => prev.filter((f) => f._id !== id));
+      alert("🗑️ Đã xóa đàn thành công!");
     }
   };
 
-  // Hàm lưu sau khi chỉnh sửa + validate dữ liệu
-  const handleSave = () => {
-    if (!editing.date) {
-      alert("Vui lòng chọn ngày nhập!");
+  const handleUpdateFlock = () => {
+    if (editing.currentCount < 0 || editing.currentCount > editing.initialCount) {
+      alert("❌ Số lượng hiện tại không hợp lệ!");
       return;
     }
 
-    const ngayNhap = new Date(editing.date);
-    const today = new Date();
-    if (ngayNhap > today) {
-      alert("Ngày nhập không được vượt quá ngày hiện tại!");
+    if (!editing.avgWeight || isNaN(editing.avgWeight)) {
+      alert("❌ Trọng lượng trung bình phải là số!");
       return;
     }
 
-    if (editing.initial <= 0) {
-      alert("Số lượng ban đầu phải lớn hơn 0!");
-      return;
-    }
-
-    if (editing.current < 0 || editing.current > editing.initial) {
-      alert("Số lượng hiện tại không hợp lệ!");
-      return;
-    }
-
-    if (!editing.avgWeight || !/^\d+(\.\d+)?kg$/.test(editing.avgWeight)) {
-      alert("Trọng lượng trung bình phải có định dạng số + 'kg' (VD: 2.1kg)");
-      return;
-    }
-
-    // Cập nhật vào danh sách
     setFlocks((prev) =>
-      prev.map((f) => (f.id === editing.id ? editing : f))
+      prev.map((f) => (f._id === editing._id ? editing : f))
     );
 
-    alert("Cập nhật thông tin đàn thành công!");
+    alert("✅ Cập nhật thông tin đàn thành công!");
     setEditing(null);
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {/* --- Thống kê --- */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-green-50 p-4 rounded-2xl shadow-sm">
-          <p className="text-gray-500 text-sm">Tổng số đàn</p>
-          <h2 className="text-2xl font-bold text-green-700">{flocks.length}</h2>
-        </div>
-        <div className="bg-blue-50 p-4 rounded-2xl shadow-sm">
-          <p className="text-gray-500 text-sm">Đàn đang nuôi</p>
-          <h2 className="text-2xl font-bold text-blue-700">
-            {flocks.filter((f) => f.status === "Đang nuôi").length}
-          </h2>
-        </div>
-        <div className="bg-purple-50 p-4 rounded-2xl shadow-sm">
-          <p className="text-gray-500 text-sm">Trọng lượng TB</p>
-          <h2 className="text-2xl font-bold text-purple-700">1.9kg</h2>
-        </div>
-        <div className="bg-orange-50 p-4 rounded-2xl shadow-sm">
-          <p className="text-gray-500 text-sm">Tỷ lệ chết TB</p>
-          <h2 className="text-2xl font-bold text-orange-700">2.1%</h2>
-        </div>
-      </div>
-
-      {/* --- Bộ lọc --- */}
-      <div className="flex items-center gap-3 bg-white p-4 rounded-2xl shadow-sm">
-        <select
-          className="border rounded-lg px-3 py-2 text-sm"
-          value={filter.status}
-          onChange={(e) => setFilter({ ...filter, status: e.target.value })}
-        >
-          <option>Tất cả</option>
-          <option>Đang nuôi</option>
-          <option>Đã bán</option>
-        </select>
-
-        <select
-          className="border rounded-lg px-3 py-2 text-sm"
-          value={filter.breed}
-          onChange={(e) => setFilter({ ...filter, breed: e.target.value })}
-        >
-          <option>Tất cả</option>
-          <option>Gà Tam Hoàng</option>
-          <option>Gà Broiler</option>
-        </select>
-
-        <input
-          type="text"
-          placeholder="Tìm kiếm mã lứa..."
-          className="border rounded-lg px-3 py-2 flex-1 text-sm"
-          value={filter.search}
-          onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-        />
-
-        <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
-          🔍
-        </button>
-      </div>
-
-      {/* --- Bảng danh sách --- */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm">
-        <table className="w-full text-sm text-left border-collapse">
-          <thead className="border-b">
-            <tr className="text-gray-600">
-              <th className="p-3">Mã lứa</th>
-              <th className="p-3">Ngày nhập</th>
-              <th className="p-3">Giống</th>
-              <th className="p-3">SL ban đầu</th>
-              <th className="p-3">SL hiện tại</th>
-              <th className="p-3">Trọng lượng TB</th>
-              <th className="p-3">Trạng thái</th>
-              <th className="p-3 text-center">Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((f) => (
-              <tr key={f.id} className="border-b hover:bg-gray-50">
-                <td className="p-3 font-medium">{f.id}</td>
-                <td className="p-3">{f.date}</td>
-                <td className="p-3">{f.breed}</td>
-                <td className="p-3">{f.initial.toLocaleString()}</td>
-                <td className="p-3 font-semibold">{f.current.toLocaleString()}</td>
-                <td className="p-3">{f.avgWeight}</td>
-                <td className="p-3">
-                  {f.status === "Đang nuôi" ? (
-                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
-                      Đang nuôi
-                    </span>
-                  ) : (
-                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium">
-                      Đã bán
-                    </span>
-                  )}
-                </td>
-                <td className="p-3 text-center">
-                  <ActionButtons
-                    onView={() => handleView(f)}
-                    onEdit={() => handleEdit(f)}
-                    onDelete={() => handleDelete(f.id)}
-                  />
-                </td>
+    <div className="p-4">
+      <h2 className="text-xl font-semibold mb-4">Danh sách đàn</h2>
+      <Statistical flocks={flocks}/>
+      {loading ? (
+        <p>Đang tải...</p>
+      ) : flocks?.length === 0 ? (
+        <p>Không có đàn nào.</p>
+      ) : (
+        <div className="mt-10">
+          <table className="w-full border-none">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="px-4 py-2">Mã đàn</th>
+                <th className="px-4 py-2">Ngày nhập</th>
+                <th className="px-4 py-2">Giống</th>
+                <th className="px-4 py-2">Số lượng nhập</th>
+                <th className="px-4 py-2">Số lượng hiện tại</th>
+                <th className="px-4 py-2">Trọng lượng TB</th>
+                <th className="px-4 py-2">Trạng thái</th>
+                <th className="px-4 py-2">Hành động</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="text-sm text-gray-500 mt-2">
-          Hiển thị {filtered.length} trong tổng số {flocks.length} đàn
-        </p>
-      </div>
+            </thead>
+            <tbody>
+              {currentFlocks.map((flock, index) => (
+                <FlockRow
+                  key={flock._id}
+                  flock={flock}
+                  index={index}
+                  formatDate={formatDate}
+                  getStatusBadge={getStatusBadge}
+                  onView={handleView}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </tbody>
+          </table>
 
-      {/* --- Modal chỉnh sửa --- */}
+          {/* Phân trang */}
+          <div className="flex justify-center mt-4 gap-2">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+            >
+              ← Trước
+            </button>
+            <span className="px-2 py-1">
+              Trang {currentPage}/{totalPages}
+            </span>
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+            >
+              Sau →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal chỉnh sửa */}
       {editing && (
-        <div className='fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50'>
-          <div className="bg-white p-6 rounded-2xl shadow-lg w-[400px] space-y-4 animate-fadeIn">
-            <h3 className="text-lg font-semibold text-center">
-              Chỉnh sửa thông tin đàn
-            </h3>
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-[400px] relative">
+            <button
+              className="absolute top-2 right-2 text-gray-500"
+              onClick={() => setEditing(null)}
+            >
+              <X className="w-5 h-5" />
+            </button>
 
-            <div className="space-y-2">
-              <label className="block text-sm">Ngày nhập:</label>
-              <input
-                type="date"
-                className="border px-3 py-2 w-full rounded-lg text-sm"
-                value={editing.date}
-                onChange={(e) =>
-                  setEditing({ ...editing, date: e.target.value })
-                }
-              />
-            </div>
+            <h3 className="text-lg font-semibold mb-4">Chỉnh sửa đàn</h3>
 
-            <div className="space-y-2">
-              <label className="block text-sm">Giống gà:</label>
-              <select
-                className="border px-3 py-2 w-full rounded-lg text-sm"
-                value={editing.breed || ""}   // nếu editing.breed rỗng thì gán ""
-                onChange={(e) => setEditing({ ...editing, breed: e.target.value })}
-              >
-                <option value="" disabled>
-                  -- Chọn giống gà --
-                </option>
-                <option value="Gà Ri">Gà Ri</option>
-                <option value="Gà Tam Hoàng">Gà Tam Hoàng</option>
-                <option value="Gà Ai Cập">Gà Ai Cập</option>
-              </select>
-
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-sm">SL ban đầu:</label>
+            <div className="flex flex-col gap-3">
+              <label>
+                Số lượng hiện tại:
                 <input
                   type="number"
-                  className="border px-3 py-2 w-full rounded-lg text-sm"
-                  value={editing.initial}
+                  value={editing.currentCount || ""}
                   onChange={(e) =>
-                    setEditing({ ...editing, initial: +e.target.value })
+                    setEditing({ ...editing, currentCount: + e.target.value })
                   }
+                  className="w-full border rounded px-2 py-1"
                 />
-              </div>
-              <div>
-                <label className="block text-sm">SL hiện tại:</label>
+              </label>
+              <label>
+                Trọng lượng trung bình (kg):
                 <input
                   type="number"
-                  className="border px-3 py-2 w-full rounded-lg text-sm"
-                  value={editing.current}
+                  step="0.1"
+                  value={editing.avgWeight || ""}
                   onChange={(e) =>
-                    setEditing({ ...editing, current: +e.target.value })
+                    setEditing({ ...editing, avgWeight: +e.target.value })
                   }
+                  className="w-full border rounded px-2 py-1"
                 />
-              </div>
+              </label>
             </div>
 
-            <div className="space-y-2">
-              <label className="block text-sm">Trọng lượng TB:</label>
-              <input
-                type="text"
-                className="border px-3 py-2 w-full rounded-lg text-sm"
-                value={editing.avgWeight}
-                onChange={(e) =>
-                  setEditing({ ...editing, avgWeight: e.target.value })
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm">Trạng thái:</label>
-              <select
-                className="border px-3 py-2 w-full rounded-lg text-sm"
-                value={editing.status}
-                onChange={(e) =>
-                  setEditing({ ...editing, status: e.target.value })
-                }
-              >
-                <option>Đang nuôi</option>
-                <option>Đã bán</option>
-              </select>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => setEditing(null)}
-                className="px-4 py-2 rounded-lg border text-gray-600 hover:bg-gray-100"
+                className="px-3 py-1 bg-gray-200 rounded"
               >
                 Hủy
               </button>
               <button
-                onClick={handleSave}
-                className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700"
+                onClick={handleUpdateFlock}
+                className="px-3 py-1 bg-blue-500 text-white rounded"
               >
                 Lưu
               </button>
@@ -331,3 +256,5 @@ export default function Flocks() {
     </div>
   );
 }
+
+export default Flocks;
