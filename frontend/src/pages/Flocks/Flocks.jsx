@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Eye, Edit, Trash2, X } from "lucide-react";
 import Statistical from "./Statistical";
+import FlockDeleteHandler from "./FlockDelete";
 // ✅ Component con — hiển thị 1 dòng đàn gà
 const FlockRow = ({
   flock,
@@ -36,9 +37,10 @@ const FlockRow = ({
         <button title="Chỉnh sửa" onClick={() => onEdit(flock)}>
           <Edit className="w-4 h-4 text-gray-600" />
         </button>
-        <button title="Xóa" onClick={() => onDelete(flock._id)}>
-          <Trash2 className="w-4 h-4 text-gray-600" />
-        </button>
+         <FlockDeleteHandler
+          flock={flock}
+          onDeleted={(id) => console.log("✅ Đã xóa đàn:", id)}
+        />
       </td>
     </tr>
   );
