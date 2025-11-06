@@ -138,14 +138,14 @@ function Flocks() {
   return (
     <div className="p-4">
       <h2 className="text-xl font-semibold mb-4">Danh sách đàn</h2>
-      {/* <Statistical/> */}
+      <Statistical flocks={flocks}/>
       {loading ? (
         <p>Đang tải...</p>
       ) : flocks?.length === 0 ? (
         <p>Không có đàn nào.</p>
       ) : (
-        <>
-          <table className="w-full border">
+        <div className="mt-10">
+          <table className="w-full border-none">
             <thead>
               <tr className="bg-gray-200">
                 <th className="px-4 py-2">Mã đàn</th>
@@ -194,7 +194,7 @@ function Flocks() {
               Sau →
             </button>
           </div>
-        </>
+        </div>
       )}
 
       {/* Modal chỉnh sửa */}
@@ -217,7 +217,7 @@ function Flocks() {
                   type="number"
                   value={editing.currentCount || ""}
                   onChange={(e) =>
-                    setEditing({ ...editing, currentCount: +e.target.value })
+                    setEditing({ ...editing, currentCount: + e.target.value })
                   }
                   className="w-full border rounded px-2 py-1"
                 />
