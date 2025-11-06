@@ -17,7 +17,6 @@ const clientInstance = new MongoClient(env.MONGODB_URL, {
 
 export const CONNECT_DB = async () => {
   await clientInstance.connect()
-  // Kết nối thành công thì lấy database theo tên và gán ngược lại databaseInstance
   databaseInstance = clientInstance.db(env.DATABASE_NAME)
 }
 
