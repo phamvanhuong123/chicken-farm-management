@@ -9,17 +9,15 @@ import { APIs_V1 } from '~/routes/index'
 import { errorHandlingMiddleware } from './middlewares/errorHandlingMiddleware'
 import { env } from './config/environment'
 import { corsOptions } from './config/cors'
+import authRoutes from './routes/authRoutes'
 
 const START_SERVER = () => {
   const app = express()
-  // xu li cors
   app.use(cors(corsOptions))
   const port = 8071
-  // enable req.body json data
   app.use(express.json())
-  //use api/v1
   app.use('/v1', APIs_V1)
-  // middleware xử lí lỗi tập trung
+  app.use('/auth', authRoutes)
   app.use(errorHandlingMiddleware)
 
   if (env.BUILD_MODE === 'production') {
@@ -32,7 +30,6 @@ const START_SERVER = () => {
       console.log(`Listen port :http://localhost:${port}`)
     })
   }
-  // Thực hiện các tác vụ cleanup trước khi dừng server
   exitHook(() => {
     console.log('closed disconnected mongoDB alast')
     CLOSED_DB()
