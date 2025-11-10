@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Menu, X, Bell, User, LogIn, UserPlus, ChevronDown } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
@@ -22,6 +23,7 @@ function Header({ onToggleSidebar, isSidebarCollapsed }) {
           <h1 className="text-xl font-bold text-white">
             Farm Management
           </h1>
+          
         </div>
       </div>
 
