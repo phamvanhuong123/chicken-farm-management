@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Eye, Edit, Trash2 } from "lucide-react";
-import FlockDelete from "./FlockDelete";
+import FlockDelete from "./FlockDelete/FlockDelete";
 
 // ✅ Component con — hiển thị 1 dòng đàn gà
 const FlockRow = ({
