@@ -9,6 +9,8 @@ import {
   FaMoneyBillWave,
   FaSearch,
 } from "react-icons/fa";
+import { ArrowDownFromLine, ArrowDownToLine, Edit, Eye, PlusIcon, Trash2 } from "lucide-react";
+import { Button } from "~/components/ui/button";
 
 // 🎨 Badge màu động (nếu có)
 const TypeBadge = ({ type, color }) => {
@@ -163,8 +165,8 @@ export default function Inventory() {
           </p>
         </div>
         <div className="flex gap-2 items-center">
-          <label className="px-4 py-2 border rounded-md bg-white hover:bg-gray-100 text-sm cursor-pointer">
-            ⬆️ Nhập Excel
+          <label className="px-2 py-2 border rounded-md bg-white hover:bg-gray-100 text-sm cursor-pointer flex items-center gap-1.5">
+            <ArrowDownToLine size={15} /> Nhập Excel
             <input
               type="file"
               accept=".xlsx"
@@ -175,9 +177,9 @@ export default function Inventory() {
 
           <button
             onClick={handleExport}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+            className="px-2 py-2 border rounded-md bg-white hover:bg-gray-100 text-sm cursor-pointer flex items-center gap-1.5"
           >
-            ⬇️ Xuất Excel
+            <ArrowDownFromLine size={15} className="rotate-180"  /> Xuất Excel
           </button>
 
           {file && (
@@ -185,16 +187,12 @@ export default function Inventory() {
               onClick={handleImport}
               className="px-3 py-2 bg-green-500 text-white rounded-md text-sm hover:bg-green-600"
             >
-              ✅ Xác nhận
+             Xác nhận
             </button>
           )}
 
-          <button
-            className="px-4 py-2 text-white rounded-md text-sm font-medium hover:opacity-90"
-            style={{ backgroundColor: "#27a447" }}
-          >
-            ➕ Thêm vật tư
-          </button>
+          <Button   className={'bg-green-400 hover:bg-green-500 cursor-pointer'}> <PlusIcon/>Thêm vật tư</Button>
+
         </div>
       </div>
 
@@ -337,13 +335,13 @@ export default function Inventory() {
                   </td>
                   <td className="p-3 text-center">
                     <button
-                      className="mx-1 hover:text-blue-600"
+                      className="p-2 rounded cursor-pointer hover:bg-gray-200"
                       onClick={() => setSelectedMaterial(m._id)} // 🆕 mở popup
                     >
-                      👁️
+                        <Eye size={16} className="w-4 h-4 text-gray-600 " />
                     </button>
-                    <button className="mx-1 hover:text-green-600">✏️</button>
-                    <button className="mx-1 hover:text-red-600">🗑️</button>
+                    <button className="p-2 rounded cursor-pointer hover:bg-blue-200"> <Edit size={16} className="w-4 h-4 text-blue-500" /></button>
+                    <button className="p-2 rounded hover:bg-red-50 text-red-600 disabled:opacity-50 cursor-pointer"> <Trash2 size={16} /></button>
                   </td>
                 </tr>
               ))

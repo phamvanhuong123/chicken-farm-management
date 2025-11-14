@@ -31,9 +31,9 @@ function SideBar({ isCollapsed }) {
 
   return (
     <aside className={`
-      mt-3
+      
       border-r border-gray-200 transition-all bg-white duration-300 ease-in-out
-      ${isCollapsed ? 'w-[105px]' : 'w-64'}
+      ${isCollapsed ? 'w-[105px] mt-13' : 'w-64 mt-10'}
       h-screen fixed left-0 top-0 z-40
       flex flex-col 
     `}>
@@ -42,13 +42,7 @@ function SideBar({ isCollapsed }) {
       <nav className="flex-1 px-3 py-6">
         {/* Main Menu */}
         <div>
-          <div className={`px-4 mb-4 ${isCollapsed ? 'text-center' : ''}`}>
-            {!isCollapsed && (
-              <h3 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
-                Quản lý chính
-              </h3>
-            )}
-          </div>
+          
           
           <ul className="space-y-2">
             {menuItems.map((item) => {

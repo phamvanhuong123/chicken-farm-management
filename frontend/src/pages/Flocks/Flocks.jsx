@@ -3,8 +3,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Eye, Edit, Trash2 } from "lucide-react";
 import FlockDelete from "./FlockDelete/FlockDelete";
-
-// ✅ Component con — hiển thị 1 dòng đàn gà
+import Statistical from "./Statistical/Statistical";
+import HeaderFlock from "./HeaderFlock/HeaderFlock";
 const FlockRow = ({
   flock,
   index,
@@ -32,11 +32,11 @@ const FlockRow = ({
       </td>
       <td className="px-4 py-2 text-center">{getStatusBadge(flock.status)}</td>
       <td className="px-4 py-2 text-center flex justify-center gap-2">
-        <button title="Xem chi tiết" onClick={() => onView(flock._id)}>
-          <Eye className="w-4 h-4 text-gray-600" />
+        <button className="p-2 rounded cursor-pointer hover:bg-gray-200" title="Xem chi tiết" onClick={() => onView(flock._id)}>
+          <Eye size={16} className="w-4 h-4 text-gray-600   " />
         </button>
-        <button title="Chỉnh sửa" onClick={() => onEdit(flock._id)}>
-          <Edit className="w-4 h-4 text-gray-600" />
+        <button className="p-2 rounded cursor-pointer hover:bg-blue-200" title="Chỉnh sửa" onClick={() => onEdit(flock._id)}>
+          <Edit size={16} className="w-4 h-4 text-blue-500" />
         </button>
         <FlockDelete
           flock={flock}
@@ -49,7 +49,6 @@ const FlockRow = ({
   );
 };
 
-// ✅ Component chính — trang danh sách đàn
 function Flocks() {
   const [flocks, setFlocks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -116,8 +115,11 @@ function Flocks() {
 
   return (
     <div className="px-8 mt-8">
-      <h1 className="text-3xl font-bold mb-6">Quản lí đàn gà</h1>
 
+      <HeaderFlock/>
+    
+      
+      <Statistical flocks={flocks}/>
       <div className="bg-white rounded shadow overflow-x-auto">
         {loading ? (
           <div className="p-6 text-center text-gray-500">
