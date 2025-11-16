@@ -6,13 +6,13 @@ function SideBar({ isCollapsed }) {
   const [activeTooltip, setActiveTooltip] = useState(null);
 
   const menuItems = [
-    {
-      path: "/dashboard",
-      icon: BarChart3,
-      label: "Tổng quan",
-      end: true,
-      badge: null
-    },
+    // {
+    //   path: "/dashboard",
+    //   icon: BarChart3,
+    //   label: "Tổng quan",
+    //   end: true,
+    //   badge: null
+    // },
     {
       path: "/dashboard/flocks",
       icon: Home,
