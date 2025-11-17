@@ -5,8 +5,9 @@ import FieldErrorAlert from "~/components/FieldErrorAlert";
 import { FIELD_REQUIRED_MESSAGE } from "~/utils/validators";
 import { LuEye, LuEyeClosed } from "react-icons/lu";
 import { login as apiLogin } from "~/services/authService";
-
+import { MoonLoader} from "react-spinners"
 function LoginForm() {
+  const [loading,setLoading] = useState(false)
   const { register, handleSubmit, formState: { errors } } = useForm();
   const navigate = useNavigate();
   const INPUT_STYLE = "w-full rounded-[6px] px-3 py-2.5 text-[#646464] outline-none border-[#e5e9ec] border-[1px] focus:border-[#80bdff]";
@@ -16,8 +17,10 @@ function LoginForm() {
   const submitLogin = async (data) => {
     try {
       setStatusMessage(null);
+      setLoading(true)
       const res = await apiLogin(data);
       // res should contain token
+      
       const token = res.token;
       if (token) {
         localStorage.setItem("authToken", token);
@@ -27,9 +30,13 @@ function LoginForm() {
       } else {
         setStatusMessage({ type: "error", text: res.message || "Không nhận được token" });
       }
+      
     } catch (err) {
       const text = err?.response?.data?.message || err.message || "Lỗi đăng nhập";
       setStatusMessage({ type: "error", text });
+    }
+    finally{
+      setLoading(false)
     }
   };
 
@@ -69,11 +76,14 @@ function LoginForm() {
               Ghi nhớ mật khẩu
             </label>
           </div>
-
-          <button className="block mb-3.5 py-1.5 px-4 bg-[#019788] text-[#fff] font-bold text-[1rem] rounded-[6px] cursor-pointer hover:bg-[#027d72] transition-all" type="submit">
+          
+          <div className="flex gap-3">
+            <button disabled={loading} className="disabled:cursor-not-allowed disabled:opacity-30  block mb-3.5 py-1.5 px-4 bg-[#019788] text-[#fff] font-bold text-[1rem] rounded-[6px] cursor-pointer hover:bg-[#027d72] transition-all" type="submit">
             Đăng nhập
           </button>
-
+           <MoonLoader loading={loading} size={30} color={'#019788'} />
+          </div>
+          
           {statusMessage && (
             <div className={`p-3 rounded ${statusMessage.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
               {statusMessage.text}
@@ -86,7 +96,9 @@ function LoginForm() {
           </div>
         </form>
       </div>
+      
     </div>
+   
   );
 }
 

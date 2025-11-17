@@ -4,7 +4,7 @@ import { GET_DB } from '~/config/mongodb.js'
 import { sendOTPEmail } from '~/services/emailService.js'
 import { env } from '~/config/environment.js'
 
-const OTP_EXPIRY = 3 * 60 * 1000 
+const OTP_EXPIRY = 3 * 60 * 1000
 
 export const register = async (req, res) => {
   try {
