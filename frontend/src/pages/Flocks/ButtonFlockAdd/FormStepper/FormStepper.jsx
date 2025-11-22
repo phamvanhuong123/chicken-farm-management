@@ -24,7 +24,7 @@ function FormStepper({ onClose }) {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({});
-  const [success, setSuccess] = useState(false); // ⭐ Thêm state báo thành công
+  const [success, setSuccess] = useState(false); //Thêm state báo thành công
 
   const nextStep = () => {
     const values = getValues();
