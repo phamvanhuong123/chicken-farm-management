@@ -85,9 +85,9 @@ export default function FlockDelete({ flock, onDeleted, onError }) {
         title="Xóa"
         disabled={loading}
         onClick={handleClickDelete}
-        className="p-2 rounded hover:bg-red-50 text-red-600 disabled:opacity-50"
+        className="p-2 rounded hover:bg-red-50 text-red-600 disabled:opacity-50 cursor-pointer"
       >
-        <Trash2 size={18} />
+        <Trash2 size={16} />
       </button>
 
       <ConfirmModal

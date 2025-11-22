@@ -12,8 +12,8 @@ function AllRoute() {
       <Route path='flocks' element={<FlockForm/>}/>
       <Route path='inventory' element={<Inventory/>}/>
     </Route>
-    <Route path='/login' element={<Auth/>} />
-    <Route path='/register' element={<Auth/>} />
+    <Route path='/login' element={<Auth/>}/>
+    <Route path='/register' element={<Auth/>}/>
   </Routes>
 }
 export default AllRoute

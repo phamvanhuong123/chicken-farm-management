@@ -17,22 +17,25 @@ import {
   verifyOtp as apiVerifyOtp,
   resendOtp as apiResendOtp
 } from "~/services/authService";
+import { MoonLoader } from "react-spinners";
 
 function RegisterForm() {
   const { register: formRegister, handleSubmit, formState: { errors }, reset } = useForm();
   const navigate = useNavigate();
   const INPUT_STYLE = "w-full rounded-[6px] px-3 py-2.5 text-[#646464] outline-none border-[#e5e9ec] border-[1px] focus:border-[#80bdff]";
-
+  
   const [showPassword, setShowPassword] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [statusMessage, setStatusMessage] = useState(null);
   const [verifLoading, setVerifLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
-
+  const [loading,setLoading] = useState(false)
+  
   const registerSubmit = async (data) => {
     try {
       setStatusMessage(null);
+      setLoading(true)
       console.log('Sending register request with data:', data);
       const res = await apiRegister(data);
       console.log('Register response:', res);
@@ -44,12 +47,16 @@ function RegisterForm() {
       const text = err?.response?.data?.message || err.message || "Lỗi khi đăng ký";
       setStatusMessage({ type: "error", text });
     }
+    finally{
+      setLoading(false)
+    }
   };
 
   const handleVerifyOtp = async (values) => {
     try {
       setVerifLoading(true);
       setStatusMessage(null);
+      
       const otp = values.verification_code;
       const res = await apiVerifyOtp(registeredEmail, otp);
       setStatusMessage({ type: "success", text: res.message || "Xác thực thành công" });
@@ -186,12 +193,17 @@ function RegisterForm() {
           )}
 
           {!otpSent && (
-            <button
-              className="block mb-3.5 py-1.5 px-4 bg-[#019788] text-[#fff] font-bold text-[1rem] rounded-[6px] cursor-pointer hover:bg-[#027d72] transition-all "
+            <div className="flex gap-3">
+              <button
+              disabled={loading}
+              className="disabled:cursor-not-allowed disabled:opacity-30 block mb-3.5 py-1.5 px-4 bg-[#019788] text-[#fff] font-bold text-[1rem] rounded-[6px] cursor-pointer hover:bg-[#027d72] transition-all "
               type="submit"
             >
               Tạo tài khoản
             </button>
+           <MoonLoader loading={loading} size={30} color={'#019788'} />
+
+            </div>
           )}
 
           {statusMessage && (
