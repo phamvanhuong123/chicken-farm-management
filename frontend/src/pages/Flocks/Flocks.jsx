@@ -6,6 +6,7 @@ import FlockDelete from "./FlockDelete/FlockDelete";
 import Statistical from "./Statistical/Statistical";
 import HeaderFlock from "./HeaderFlock/HeaderFlock";
 import FilterFlock from "./FilterFlock/FilterFlock";
+import FlockForm from "./FlockForm/FlockEditModal";
 
 // Component FlockRow (Không thay đổi)
 const FlockRow = ({
@@ -62,6 +63,9 @@ function Flocks() {
   // State cho bộ lọc
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterSpecies, setFilterSpecies] = useState("all");
+
+// === STATE CONTROL EDIT MODAL ===
+  const [editingFlock, setEditingFlock] = useState(null);
   
   // === THÊM STATE CHO TÌM KIẾM ===
   const [searchTerm, setSearchTerm] = useState("");
@@ -158,7 +162,10 @@ function Flocks() {
 
   // Xử lý sự kiện (Không thay đổi)
   const handleView = (id) => console.log("👁️ Xem chi tiết đàn:", id);
-  const handleEdit = (id) => console.log("✏️ Chỉnh sửa đàn:", id);
+  const handleEdit = (id) => {
+  const flock = flocks.find((f) => f._id === id);
+  setEditingFlock(flock);
+  };
   const handleDelete = (id) => console.log("🗑️ Xóa đàn:", id);
 
   return (
@@ -255,6 +262,18 @@ function Flocks() {
           </>
         )}
       </div>
+      {editingFlock && (
+  <FlockForm
+    flock={editingFlock}
+    onClose={() => setEditingFlock(null)}
+    onSaved={(updated) => {
+      setFlocks((prev) =>
+        prev.map((f) => (f._id === updated._id ? updated : f))
+      );
+      setEditingFlock(null);
+    }}
+  />
+)}
     </div>
   );
 }
