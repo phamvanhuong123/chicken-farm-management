@@ -12,7 +12,7 @@ function LayoutDefault() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="min-h-screen flex flex-col ">
       {/* Fixed Header */}
       <Header 
         onToggleSidebar={toggleSidebar} 
@@ -28,14 +28,14 @@ function LayoutDefault() {
         <main className={`
           flex-1 transition-all duration-300 ease-in-out
           ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}
-          min-h-[calc(100vh-4rem)] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900
+          min-h-[calc(100vh-4rem)]
         `}>
           <Outlet />
         </main>
       </div>
       
       {/* Footer */}
-      <Footer />
+      {/* <Footer /> */}
     </div>
   )
 }

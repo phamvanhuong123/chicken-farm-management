@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from "react";
+// Flocks.js
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { Eye, Edit, Trash2 } from "lucide-react";
-import FlockDelete from "./FlockDelete";
+import FlockDelete from "./FlockDelete/FlockDelete";
+import Statistical from "./Statistical/Statistical";
+import HeaderFlock from "./HeaderFlock/HeaderFlock";
+import FilterFlock from "./FilterFlock/FilterFlock";
 
-// ✅ Component con — hiển thị 1 dòng đàn gà
+// Component FlockRow (Không thay đổi)
 const FlockRow = ({
   flock,
   index,
@@ -31,11 +35,11 @@ const FlockRow = ({
       </td>
       <td className="px-4 py-2 text-center">{getStatusBadge(flock.status)}</td>
       <td className="px-4 py-2 text-center flex justify-center gap-2">
-        <button title="Xem chi tiết" onClick={() => onView(flock._id)}>
-          <Eye className="w-4 h-4 text-gray-600" />
+        <button className="p-2 rounded cursor-pointer hover:bg-gray-200" title="Xem chi tiết" onClick={() => onView(flock._id)}>
+          <Eye size={16} className="w-4 h-4 text-gray-600   " />
         </button>
-        <button title="Chỉnh sửa" onClick={() => onEdit(flock._id)}>
-          <Edit className="w-4 h-4 text-gray-600" />
+        <button className="p-2 rounded cursor-pointer hover:bg-blue-200" title="Chỉnh sửa" onClick={() => onEdit(flock._id)}>
+          <Edit size={16} className="w-4 h-4 text-blue-500" />
         </button>
         <FlockDelete
           flock={flock}
@@ -48,14 +52,22 @@ const FlockRow = ({
   );
 };
 
-// ✅ Component chính — trang danh sách đàn
+// Component Flocks (Đã cập nhật)
 function Flocks() {
-  const [flocks, setFlocks] = useState([]);
+  const [flocks, setFlocks] = useState([]); // Danh sách master
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
 
-  // Gọi API lấy danh sách đàn
+  // State cho bộ lọc
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterSpecies, setFilterSpecies] = useState("all");
+  
+  // === THÊM STATE CHO TÌM KIẾM ===
+  const [searchTerm, setSearchTerm] = useState("");
+  // ===============================
+
+  // Gọi API (Không thay đổi)
   useEffect(() => {
     const fetchFlocks = async () => {
       try {
@@ -71,7 +83,43 @@ function Flocks() {
     fetchFlocks();
   }, []);
 
-  // Format ngày
+  // === CẬP NHẬT LOGIC LỌC ===
+  const filteredFlocks = useMemo(() => {
+    // Chuyển đổi searchTerm sang chữ thường một lần
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+
+    return flocks.filter(flock => {
+      // Logic lọc trạng thái
+      const statusMatch =
+        filterStatus === "all" ||
+        (filterStatus === "Raising" && (flock.status === "Raising" || flock.status === "Đang nuôi")) ||
+        (filterStatus === "Sold" && (flock.status === "Sold" || flock.status === "Đã bán")) ||
+        flock.status === filterStatus;
+
+      // Logic lọc giống gà
+      const speciesMatch = filterSpecies === "all" || flock.speciesId === filterSpecies;
+      
+      // Logic tìm kiếm theo mã lứa (flock.code)
+      const searchMatch = (flock.code || '') // Xử lý nếu code là null/undefined
+        .toLowerCase()
+        .includes(lowerCaseSearchTerm);
+
+      return statusMatch && speciesMatch && searchMatch; // Thêm điều kiện searchMatch
+    });
+  }, [flocks, filterStatus, filterSpecies, searchTerm]); // Thêm searchTerm vào dependency
+  
+  // Lấy danh sách giống gà động (Không thay đổi)
+  const allSpecies = useMemo(() => 
+    [...new Set(flocks.map(flock => flock.speciesId).filter(Boolean))]
+  , [flocks]);
+
+  // === CẬP NHẬT RESET TRANG ===
+  useEffect(() => {
+    setCurrentPage(1); // Quay về trang 1 mỗi khi bộ lọc HOẶC tìm kiếm thay đổi
+  }, [filterStatus, filterSpecies, searchTerm]); // Thêm searchTerm vào dependency
+  // ===========================
+
+  // Format ngày (Không thay đổi)
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const day = String(date.getDate()).padStart(2, "0");
@@ -80,7 +128,7 @@ function Flocks() {
     return `${day}/${month}/${year}`;
   };
 
-  // Badge trạng thái
+  // Badge trạng thái (Không thay đổi)
   const getStatusBadge = (status) => (
     <span
       className={`px-2 py-1 text-xs font-medium rounded ${
@@ -97,9 +145,9 @@ function Flocks() {
     </span>
   );
 
-  // Phân trang
-  const totalPages = Math.ceil(flocks.length / rowsPerPage);
-  const currentFlocks = flocks.slice(
+  // Cập nhật phân trang (Không thay đổi, vì đã dùng filteredFlocks)
+  const totalPages = Math.ceil(filteredFlocks.length / rowsPerPage) || 1;
+  const currentFlocks = filteredFlocks.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
@@ -108,15 +156,28 @@ function Flocks() {
   const handleNextPage = () =>
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
-
-  // Xử lý sự kiện
+  // Xử lý sự kiện (Không thay đổi)
   const handleView = (id) => console.log("👁️ Xem chi tiết đàn:", id);
   const handleEdit = (id) => console.log("✏️ Chỉnh sửa đàn:", id);
   const handleDelete = (id) => console.log("🗑️ Xóa đàn:", id);
 
   return (
-    <div className="p-6">
-      <h1 className="text-lg font-semibold mb-4">Danh sách đàn gà</h1>
+    <div className="px-8 mt-8">
+      <HeaderFlock />
+      
+      <Statistical flocks={filteredFlocks} />
+      
+      {/* === TRUYỀN PROPS TÌM KIẾM CHO FILTER === */}
+      <FilterFlock 
+        filterStatus={filterStatus}
+        onStatusChange={setFilterStatus}
+        filterSpecies={filterSpecies}
+        onSpeciesChange={setFilterSpecies}
+        allSpecies={allSpecies}
+        searchTerm={searchTerm} // Truyền giá trị tìm kiếm
+        onSearchChange={setSearchTerm} // Truyền hàm cập nhật
+      />
+      {/* ======================================= */}
 
       <div className="bg-white rounded shadow overflow-x-auto">
         {loading ? (
@@ -127,6 +188,10 @@ function Flocks() {
           <div className="p-6 text-center text-gray-500">
             Chưa có dữ liệu đàn gà.
           </div>
+        ) : filteredFlocks.length === 0 ? (
+          <div className="p-6 text-center text-gray-500">
+            Không tìm thấy đàn gà nào khớp.
+          </div>
         ) : (
           <>
             <table className="w-full text-left border-collapse">
@@ -135,24 +200,13 @@ function Flocks() {
                   <th className="px-4 py-2 text-sm font-semibold">Mã lứa</th>
                   <th className="px-4 py-2 text-sm font-semibold">Ngày nhập</th>
                   <th className="px-4 py-2 text-sm font-semibold">Giống</th>
-                  <th className="px-4 py-2 text-sm font-semibold text-center">
-                    SL ban đầu
-                  </th>
-                  <th className="px-4 py-2 text-sm font-semibold text-center">
-                    SL hiện tại
-                  </th>
-                  <th className="px-4 py-2 text-sm font-semibold text-center">
-                    TL TB (kg/con)
-                  </th>
-                  <th className="px-4 py-2 text-sm font-semibold text-center">
-                    Trạng thái
-                  </th>
-                  <th className="px-4 py-2 text-sm font-semibold text-center">
-                    Hành động
-                  </th>
+                  <th className="px-4 py-2 text-sm font-semibold text-center">SL ban đầu</th>
+                  <th className="px-4 py-2 text-sm font-semibold text-center">SL hiện tại</th>
+                  <th className="px-4 py-2 text-sm font-semibold text-center">TL TB (kg/con)</th>
+                  <th className="px-4 py-2 text-sm font-semibold text-center">Trạng thái</th>
+                  <th className="px-4 py-2 text-sm font-semibold text-center">Hành động</th>
                 </tr>
               </thead>
-
               <tbody>
                 {currentFlocks.map((flock, index) => (
                   <FlockRow
@@ -168,46 +222,41 @@ function Flocks() {
                 ))}
               </tbody>
             </table>
-
-            <div className="flex justify-between items-center px-4 py-3 border-t text-sm text-gray-700">
-              <button
-                onClick={handlePrevPage}
-                disabled={currentPage === 1}
-                className={`px-3 py-1 border rounded disabled:opacity-50 ${
-                  currentPage !== 1
-                    ? "hover:bg-amber-200 transition cursor-pointer"
-                    : ""
-                }`}
-              >
-                Quay lại
-              </button>
-              <span>
-                Trang {currentPage} / {totalPages}
-              </span>
-              <button
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-                className={`px-3 py-1 border rounded disabled:opacity-50 ${
-                  currentPage !== totalPages
-                    ? "hover:bg-amber-200 transition cursor-pointer"
-                    : ""
-                }`}
-              >
-                Trang tiếp
-              </button>
-            </div>
+            
+            {totalPages > 1 && (
+              <div className="flex justify-between items-center px-4 py-3 border-t text-sm text-gray-700">
+                <button
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 border rounded disabled:opacity-50 ${
+                    currentPage !== 1
+                      ? "hover:bg-amber-200 transition cursor-pointer"
+                      : ""
+                  }`}
+                >
+                  Quay lại
+                </button>
+                <span>
+                  Trang {currentPage} / {totalPages}
+                </span>
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 border rounded disabled:opacity-50 ${
+                    currentPage !== totalPages
+                      ? "hover:bg-amber-200 transition cursor-pointer"
+                      : ""
+                  }`}
+                >
+                  Trang tiếp
+                </button>
+              </div>
+            )}
           </>
         )}
-
       </div>
-
-      {/* Popup chi tiết đàn */}
-      {selectedFlock && (
-        <FlockDetailModal
-          flockId={selectedFlock}
-          onClose={() => setSelectedFlock(null)}
-        />
-      )}
     </div>
   );
 }
+
+export default Flocks;

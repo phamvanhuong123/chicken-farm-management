@@ -34,7 +34,7 @@ export const rateLimiter = (opts = {}) => {
 
 setInterval(() => {
   const now = Date.now()
-  const ttl = 5 * 60 * 1000 
+  const ttl = 5 * 60 * 1000
   for (const [key, entry] of store.entries()) {
     if (now - entry.start > ttl) store.delete(key)
   }
