@@ -6,7 +6,7 @@ import Flocks from '~/pages/Flocks/Flocks'
 import Inventory from '~/pages/Inventory/Inventory'
 function AllRoute() {
   return <Routes>
-    <Route path='/' element={<Navigate to="/dashboard" replace={true} />}/>
+    <Route path='/' element={<Navigate to="/dashboard/flocks" replace={true} />}/>
     <Route path='/dashboard' element={<LayoutDefault/>}>
       <Route index element={<Dashboard/>}/>
       <Route path='flocks' element={<Flocks/>}/>

@@ -1,12 +1,13 @@
 import Joi from 'joi'
 
 export const createFlockSchema = Joi.object({
-  importDate: Joi.date().required(),
   initialCount: Joi.number().integer().min(1).required(),
   speciesId: Joi.string().required(),
   areaId: Joi.string().required(),
   ownerId: Joi.string().required(),
   avgWeight: Joi.number().min(0).default(0),
+  price : Joi.number().min(0).default(0),
+  note : Joi.string().min(10).max(255).trim().strict(),
   status: Joi.string().valid('Raising', 'Sold', 'Closed').default('Raising'),
   currentCount: Joi.number().integer().min(0).default(Joi.ref('initialCount'))
 })

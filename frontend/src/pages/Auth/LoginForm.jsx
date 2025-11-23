@@ -26,7 +26,7 @@ function LoginForm() {
         localStorage.setItem("authToken", token);
         setStatusMessage({ type: "success", text: "Đăng nhập thành công" });
         // navigate to home or dashboard
-        setTimeout(() => navigate("/"), 800);
+        setTimeout(() => navigate("/dashboard/flocks"), 800);
       } else {
         setStatusMessage({ type: "error", text: res.message || "Không nhận được token" });
       }

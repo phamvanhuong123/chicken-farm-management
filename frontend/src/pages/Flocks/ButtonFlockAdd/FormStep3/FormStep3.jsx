@@ -7,7 +7,7 @@ function InfoRow({ label, value }) {
     </div>
   )
 }
-function FormStep3 (){
+function FormStep3 ({register}){
   const formData = {
     ngayNhap: new Date("2024-01-15T00:00:00"), // Dùng new Date()
     nhaCungCap: "Trang trại ABC",
