@@ -33,7 +33,7 @@ const validateBeforeUpdate = async (data) => {
   const updateSchema = Joi.object({
     currentCount: Joi.number().integer().min(0).optional(),
     avgWeight: Joi.number().min(0).optional(),
-    status: Joi.string().valid('Raising', 'dSold', 'Closed').optional()
+    status: Joi.string().valid('Raising', 'Sold', 'Closed').optional()
   })
   return await updateSchema.validateAsync(data, {
     abortEarly: false,
