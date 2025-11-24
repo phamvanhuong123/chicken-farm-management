@@ -34,11 +34,12 @@ export default function FlockDetailModal({ flockId, onClose }) {
 
         {/* Nút đóng */}
         <button
-          onClick={onClose}
-          className="absolute right-4 top-4 text-gray-600 hover:text-black text-lg"
+        onClick={onClose}
+        className="absolute right-4 top-4 text-gray-600 hover:text-black text-lg cursor-pointer"
         >
-          ✕
+        ✕
         </button>
+
 
         {loading ? (
           <p className="text-center py-10">Đang tải...</p>
@@ -108,10 +109,11 @@ export default function FlockDetailModal({ flockId, onClose }) {
             <div className="mt-6 text-right">
               <button
                 onClick={onClose}
-                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded cursor-pointer"
               >
-                Đóng
+              Đóng
               </button>
+
             </div>
           </>
         )}
