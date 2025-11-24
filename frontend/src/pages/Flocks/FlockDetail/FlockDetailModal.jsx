@@ -3,137 +3,112 @@ import React, { useEffect, useState } from "react";
 export default function FlockDetailModal({ flockId, onClose }) {
   const [flock, setFlock] = useState(null);
   const [logs, setLogs] = useState([]);
-  const [tab, setTab] = useState("info");
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Giả lập fetch API
-    setTimeout(() => {
-      if (flockId === "A001") {
-        setFlock({
-          code: "A001",
-          species: "Gà Ri",
-          importDate: "2024-01-15",
-          initial: 1500,
-          current: 1485,
-          weight: 1.8,
-          supplier: "Trại giống Minh Châu",
-          area: "Khu A",
-          cost: 50000000,
-          note: "Đàn phát triển tốt",
-          status: "Raising",
-        });
-        setLogs([
-          {
-            id: 1,
-            date: "2024-02-01",
-            type: "Cho ăn",
-            quantity: "50kg",
-            note: "Cho ăn buổi sáng",
-            user: "Nguyễn Văn A",
-          },
-          {
-            id: 2,
-            date: "2024-02-05",
-            type: "Tiêm thuốc",
-            quantity: "2 lọ",
-            note: "Vaccine cúm",
-            user: "Lê Thị B",
-          },
-        ]);
-      } else {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+
+        const res = await fetch(`http://localhost:8071/v1/flocks/detail/by-id/${flockId}`);
+        const json = await res.json();
+
+        if (!json?.data) throw new Error();
+
+        setFlock(json.data.flock);
+        setLogs(json.data.logs || []);
+      } catch (err) {
         setError("Không thể tải thông tin đàn, vui lòng thử lại.");
+      } finally {
+        setLoading(false);
       }
-    }, 400);
+    };
+
+    loadData();
   }, [flockId]);
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-      <div className="bg-white w-[700px] rounded-xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-semibold mb-4">
-          Chi tiết đàn {flock?.code || ""}
-        </h2>
+    <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+      <div className="bg-white w-[800px] rounded-lg shadow-xl p-6 relative">
 
-        {error ? (
-          <p className="text-red-500 text-center py-4">{error}</p>
-        ) : !flock ? (
-          <p className="text-center text-gray-500 py-4">Đang tải dữ liệu...</p>
+        {/* Nút đóng */}
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 text-gray-600 hover:text-black text-lg"
+        >
+          ✕
+        </button>
+
+        {loading ? (
+          <p className="text-center py-10">Đang tải...</p>
+        ) : error ? (
+          <p className="text-center text-red-500 py-10">{error}</p>
         ) : (
           <>
-            {/* Tabs */}
-            <div className="flex border-b mb-4">
-              <button
-                className={`pb-2 px-4 ${
-                  tab === "info"
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-500"
-                }`}
-                onClick={() => setTab("info")}
-              >
-                Thông tin đàn
-              </button>
-              <button
-                className={`pb-2 px-4 ${
-                  tab === "logs"
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-500"
-                }`}
-                onClick={() => setTab("logs")}
-              >
-                Nhật ký liên quan
-              </button>
+            {/* Tiêu đề */}
+            <h2 className="text-2xl font-bold mb-4">Chi tiết đàn</h2>
+
+            {/* Thông tin đàn */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <Info label="Mã lứa" value={flock.code} />
+              <Info label="Giống gà" value={flock.speciesId} />
+              <Info label="Ngày nhập" value={flock.importDate} />
+              <Info label="Số lượng ban đầu" value={flock.initialCount} />
+              <Info label="Số lượng hiện tại" value={flock.currentCount} />
+              <Info label="Trọng lượng TB" value={`${flock.avgWeight} kg`} />
+              <Info label="Nhà cung cấp" value={flock.supplier || "-"} />
+              <Info label="Khu nuôi" value={flock.areaId || "-"} />
+              <Info label="Chi phí nhập" value={flock.importCost || "-"} />
+              <Info
+                label="Trạng thái"
+                value={
+                  flock.status === "Raising"
+                    ? "Đang nuôi"
+                    : flock.status === "Sold"
+                    ? "Đã bán"
+                    : flock.status
+                }
+              />
             </div>
 
-            {/* Nội dung tab */}
-            {tab === "info" ? (
-              <div className="grid grid-cols-2 gap-y-2 text-sm">
-                <p><b>Mã lứa:</b> {flock.code}</p>
-                <p><b>Giống gà:</b> {flock.species}</p>
-                <p><b>Ngày nhập:</b> {flock.importDate}</p>
-                <p><b>Số lượng:</b> {flock.initial} / {flock.current}</p>
-                <p><b>Trọng lượng TB:</b> {flock.weight}kg</p>
-                <p><b>Nhà cung cấp:</b> {flock.supplier}</p>
-                <p><b>Khu nuôi:</b> {flock.area}</p>
-                <p><b>Chi phí nhập:</b> {flock.cost.toLocaleString()} ₫</p>
-                <p className="col-span-2"><b>Ghi chú:</b> {flock.note}</p>
-                <p>
-                  <b>Trạng thái:</b>{" "}
-                  {flock.status === "Raising" ? "Đang nuôi" : "Đã bán"}
-                </p>
-              </div>
-            ) : logs.length === 0 ? (
-              <p className="text-gray-500 text-sm">
-                Chưa có nhật ký nào cho đàn này.
-              </p>
+            {/* Nhật ký */}
+            <h3 className="text-xl font-semibold mb-2">Nhật ký liên quan</h3>
+
+            {logs.length === 0 ? (
+              <p className="text-gray-500 italic">Chưa có nhật ký liên quan.</p>
             ) : (
-              <table className="w-full text-sm border mt-2">
+              <table className="w-full border border-gray-200 mt-2">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="p-2 border">Ngày</th>
-                    <th className="p-2 border">Loại nhật ký</th>
-                    <th className="p-2 border">Số lượng</th>
-                    <th className="p-2 border">Ghi chú</th>
-                    <th className="p-2 border">Người ghi</th>
+                    <th className="px-2 py-1 border">Ngày</th>
+                    <th className="px-2 py-1 border">Loại</th>
+                    <th className="px-2 py-1 border">Số lượng</th>
+                    <th className="px-2 py-1 border">Ghi chú</th>
+                    <th className="px-2 py-1 border">Người ghi</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {logs.map((l) => (
-                    <tr key={l.id}>
-                      <td className="p-2 border">{l.date}</td>
-                      <td className="p-2 border">{l.type}</td>
-                      <td className="p-2 border">{l.quantity}</td>
-                      <td className="p-2 border">{l.note}</td>
-                      <td className="p-2 border">{l.user}</td>
+                  {logs.map((log, i) => (
+                    <tr key={i} className="border">
+                      <td className="px-2 py-1 border">{log.date}</td>
+                      <td className="px-2 py-1 border">{log.type}</td>
+                      <td className="px-2 py-1 border">{log.quantity}</td>
+                      <td className="px-2 py-1 border">{log.note}</td>
+                      <td className="px-2 py-1 border">
+                        {log.userId?.name || "-"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             )}
 
-            <div className="text-right mt-6">
+            {/* Nút đóng */}
+            <div className="mt-6 text-right">
               <button
                 onClick={onClose}
-                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
               >
                 Đóng
               </button>
@@ -141,6 +116,15 @@ export default function FlockDetailModal({ flockId, onClose }) {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function Info({ label, value }) {
+  return (
+    <div>
+      <p className="text-gray-600 font-medium">{label}:</p>
+      <p className="font-semibold">{value}</p>
     </div>
   );
 }
