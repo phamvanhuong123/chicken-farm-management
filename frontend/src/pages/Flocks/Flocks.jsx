@@ -24,7 +24,7 @@ const FlockRow = ({
     <tr key={flock._id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
       <td className="px-4 py-2">{flock.code || "-"}</td>
       <td className="px-4 py-2">
-        {flock.importDate ? formatDate(flock.importDate) : "-"}
+        {flock.createdAt ? formatDate(flock.createdAt) : "-"}
       </td>
       <td className="px-4 py-2">{flock.speciesId || "-"}</td>
       <td className="px-4 py-2 text-center">
@@ -39,7 +39,7 @@ const FlockRow = ({
       <td className="px-4 py-2 text-center">{getStatusBadge(flock.status)}</td>
       <td className="px-4 py-2 text-center flex justify-center gap-2">
         <button className="p-2 rounded cursor-pointer hover:bg-gray-200" title="Xem chi tiết" onClick={() => { onView(flock._id);       // Giữ nguyên hàm của leader
-           setSelectedFlockId(flock._id); // GỌI RIÊNG CỦA CHÚNG TA
+           setSelectedFlockId(flock._id);
        }}
         >
           <Eye size={16} className="w-4 h-4 text-gray-600" />
@@ -266,12 +266,12 @@ function Flocks() {
           </>
         )}
       </div>
-      {selectedFlockId && (
-  <FlockDetailModal
-    flockId={selectedFlockId}
-    onClose={() => setSelectedFlockId(null)}
-  />
-)}
+    {selectedFlockId && (
+      <FlockDetailModal
+      flockId={selectedFlockId}
+      onClose={() => setSelectedFlockId(null)}
+      />
+    )}
     </div>
   );
 }

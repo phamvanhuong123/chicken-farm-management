@@ -11,7 +11,7 @@ export default function FlockDetailModal({ flockId, onClose }) {
       try {
         setLoading(true);
 
-        const res = await fetch(`http://localhost:8071/v1/flocks/detail/by-id/${flockId}`);
+        const res = await fetch(`http://localhost:8071/v1/flocks/${flockId}`);
         const json = await res.json();
 
         if (!json?.data) throw new Error();
@@ -29,8 +29,8 @@ export default function FlockDetailModal({ flockId, onClose }) {
   }, [flockId]);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-      <div className="bg-white w-[800px] rounded-lg shadow-xl p-6 relative">
+    <div className='fixed inset-0 bg-black/30 backdrop-blur-[2px] flex justify-center items-center z-50 transition-all duration-300'>
+        <div className='bg-white rounded-2xl shadow-lg p-8 w-[650px] relative animate-fadeIn'>
 
         {/* Nút đóng */}
         <button

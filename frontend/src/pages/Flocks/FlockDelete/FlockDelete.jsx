@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { Trash2, X } from "lucide-react";
-
+import swal from "sweetalert";
 const API_BASE = "http://localhost:8071/v1";
 
 /** Modal xác nhận xóa */
@@ -54,7 +54,7 @@ export default function FlockDelete({ flock, onDeleted, onError }) {
 
   const confirmDelete = async () => {
     if (isRaising(flock.status)) {
-      alert(
+      swal(
         "Không thể xóa đàn đang nuôi. Vui lòng hoàn tất xuất chuồng trước khi xóa."
       );
       setModalOpen(false);
@@ -64,14 +64,15 @@ export default function FlockDelete({ flock, onDeleted, onError }) {
     try {
       setLoading(true);
       await axios.delete(`${API_BASE}/flocks/${flock._id}`);
-      alert("Xóa đàn thành công.");
+      swal("Xoá đàn thành công.", "", "success");
+
       if (onDeleted) onDeleted(flock._id);
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("kpi:refresh"));
       }
     } catch (err) {
-      console.error(err);
-      alert("Không thể xóa đàn, vui lòng thử lại.");
+      // swal("Không thể xóa đàn, vui lòng thử lại.",'');
+      swal("Không thể xóa đàn, vui lòng thử lại.", "", "error");
       if (onError) onError(err);
     } finally {
       setLoading(false);
