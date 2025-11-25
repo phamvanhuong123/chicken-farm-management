@@ -3,6 +3,7 @@
 import express from 'express'
 import flockRoute from './v1/flock.route.js'
 import materialRoute from './v1/material.route.js'
+import authRoutes from './v1/auth.routes.js'
 const router = express.Router()
 
 // route kiểm tra server
@@ -14,4 +15,5 @@ router.get('/status', (req, res) => {
 // nhóm route đàn gà (Chỉ định rõ prefix /flocks)
 router.use('/flocks', flockRoute)
 router.use('/materials', materialRoute)
+router.use("/auth", authRoutes);
 export const APIs_V1 = router
