@@ -5,16 +5,18 @@ import { ObjectId } from "mongodb"
 const USER_COLLECTION_NAME = "users"
 
 const USER_COLLECTION_SCHEMA = Joi.object({
-  username: Joi.string().min(2).max(50).allow(null).default(null),
+  username: Joi.string().min(2).max(50).required(),
   phone: Joi.string().allow(null).default(null),
   email: Joi.string().email().required(),
   password: Joi.string().required(),
   verified: Joi.boolean().default(false),
   otp: Joi.string().allow(null).default(null),
   otpExpires: Joi.number().allow(null).default(null),
-  createdAt: Joi.date().default(() => new Date()),
-  updatedAt: Joi.date().timestamp('javascript').default(null)
-  
+  createdAt: Joi.date().timestamp('javascript').default(Date.now),
+  updatedAt: Joi.date().timestamp('javascript').default(null),
+  role : Joi.string().valid("employer","employee").default("employee"),
+  status : Joi.string().valid("working","onLeave").default("working"),
+  parentId : Joi.string().pattern(/^[0-9a-fA-F]{24}$/).message('Your string fails to match the Object Id pattern!').default(null)
 })
 
 const create = async (data) => {
@@ -51,10 +53,22 @@ const clearOTP = async (email) => {
     )
 }
 
+//Tìm kiếm người dùng parentId (parentId là _id của người chủ)
+const findUserByParentId = async (parentId) => {
+  try{
+    const record = await GET_DB().collection("users").find({parentId : new ObjectId(String(parentId))}).toArray()
+    return record
+  }
+  catch(e) {
+    throw new Error(e)
+  }
+}
+
 export const userModel = {
   create,
   findByEmailOrPhone,
   findByEmail,
   updateByEmail,
-  clearOTP
+  clearOTP,
+  findUserByParentId
 }

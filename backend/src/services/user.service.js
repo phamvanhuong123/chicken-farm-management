@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken"
 import { userModel } from "~/models/user.model.js"
 import { sendOTPEmail } from "./emailService.js"
 import { env } from "../config/environment.js"
+import ApiError from "~/utils/ApiError.js"
+import { StatusCodes } from "http-status-codes"
 
 const OTP_EXPIRY = 3 * 60 * 1000
 
@@ -139,9 +141,18 @@ const login = async ({ idName, password }) => {
   return { token }
 }
 
+const findUserByParentId = async (parentId) =>{
+    const employees = await userModel.findUserByParentId(parentId)
+    if(employees.length === 0){
+      throw new ApiError(StatusCodes.NOT_FOUND, "Chưa có nhân viên nào")
+    }
+    return employees
+}
+
 export const userService = {
   register,
   verifyOTP,
   resendOTP,
-  login
+  login,
+  findUserByParentId
 }
