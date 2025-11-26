@@ -6,7 +6,7 @@ import FlockDelete from "./FlockDelete/FlockDelete";
 import Statistical from "./Statistical/Statistical";
 import HeaderFlock from "./HeaderFlock/HeaderFlock";
 import FilterFlock from "./FilterFlock/FilterFlock";
-import FlockForm from "./FlockForm/FlockEditModal";
+import FlockEdit from "./FlockEdit/FlockEditModal";
 
 // Component FlockRow (Không thay đổi)
 const FlockRow = ({
@@ -17,12 +17,13 @@ const FlockRow = ({
   onView,
   onEdit,
   onDelete,
+  setFlocks
 }) => {
   return (
     <tr key={flock._id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
       <td className="px-4 py-2">{flock.code || "-"}</td>
       <td className="px-4 py-2">
-        {flock.importDate ? formatDate(flock.importDate) : "-"}
+        {flock.createdAt ? formatDate(flock.createdAt) : "-"}
       </td>
       <td className="px-4 py-2">{flock.speciesId || "-"}</td>
       <td className="px-4 py-2 text-center">
@@ -225,6 +226,7 @@ function Flocks() {
                     onView={handleView}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
+                    setFlocks={setFlocks}
                   />
                 ))}
               </tbody>
@@ -263,17 +265,12 @@ function Flocks() {
         )}
       </div>
       {editingFlock && (
-  <FlockForm
-    flock={editingFlock}
-    onClose={() => setEditingFlock(null)}
-    onSaved={(updated) => {
-      setFlocks((prev) =>
-        prev.map((f) => (f._id === updated._id ? updated : f))
-      );
-      setEditingFlock(null);
-    }}
-  />
-)}
+        <FlockEditModal
+          flock={editingFlock}
+          onClose={() => setEditingFlock(null)}
+          onSaved={handleSaved}
+        />
+      )}
     </div>
   );
 }

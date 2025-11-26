@@ -29,6 +29,7 @@ function LayoutDefault() {
           flex-1 transition-all duration-300 ease-in-out
           ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}
           min-h-[calc(100vh-4rem)]
+          bg-gray-100
         `}>
           <Outlet />
         </main>
