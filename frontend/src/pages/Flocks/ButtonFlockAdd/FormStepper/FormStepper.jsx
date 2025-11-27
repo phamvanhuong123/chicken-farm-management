@@ -54,6 +54,9 @@ function FormStepper({ onClose }) {
 
   return (
     <>
+    <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl cursor-pointer">
+      ✕
+    </button>
       {/* Thông báo thành công */}
       {success && (
         <div className="w-full text-center bg-green-100 text-green-700 p-3 rounded mb-4">
@@ -95,19 +98,21 @@ function FormStepper({ onClose }) {
       {/* Nút điều hướng */}
       <div className="flex justify-between mt-6">
         {currentStep > 1 ? (
-          <Button variant="secondary" onClick={prevStep}>
-            Quay lại
-          </Button>
+         <Button variant="secondary" onClick={prevStep} className="cursor-pointer">
+          Quay lại
+         </Button>
+
         ) : (
           <div></div>
         )}
 
         {currentStep < 3 ? (
-          <Button onClick={nextStep} className="bg-green-500 hover:bg-green-600">
+          <Button onClick={nextStep} className="bg-green-500 hover:bg-green-600" style={{ cursor: "pointer" }}>
             Tiếp tục
           </Button>
+
         ) : (
-          <Button onClick={onSubmit} className="bg-green-500 hover:bg-green-600">
+          <Button onClick={onSubmit} className="bg-green-500 hover:bg-green-600 cursor-pointer">
             Hoàn tất
           </Button>
         )}
