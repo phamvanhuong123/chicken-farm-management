@@ -1,14 +1,14 @@
 // Flocks.js
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
-import { Eye, Edit, Trash2 } from "lucide-react";
+import { Eye, Edit } from "lucide-react";
 import FlockDelete from "./FlockDelete/FlockDelete";
 import Statistical from "./Statistical/Statistical";
 import HeaderFlock from "./HeaderFlock/HeaderFlock";
 import FilterFlock from "./FilterFlock/FilterFlock";
-import FlockEdit from "./FlockEdit/FlockEditModal";
+import FlockEditModal from "./FlockEdit/FlockEditModal";
 
-// Component FlockRow (Không thay đổi)
+// Component FlockRow (KHÔNG ĐỤNG)
 const FlockRow = ({
   flock,
   index,
@@ -20,7 +20,10 @@ const FlockRow = ({
   setFlocks
 }) => {
   return (
-    <tr key={flock._id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+    <tr
+      key={flock._id}
+      className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}
+    >
       <td className="px-4 py-2">{flock.code || "-"}</td>
       <td className="px-4 py-2">
         {flock.createdAt ? formatDate(flock.createdAt) : "-"}
@@ -35,14 +38,27 @@ const FlockRow = ({
       <td className="px-4 py-2 text-center">
         {flock.avgWeight?.toFixed(1) || 0}
       </td>
-      <td className="px-4 py-2 text-center">{getStatusBadge(flock.status)}</td>
+      <td className="px-4 py-2 text-center">
+        {getStatusBadge(flock.status)}
+      </td>
+
       <td className="px-4 py-2 text-center flex justify-center gap-2">
-        <button className="p-2 rounded cursor-pointer hover:bg-gray-200" title="Xem chi tiết" onClick={() => onView(flock._id)}>
-          <Eye size={16} className="w-4 h-4 text-gray-600   " />
+        <button
+          className="p-2 rounded hover:bg-gray-200"
+          title="Xem chi tiết"
+          onClick={() => onView(flock._id)}
+        >
+          <Eye size={16} className="w-4 h-4 text-gray-600" />
         </button>
-        <button className="p-2 rounded cursor-pointer hover:bg-blue-200" title="Chỉnh sửa" onClick={() => onEdit(flock._id)}>
+
+        <button
+          className="p-2 rounded hover:bg-blue-200"
+          title="Chỉnh sửa"
+          onClick={() => onEdit(flock._id)}
+        >
           <Edit size={16} className="w-4 h-4 text-blue-500" />
         </button>
+
         <FlockDelete
           flock={flock}
           onDeleted={(id) =>
@@ -54,138 +70,150 @@ const FlockRow = ({
   );
 };
 
-// Component Flocks (Đã cập nhật)
 function Flocks() {
-  const [flocks, setFlocks] = useState([]); // Danh sách master
+  const [flocks, setFlocks] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
 
-  // State cho bộ lọc
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterSpecies, setFilterSpecies] = useState("all");
 
-// === STATE CONTROL EDIT MODAL ===
-  const [editingFlock, setEditingFlock] = useState(null);
-  
-  // === THÊM STATE CHO TÌM KIẾM ===
   const [searchTerm, setSearchTerm] = useState("");
-  // ===============================
 
-  // Gọi API (Không thay đổi)
+  // STATE mở Modal Edit bằng LOG
+  const [editingFlock, setEditingFlock] = useState(null);
+
+  // Gọi API
   useEffect(() => {
     const fetchFlocks = async () => {
       try {
         const res = await axios.get("http://localhost:8071/v1/flocks");
         setFlocks(res.data.data || []);
-      } catch (error) {
-        console.error("Lỗi tải danh sách đàn:", error);
+      } catch (err) {
+        console.error("Lỗi tải danh sách đàn:", err);
         setFlocks([]);
       } finally {
         setLoading(false);
       }
     };
+
     fetchFlocks();
   }, []);
 
-  // === CẬP NHẬT LOGIC LỌC ===
-  const filteredFlocks = useMemo(() => {
-    // Chuyển đổi searchTerm sang chữ thường một lần
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+  // ⭐⭐ LISTEN TO EDIT-LOG → tự bật modal ⭐⭐
+  useEffect(() => {
+    const originalLog = console.log;
 
-    return flocks.filter(flock => {
-      // Logic lọc trạng thái
-      const statusMatch =
+    console.log = (...args) => {
+      originalLog(...args);
+
+      if (typeof args[0] === "string" && args[0].includes("✏️ Chỉnh sửa đàn:")) {
+        const id = args[1];
+        const found = flocks.find((f) => f._id === id);
+        setEditingFlock(found);
+      }
+    };
+
+    return () => {
+      console.log = originalLog; // cleanup
+    };
+  }, [flocks]);
+
+  // ================= FILTER =================
+  const filteredFlocks = useMemo(() => {
+    const lower = searchTerm.toLowerCase();
+
+    return flocks.filter((flock) => {
+      const s1 =
         filterStatus === "all" ||
-        (filterStatus === "Raising" && (flock.status === "Raising" || flock.status === "Đang nuôi")) ||
-        (filterStatus === "Sold" && (flock.status === "Sold" || flock.status === "Đã bán")) ||
+        (filterStatus === "Raising" &&
+          ["Raising", "Đang nuôi"].includes(flock.status)) ||
+        (filterStatus === "Sold" &&
+          ["Sold", "Đã bán"].includes(flock.status)) ||
         flock.status === filterStatus;
 
-      // Logic lọc giống gà
-      const speciesMatch = filterSpecies === "all" || flock.speciesId === filterSpecies;
-      
-      // Logic tìm kiếm theo mã lứa (flock.code)
-      const searchMatch = (flock.code || '') // Xử lý nếu code là null/undefined
-        .toLowerCase()
-        .includes(lowerCaseSearchTerm);
+      const s2 =
+        filterSpecies === "all" || flock.speciesId === filterSpecies;
 
-      return statusMatch && speciesMatch && searchMatch; // Thêm điều kiện searchMatch
+      const s3 = (flock.code || "").toLowerCase().includes(lower);
+
+      return s1 && s2 && s3;
     });
-  }, [flocks, filterStatus, filterSpecies, searchTerm]); // Thêm searchTerm vào dependency
-  
-  // Lấy danh sách giống gà động (Không thay đổi)
-  const allSpecies = useMemo(() => 
-    [...new Set(flocks.map(flock => flock.speciesId).filter(Boolean))]
-  , [flocks]);
+  }, [flocks, filterStatus, filterSpecies, searchTerm]);
 
-  // === CẬP NHẬT RESET TRANG ===
+  const allSpecies = useMemo(() => {
+    return [...new Set(flocks.map((f) => f.speciesId).filter(Boolean))];
+  }, [flocks]);
+
   useEffect(() => {
-    setCurrentPage(1); // Quay về trang 1 mỗi khi bộ lọc HOẶC tìm kiếm thay đổi
-  }, [filterStatus, filterSpecies, searchTerm]); // Thêm searchTerm vào dependency
-  // ===========================
+    setCurrentPage(1);
+  }, [filterStatus, filterSpecies, searchTerm]);
 
-  // Format ngày (Không thay đổi)
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
+  // ================= FORMAT =================
+  const formatDate = (str) => {
+    const d = new Date(str);
+    return `${String(d.getDate()).padStart(2, "0")}/${String(
+      d.getMonth() + 1
+    ).padStart(2, "0")}/${d.getFullYear()}`;
   };
 
-  // Badge trạng thái (Không thay đổi)
   const getStatusBadge = (status) => (
     <span
-      className={`px-2 py-1 text-xs font-medium rounded ${
-        status === "Raising" || status === "Đang nuôi"
+      className={`px-2 py-1 text-xs rounded ${
+        ["Raising", "Đang nuôi"].includes(status)
           ? "bg-green-100 text-green-800"
           : "bg-gray-200 text-gray-800"
       }`}
     >
-      {status === "Raising"
-        ? "Đang nuôi"
-        : status === "Sold"
-        ? "Đã bán"
-        : status}
+      {status === "Raising" ? "Đang nuôi" : status === "Sold" ? "Đã bán" : status}
     </span>
   );
 
-  // Cập nhật phân trang (Không thay đổi, vì đã dùng filteredFlocks)
+  // ================= PAGING =================
   const totalPages = Math.ceil(filteredFlocks.length / rowsPerPage) || 1;
+
   const currentFlocks = filteredFlocks.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
 
-  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
-  const handleNextPage = () =>
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  // ================= HANDLERS =================
+  const handleView = (id) =>
+    console.log("👁️ Xem chi tiết đàn:", id);
 
-  // Xử lý sự kiện (Không thay đổi)
-  const handleView = (id) => console.log("👁️ Xem chi tiết đàn:", id);
+  // ⭐ Bạn muốn để handleEdit ĐÚNG 1 dòng, và modal vẫn mở
   const handleEdit = (id) => {
-  const flock = flocks.find((f) => f._id === id);
-  setEditingFlock(flock);
+    console.log("✏️ Chỉnh sửa đàn:", id);
   };
-  const handleDelete = (id) => console.log("🗑️ Xóa đàn:", id);
 
+  const handleDelete = (id) =>
+    console.log("🗑️ Xóa đàn:", id);
+
+  // Sau khi sửa đàn → cập nhật bảng
+  const handleSaved = (updated) => {
+    setFlocks((prev) =>
+      prev.map((f) => (f._id === updated._id ? updated : f))
+    );
+  };
+
+  // ================= UI =================
   return (
     <div className="px-8 mt-8">
       <HeaderFlock />
-      
+
       <Statistical flocks={filteredFlocks} />
-      
-      {/* === TRUYỀN PROPS TÌM KIẾM CHO FILTER === */}
-      <FilterFlock 
+
+      <FilterFlock
         filterStatus={filterStatus}
         onStatusChange={setFilterStatus}
         filterSpecies={filterSpecies}
         onSpeciesChange={setFilterSpecies}
         allSpecies={allSpecies}
-        searchTerm={searchTerm} // Truyền giá trị tìm kiếm
-        onSearchChange={setSearchTerm} // Truyền hàm cập nhật
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
       />
-      {/* ======================================= */}
 
       <div className="bg-white rounded shadow overflow-x-auto">
         {loading ? (
@@ -202,19 +230,20 @@ function Flocks() {
           </div>
         ) : (
           <>
-            <table className="w-full text-left border-collapse">
+            <table className="w-full border-collapse text-left">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="px-4 py-2 text-sm font-semibold">Mã lứa</th>
-                  <th className="px-4 py-2 text-sm font-semibold">Ngày nhập</th>
-                  <th className="px-4 py-2 text-sm font-semibold">Giống</th>
-                  <th className="px-4 py-2 text-sm font-semibold text-center">SL ban đầu</th>
-                  <th className="px-4 py-2 text-sm font-semibold text-center">SL hiện tại</th>
-                  <th className="px-4 py-2 text-sm font-semibold text-center">TL TB (kg/con)</th>
-                  <th className="px-4 py-2 text-sm font-semibold text-center">Trạng thái</th>
-                  <th className="px-4 py-2 text-sm font-semibold text-center">Hành động</th>
+                  <th className="px-4 py-2">Mã lứa</th>
+                  <th className="px-4 py-2">Ngày nhập</th>
+                  <th className="px-4 py-2">Giống</th>
+                  <th className="px-4 py-2 text-center">SL ban đầu</th>
+                  <th className="px-4 py-2 text-center">SL hiện tại</th>
+                  <th className="px-4 py-2 text-center">TL TB</th>
+                  <th className="px-4 py-2 text-center">Trạng thái</th>
+                  <th className="px-4 py-2 text-center">Hành động</th>
                 </tr>
               </thead>
+
               <tbody>
                 {currentFlocks.map((flock, index) => (
                   <FlockRow
@@ -231,31 +260,31 @@ function Flocks() {
                 ))}
               </tbody>
             </table>
-            
+
             {totalPages > 1 && (
-              <div className="flex justify-between items-center px-4 py-3 border-t text-sm text-gray-700">
+              <div className="flex justify-between items-center px-4 py-3 border-t">
                 <button
-                  onClick={handlePrevPage}
+                  onClick={() =>
+                    setCurrentPage((p) => Math.max(p - 1, 1))
+                  }
                   disabled={currentPage === 1}
-                  className={`px-3 py-1 border rounded disabled:opacity-50 ${
-                    currentPage !== 1
-                      ? "hover:bg-amber-200 transition cursor-pointer"
-                      : ""
-                  }`}
+                  className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-amber-200"
                 >
                   Quay lại
                 </button>
+
                 <span>
                   Trang {currentPage} / {totalPages}
                 </span>
+
                 <button
-                  onClick={handleNextPage}
+                  onClick={() =>
+                    setCurrentPage((p) =>
+                      Math.min(p + 1, totalPages)
+                    )
+                  }
                   disabled={currentPage === totalPages}
-                  className={`px-3 py-1 border rounded disabled:opacity-50 ${
-                    currentPage !== totalPages
-                      ? "hover:bg-amber-200 transition cursor-pointer"
-                      : ""
-                  }`}
+                  className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-amber-200"
                 >
                   Trang tiếp
                 </button>
@@ -264,6 +293,8 @@ function Flocks() {
           </>
         )}
       </div>
+
+      {/* ⭐ MODAL EDIT */}
       {editingFlock && (
         <FlockEditModal
           flock={editingFlock}

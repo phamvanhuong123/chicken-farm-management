@@ -1,17 +1,15 @@
 import { useState } from "react"
 import HeaderStaff from "./HeaderStaff/HeaderStaff"
-import Statistical from "./Statistical/Statistical"
-import TabStaff from "./TabStaff/TabStaff"
+import Tabs from "./Tabs/Tabs"
 
 function Staff(){
-    const [tabs,setTabs] = useState('employee')
+    const [tabs,setTabs] = useState('staff')
     const handleChangeTab = (data) =>{
         setTabs(data)
     }
     return <div className="px-8 mt-8">
         <HeaderStaff tabs={tabs}/>
-        <TabStaff tabs={tabs} handleChangeTab={handleChangeTab} />
-        <Statistical/>
+        <Tabs tabs={tabs} handleChangeTab={handleChangeTab} />
     </div>
 }
 export default Staff

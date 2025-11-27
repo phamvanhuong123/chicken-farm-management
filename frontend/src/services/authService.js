@@ -16,7 +16,7 @@ function resolveApiUrl() {
     return window.__REACT_APP_API_URL__;
   }
 
-  return 'http://localhost:8071/auth';
+  return 'http://localhost:8071/v1/auth';
 }
 
 const API_URL = resolveApiUrl();
