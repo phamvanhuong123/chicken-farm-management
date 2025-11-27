@@ -62,11 +62,10 @@ function SideBar({ isCollapsed }) {
       border-r border-gray-200 transition-all bg-white duration-300 ease-in-out
       ${isCollapsed ? 'w-[105px] mt-13' : 'w-64 mt-10'}
       h-screen fixed left-0 top-0 z-40
-      flex flex-col 
     `}>
 
       {/* Navigation Section */}
-      <nav className="flex-1 px-3 py-6">
+      <nav className="flex-1 px-3 py-6 h-[calc(100%-150px)] ">
         {/* Main Menu */}
         <div>
           
@@ -143,7 +142,6 @@ function SideBar({ isCollapsed }) {
           </ul>
         </div>
       </nav>
-
       {/* User Section */}
       <div className="p-4 border-t border-gray-700/50">
         <div className={`
