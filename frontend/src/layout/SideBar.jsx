@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Home, Package, BarChart3 } from 'lucide-react';
+import { Home, Package, CircleDollarSign, NotepadText, UsersRound } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-
 function SideBar({ isCollapsed }) {
   const [activeTooltip, setActiveTooltip] = useState(null);
 
@@ -18,7 +17,14 @@ function SideBar({ isCollapsed }) {
       icon: Home,
       label: "Đàn gà",
       end: false,
-      badge: "12"
+      badge: "1"
+    },
+    {
+      path: "/dashboard/journal",
+      icon: NotepadText,
+      label: "Nhật kí",
+      end: false,
+      badge: "2"
     },
     {
       path: "/dashboard/inventory",
@@ -26,6 +32,27 @@ function SideBar({ isCollapsed }) {
       label: "Kho vật tư",
       end: false,
       badge: "3"
+    },
+    {
+      path: "/dashboard/flock-transactions",
+      icon: CircleDollarSign,
+      label: "Nhập/xuất chuồng",
+      end: false,
+      badge: "4"
+    },
+    {
+      path: "/dashboard/areas",
+      icon: CircleDollarSign,
+      label: "Khu nuôi",
+      end: false,
+      badge: "5"
+    },
+    {
+      path: "/dashboard/staff",
+      icon: UsersRound,
+      label: "Nhân sự và công việc",
+      end: false,
+      badge: "6"
     }
   ];
 

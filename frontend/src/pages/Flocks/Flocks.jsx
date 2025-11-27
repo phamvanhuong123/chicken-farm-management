@@ -16,12 +16,13 @@ const FlockRow = ({
   onView,
   onEdit,
   onDelete,
+  setFlocks
 }) => {
   return (
     <tr key={flock._id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
       <td className="px-4 py-2">{flock.code || "-"}</td>
       <td className="px-4 py-2">
-        {flock.importDate ? formatDate(flock.importDate) : "-"}
+        {flock.createdAt ? formatDate(flock.createdAt) : "-"}
       </td>
       <td className="px-4 py-2">{flock.speciesId || "-"}</td>
       <td className="px-4 py-2 text-center">
@@ -218,6 +219,7 @@ function Flocks() {
                     onView={handleView}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
+                    setFlocks={setFlocks}
                   />
                 ))}
               </tbody>
