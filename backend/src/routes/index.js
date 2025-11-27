@@ -4,6 +4,7 @@ import express from 'express'
 import flockRoute from './v1/flock.route.js'
 import materialRoute from './v1/material.route.js'
 import importRoute from './v1/import.route.js'
+import authRoutes from './v1/auth.routes.js'
 const router = express.Router()
 
 // route kiểm tra server
@@ -19,4 +20,5 @@ router.use('/materials', materialRoute)
 // nhóm route chuồng
 // nhập chuồng
 router.use('/imports', importRoute)
+router.use("/auth", authRoutes);
 export const APIs_V1 = router

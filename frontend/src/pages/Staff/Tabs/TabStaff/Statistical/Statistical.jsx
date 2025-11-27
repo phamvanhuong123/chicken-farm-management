@@ -3,7 +3,7 @@ import { CircleDollarSign, User, UserRoundX, UsersRound } from "lucide-react";
 function Statistical() {
   return (
     <>
-      <div className="grid grid-cols-4 gap-4 mb-9 ">
+      <div className="grid max-[1024px]:grid-cols-2 max-[640px]:grid-cols-1 grid-cols-4 gap-4 mb-9 ">
         <div className=" p-4 rounded-2xl shadow-sm flex gap-3 items-center bg-white">
           <div className="bg-green-100 p-3 rounded-sm">
             <UsersRound color="green" />

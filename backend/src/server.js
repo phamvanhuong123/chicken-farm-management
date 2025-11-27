@@ -9,7 +9,7 @@ import { APIs_V1 } from "~/routes/index";
 import { errorHandlingMiddleware } from "./middlewares/errorHandlingMiddleware";
 import { env } from "./config/environment";
 import { corsOptions } from "./config/cors";
-import authRoutes from "./routes/authRoutes";
+
 
 const START_SERVER = () => {
   const app = express();
@@ -17,7 +17,7 @@ const START_SERVER = () => {
   const port = 8071;
   app.use(express.json());
   app.use("/v1", APIs_V1);
-  app.use("/auth", authRoutes);
+  
   app.use(errorHandlingMiddleware);
 
   if (env.BUILD_MODE === "production") {
