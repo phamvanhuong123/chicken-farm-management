@@ -7,6 +7,7 @@ import Statistical from "./Statistical/Statistical";
 import HeaderFlock from "./HeaderFlock/HeaderFlock";
 import FilterFlock from "./FilterFlock/FilterFlock";
 import FlockDetailModal from "./FlockDetail/FlockDetailModal";
+import EditFlockModal from "./EditFlockModal/EditFlockModal";
 
 // Component FlockRow (Không thay đổi)
 const FlockRow = ({
@@ -75,6 +76,11 @@ function Flocks() {
   // === THÊM STATE CHO TÌM KIẾM ===
   const [searchTerm, setSearchTerm] = useState("");
   // ===============================
+
+  // === STATE CHO EDIT MODAL ===
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedFlock, setSelectedFlock] = useState(null);
+  // ============================
 
   // Gọi API (Không thay đổi)
   useEffect(() => {
@@ -167,7 +173,31 @@ function Flocks() {
 
   // Xử lý sự kiện (Không thay đổi)
   const handleView = (id) => console.log("👁️ Xem chi tiết đàn:", id);
-  const handleEdit = (id) => console.log("✏️ Chỉnh sửa đàn:", id);
+  
+  // Xử lý mở modal chỉnh sửa
+  const handleEdit = (id) => {
+    const flock = flocks.find((f) => f._id === id);
+    if (flock) {
+      setSelectedFlock(flock);
+      setIsEditModalOpen(true);
+    }
+  };
+
+  // Xử lý sau khi cập nhật thành công
+  const handleUpdateSuccess = (updatedFlock) => {
+    setFlocks((prev) =>
+      prev.map((f) => (f._id === updatedFlock._id ? updatedFlock : f))
+    );
+    setIsEditModalOpen(false);
+    setSelectedFlock(null);
+  };
+
+  // Đóng modal
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedFlock(null);
+  };
+
   const handleDelete = (id) => console.log("🗑️ Xóa đàn:", id);
 
   return (
@@ -272,6 +302,14 @@ function Flocks() {
       onClose={() => setSelectedFlockId(null)}
       />
     )}
+
+      {/* Edit Flock Modal */}
+      <EditFlockModal
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        flockData={selectedFlock}
+        onUpdateSuccess={handleUpdateSuccess}
+      />
     </div>
   );
 }
