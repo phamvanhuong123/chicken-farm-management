@@ -40,8 +40,8 @@ export const updateFlockSchema = Joi.object({
   currentCount: Joi.number().integer().min(0),
   avgWeight: Joi.number().min(0),
   areaId: Joi.string(), // mới thêm Team-86
-  note: Joi.string().allow("").max(255), // mới thêm Team-86
-  status: Joi.string().valid("Raising", "Sold", "Closed"),
+  note: Joi.string().allow('').max(255), // mới thêm Team-86
+  status: Joi.string().valid('Raising', 'Sold', 'Closed'),
   updatedAt: Joi.date().default(() => new Date())
 })
 
