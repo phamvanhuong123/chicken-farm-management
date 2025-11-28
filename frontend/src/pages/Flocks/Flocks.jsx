@@ -58,6 +58,7 @@ function Flocks() {
   const [flocks, setFlocks] = useState([]); // Danh sách master
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showAddModal, setShowAddModal] = useState(false);
   const rowsPerPage = 5;
 
   // State cho bộ lọc
@@ -67,7 +68,10 @@ function Flocks() {
   // === THÊM STATE CHO TÌM KIẾM ===
   const [searchTerm, setSearchTerm] = useState("");
   // ===============================
-
+// ⭐ MOVE HÀM RA NGOÀI useMemo
+  const handleAddFlock = (newFlock) => {
+    setFlocks((prev) => [newFlock, ...prev]); 
+  };
   // Gọi API (Không thay đổi)
   useEffect(() => {
     const fetchFlocks = async () => {
@@ -88,6 +92,10 @@ function Flocks() {
   const filteredFlocks = useMemo(() => {
     // Chuyển đổi searchTerm sang chữ thường một lần
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    const handleAddFlock = (newFlock) => {
+      setFlocks((prev) => [newFlock, ...prev]);  // đưa đàn mới lên đầu bảng
+    };
+
 
     return flocks.filter(flock => {
       // Logic lọc trạng thái
@@ -164,7 +172,7 @@ function Flocks() {
 
   return (
     <div className="px-8 mt-8">
-      <HeaderFlock />
+      <HeaderFlock onAdd={() => setShowAddModal(true)} />
       
       <Statistical flocks={filteredFlocks} />
       
@@ -257,6 +265,13 @@ function Flocks() {
           </>
         )}
       </div>
+      {showAddModal && (
+        <FormStepper 
+        onClose={() => setShowAddModal(false)}
+        onSaved={handleAddFlock}   // ⭐ GỬI ĐÀN MỚI VỀ BẢNG
+        />
+     )}
+
     </div>
   );
 }

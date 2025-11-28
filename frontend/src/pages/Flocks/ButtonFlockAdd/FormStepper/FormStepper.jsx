@@ -5,7 +5,7 @@ import FormStep2 from "../FormStep2/FormStep2.jsx";
 import FormStep3 from "../FormStep3/FormStep3.jsx";
 import { Button } from "~/components/ui/button";
 
-function FormStepper({ onClose }) {
+function FormStepper({ onClose, onSaved }) {
   const methods = useForm({
     defaultValues: {
       importDate: "",
@@ -24,7 +24,7 @@ function FormStepper({ onClose }) {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({});
-  const [success, setSuccess] = useState(false); //Thêm state báo thành công
+  const [success, setSuccess] = useState(false);
 
   const nextStep = () => {
     const values = getValues();
@@ -34,30 +34,74 @@ function FormStepper({ onClose }) {
 
   const prevStep = () => setCurrentStep((prev) => prev - 1);
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
     const finalValues = { ...formData, ...getValues() };
-    console.log("FINAL SUBMIT:", finalValues);
 
-    // Hiện thông báo trong UI
-    setSuccess(true);
+    // ============================
+    // 🔥 Map đúng dữ liệu backend
+    // ============================
+    const payload = {
+  initialCount: Number(finalValues.quantity),
+  speciesId: finalValues.breed,
+  areaId: finalValues.area,
+  ownerId: "admin01",   // nếu bạn có auth thì đổi
+  avgWeight: Number(finalValues.avgWeight || 0),
+  price: Number(finalValues.totalCost || 0),
+  note: finalValues.note?.trim() || "",
+};
 
-    // Reset form
-    methods.reset();
-    setCurrentStep(1);
 
-    // Tự tắt thông báo sau 2 giây
-    setTimeout(() => {
-      setSuccess(false);
-      onClose?.();
-    }, 2000);
+    console.log("PAYLOAD SENT TO BACKEND:", payload);
+
+    try {
+      const res = await fetch("http://localhost:8071/v1/flocks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      console.log("BACKEND RESPONSE:", json);
+
+if (!res.ok) {
+  console.log("BACKEND ERROR:", json);
+  alert(json.message || "Không thể thêm đàn mới!");
+  return;
+}
+
+
+      // === Hiện thông báo thành công ===
+      setSuccess(true);
+
+      // Gửi đàn mới ra ngoài component cha
+      if (onSaved) onSaved(json.data);
+
+      // Reset form + đóng popup
+      methods.reset();
+      setCurrentStep(1);
+
+      setTimeout(() => {
+        setSuccess(false);
+        onClose?.();
+      }, 1500);
+
+    } catch (error) {
+      console.error("BACKEND ERROR:", error);
+      alert("Không thể kết nối máy chủ!");
+    }
   };
 
   return (
     <>
-    <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl cursor-pointer">
-      ✕
-    </button>
-      {/* Thông báo thành công */}
+      {/* Nút X để đóng */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl cursor-pointer"
+      >
+        ✕
+      </button>
+
+      {/* Thông báo */}
       {success && (
         <div className="w-full text-center bg-green-100 text-green-700 p-3 rounded mb-4">
           Thêm mới thành công!
@@ -98,21 +142,25 @@ function FormStepper({ onClose }) {
       {/* Nút điều hướng */}
       <div className="flex justify-between mt-6">
         {currentStep > 1 ? (
-         <Button variant="secondary" onClick={prevStep} className="cursor-pointer">
-          Quay lại
-         </Button>
-
+          <Button variant="secondary" onClick={prevStep} className="cursor-pointer">
+            Quay lại
+          </Button>
         ) : (
           <div></div>
         )}
 
         {currentStep < 3 ? (
-          <Button onClick={nextStep} className="bg-green-500 hover:bg-green-600" style={{ cursor: "pointer" }}>
+          <Button
+            onClick={nextStep}
+            className="bg-green-500 hover:bg-green-600 cursor-pointer"
+          >
             Tiếp tục
           </Button>
-
         ) : (
-          <Button onClick={onSubmit} className="bg-green-500 hover:bg-green-600 cursor-pointer">
+          <Button
+            onClick={onSubmit}
+            className="bg-green-500 hover:bg-green-600 cursor-pointer"
+          >
             Hoàn tất
           </Button>
         )}

@@ -17,7 +17,7 @@ const FLOCK_COLLECTION_SCHEMA = Joi.object({
   status: Joi.string().valid("Raising", "Sold", "Closed").default("Raising"),
   currentCount: Joi.number().integer().min(0).default(Joi.ref("initialCount")),
   createdAt: Joi.date().default(() => new Date()),
-  note: Joi.string().min(10).max(255).trim().strict(),
+  note: Joi.string().allow("").min(0).max(255).optional(),
   price: Joi.number().min(0).default(0),
   updatedAt: Joi.date().default(null),
 });
