@@ -11,7 +11,6 @@ import { Button } from "~/components/ui/button";
 import { useRef, useState } from "react";
 import { X } from "lucide-react";
 import FieldErrorAlert from "~/components/FieldErrorAlert";
-import { useForm } from "react-hook-form";
 
 function SearchUser({ setValueForm, unregisterForm,registerForm, errors, clearErrors }) {
   const users = [
