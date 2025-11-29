@@ -48,7 +48,7 @@ function Areas() {
 
   return (
     <div className="p-6">
-      <HeaderArea />
+      <HeaderArea refresh={fetchAreas} />
 
       <StatisticalArea overview={overview} />
 
