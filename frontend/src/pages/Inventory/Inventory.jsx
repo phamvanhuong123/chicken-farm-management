@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { materialAPI } from "~/apis/material.api";
 import { toast } from "react-hot-toast";
 import MaterialDetail from "./MaterialDetail"; // 🆕 thêm import
+import MaterialWarningAlert from "./MaterialWarningAlert/MaterialWarningAlert"; // 🆕 Cảnh báo vật tư
 import {
   FaBox,
   FaExclamationTriangle,
@@ -195,6 +196,9 @@ export default function Inventory() {
 
         </div>
       </div>
+
+      {/* 🆕 Thông báo cảnh báo vật tư */}
+      <MaterialWarningAlert materials={materials} />
 
       {/* Thống kê */}
       <div className="grid grid-cols-4 gap-4">
