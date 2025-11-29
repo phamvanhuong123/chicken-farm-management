@@ -34,7 +34,7 @@ const create = async (data) => {
 };
 
 const findById = async (id) => {
-  return await GET_DB().collection(USER_COLLECTION_NAME).findOne({_id : new ObjectId(String(id))});
+  return await GET_DB().collection(USER_COLLECTION_NAME).findOne({_id : new ObjectId(String(id))}).project({ password : 0 });
 };
 
 const findByEmailOrPhone = async (email, phone) => {
@@ -67,7 +67,7 @@ const findUserByParentId = async (parentId) => {
   try {
     const record = await GET_DB()
       .collection("users")
-      .find({ parentId: new ObjectId(String(parentId)) })
+      .find({ parentId: new ObjectId(String(parentId)) }).project({ password : 0 })
       .toArray();
     return record;
   } catch (e) {
@@ -94,6 +94,10 @@ const addEmployee = async (parentId,data) => {
 
   }
 };
+
+const getAllUser  = async() =>{
+  return GET_DB().collection(USER_COLLECTION_NAME).find({verified : true}).project({ password : 0 }).toArray()
+}
 export const userModel = {
   create,
   findByEmailOrPhone,
@@ -102,5 +106,6 @@ export const userModel = {
   clearOTP,
   findUserByParentId,
   findById,
-  addEmployee
+  addEmployee,
+  getAllUser
 };

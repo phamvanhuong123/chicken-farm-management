@@ -167,11 +167,20 @@ const addEmployee = async (parentId, body) => {
   }
 };
 
+ const getAllUser = async() => {
+  const users = await userModel.getAllUser();
+
+  if (users.length === 0 || !users){
+    throw new ApiError(StatusCodes.NOT_FOUND,"Không tồn tại người dùng nào")
+  }
+  return users
+}
 export const userService = {
   register,
   verifyOTP,
   resendOTP,
   login,
   findUserByParentId,
-  addEmployee
+  addEmployee,
+  getAllUser
 };
