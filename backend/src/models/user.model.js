@@ -34,7 +34,9 @@ const create = async (data) => {
 };
 
 const findById = async (id) => {
-  return await GET_DB().collection(USER_COLLECTION_NAME).findOne({_id : new ObjectId(String(id))}).project({ password : 0 });
+  return await GET_DB()
+    .collection(USER_COLLECTION_NAME)
+    .findOne({ _id: new ObjectId(String(id)) });
 };
 
 const findByEmailOrPhone = async (email, phone) => {
@@ -67,7 +69,7 @@ const findUserByParentId = async (parentId) => {
   try {
     const record = await GET_DB()
       .collection("users")
-      .find({ parentId: new ObjectId(String(parentId)) }).project({ password : 0 })
+      .find({ parentId: new ObjectId(String(parentId)) })
       .toArray();
     return record;
   } catch (e) {
@@ -75,29 +77,33 @@ const findUserByParentId = async (parentId) => {
   }
 };
 
-const addEmployee = async (parentId,data) => {
+const addEmployee = async (parentId, data) => {
   try {
-    const id = data?.idEmployee
-    console.log(id)
-    delete data.id
+    const id = data?.idEmployee;
+    console.log(id);
+    delete data.idEmployee;
     //Chỉ cần cật nhật trường parentId là có thêm được nhân viên
+
     const updateUserEmployee = await GET_DB()
       .collection("users")
       .findOneAndUpdate(
         { _id: new ObjectId(String(id)) },
-        { $set: {...data, parentId} },
+        { $set: { ...data, parentId: new ObjectId(String(parentId)) } },
         { returnDocument: "after" }
       );
-    return updateUserEmployee
+    return updateUserEmployee;
   } catch (error) {
     throw new Error(error);
-
   }
 };
 
-const getAllUser  = async() =>{
-  return GET_DB().collection(USER_COLLECTION_NAME).find({verified : true}).project({ password : 0 }).toArray()
-}
+const getAllUser = async () => {
+  return GET_DB()
+    .collection(USER_COLLECTION_NAME)
+    .find({ verified: true })
+    .project({ password: 0 })
+    .toArray();
+};
 export const userModel = {
   create,
   findByEmailOrPhone,
@@ -107,5 +113,5 @@ export const userModel = {
   findUserByParentId,
   findById,
   addEmployee,
-  getAllUser
+  getAllUser,
 };
