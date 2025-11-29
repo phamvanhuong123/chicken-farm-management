@@ -12,19 +12,19 @@ router.get("/status", (req, res) => {
   res.json({ data: "ok" });
 });
 
-// Flocks (Đàn gà)
+// Flocks
 router.use("/flocks", flockRoute);
 
-// Materials (Kho vật tư)
+// Materials
 router.use("/materials", materialRoute);
 
-// Import (Nhập chuồng)
+// Imports
 router.use("/imports", importRoute);
 
 // Auth
 router.use("/auth", authRoutes);
 
-// Areas (Khu nuôi)
+// Areas (NEW)
 router.use("/areas", areaRoute);
 
 export const APIs_V1 = router;

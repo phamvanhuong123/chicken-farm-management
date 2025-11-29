@@ -1,6 +1,6 @@
 import express from "express";
 import {
-  createAreaController,
+  createArea,
   getOverviewController,
   getAreaList,
   exportAreas,
@@ -8,9 +8,10 @@ import {
 
 const router = express.Router();
 
-router.post("/", createAreaController);
-router.get("/overview", getOverviewController);
-router.get("/", getAreaList);
-router.get("/export", exportAreas);
+// Team 130 + 132 - Khu nuôi
+router.post("/", createArea); // Thêm khu nuôi mới
+router.get("/overview", getOverviewController); // KPI + biểu đồ
+router.get("/", getAreaList); // Danh sách + filter + paging
+router.get("/export", exportAreas); // Xuất Excel
 
 export default router;
