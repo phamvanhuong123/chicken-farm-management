@@ -76,3 +76,18 @@ export const addEmployee = async (req, res, next)=>{
     next(error)    
   }
 }
+
+export const getAllUser = async (req, res, next) =>{
+  try{
+    const result = await userService.getAllUser()
+    res.status(StatusCodes.ACCEPTED).json({
+      statusCode : StatusCodes.ACCEPTED,
+      message : "Thành công",
+      data : result
+
+    })
+  }
+  catch(error){
+    next(error)
+  }
+}
