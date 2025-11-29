@@ -1,5 +1,5 @@
 import express from 'express'
-import { register, verifyOTP, login, resendOTP,findUserByParentId } from '~/controllers/authController.js'
+import { register, verifyOTP, login, resendOTP,findUserByParentId,addEmployee } from '~/controllers/authController.js'
 import rateLimiter from '~/middlewares/rateLimiter.js'
 import { userValidate } from '~/validators/user.validation'
 
@@ -10,5 +10,5 @@ router.post('/verify-otp', verifyOTP)
 router.post('/resend-otp', rateLimiter({ windowMs: 60 * 1000, max: 5 }), resendOTP)
 router.post('/login', login)
 router.get("/:parentId",findUserByParentId)
-
+router.post("/addEmployee/:parentId",userValidate.addEmployee, addEmployee)
 export default router

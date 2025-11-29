@@ -61,3 +61,18 @@ export const findUserByParentId = async (req, res, next) => {
     next(error)
   }
 }
+
+export const addEmployee = async (req, res, next)=>{
+  try{
+    const parentId = req.params.parentId
+    const result = await userService.addEmployee(parentId,req.body)
+    res.status(StatusCodes.CREATED).json({
+      statusCode  : StatusCodes.CREATED,
+      message : "Thành công",
+      data : result
+    })
+  }
+  catch(error){
+    next(error)    
+  }
+}
