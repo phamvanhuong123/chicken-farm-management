@@ -32,9 +32,21 @@ const validateBeforeCreate = async (data) => {
 // Validate dữ liệu khi cập nhật
 const validateBeforeUpdate = async (data) => {
   const updateSchema = Joi.object({
+    createdAt: Joi.date().max('now').optional().messages({
+      'date.max': 'Ngày nhập không hợp lệ.'
+    }),
+    supplierId: Joi.string().optional(),
+    speciesId: Joi.string().optional(),
+    initialCount: Joi.number().integer().min(1).optional().messages({
+      'number.min': 'Số lượng phải lớn hơn 0.'
+    }),
     currentCount: Joi.number().integer().min(0).optional(),
-    avgWeight: Joi.number().min(0).optional(),
-    status: Joi.string().valid("Raising", "dSold", "Closed").optional(),
+    avgWeight: Joi.number().min(0.01).optional().messages({
+      'number.min': 'Trọng lượng trung bình phải lớn hơn 0.'
+    }),
+    areaId: Joi.string().optional(),
+    status: Joi.string().valid("Raising", "Sold", "Closed").optional(),
+    note: Joi.string().max(255).trim().allow('').optional(),
   });
   return await updateSchema.validateAsync(data, {
     abortEarly: false,
