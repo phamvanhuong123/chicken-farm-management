@@ -2,6 +2,7 @@ import { useDispatch } from 'react-redux'
 import AllRoute from './routes/AllRoute'
 import { useEffect } from 'react'
 import { setUser } from './slices/authSlice'
+import { ToastContainer } from 'react-toastify'
 
 function App() {
   const dispatch = useDispatch()
@@ -15,6 +16,7 @@ function App() {
   return (
     <>
       <AllRoute/>
+       <ToastContainer />
     </>
   )
 }

@@ -7,13 +7,14 @@ import {
   ArrowDownToLine,
   DollarSign,
   Clock,
+  Eye,
   Plus,
 } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "~/components/ui/tabs";
-import { transactionAPI } from "~/apis/transaction.api";
 
+import { transactionAPI } from "~/apis/transaction.api";
 import ExportFlockModal from "./ExportFlockModal/ExportFlockModal";
 
 /* ============================================================
@@ -67,16 +68,16 @@ const PaymentBadge = ({ method }) => {
 export default function FlockTransactions() {
   const now = new Date();
 
-  const [activeTab, setActiveTab] = useState("export");
+  const [activeTab, setActiveTab] = useState("import");
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
 
-  // EXPORT STATES
+  const [loading, setLoading] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [flocks, setFlocks] = useState([]);
-  const [loading, setLoading] = useState(false);
 
-  const [statsExport, setStatsExport] = useState({
+  const [stats, setStats] = useState({
+    totalImport: 0,
     totalExport: 0,
     totalRevenue: 0,
     pendingOrders: 0,
@@ -84,113 +85,66 @@ export default function FlockTransactions() {
 
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
-  // IMPORT STATES (KHUNG SẴN – CHƯA CODE LOGIC)
-  const [importTransactions, setImportTransactions] = useState([]);
-  const [loadingImport, setLoadingImport] = useState(false);
-  const [statsImport, setStatsImport] = useState({
-    totalImport: 0,
-    totalCost: 0,
-    pendingOrders: 0,
-  });
+  const formatDate = (d) => new Date(d).toLocaleDateString("vi-VN");
 
   /* ============================================================
-     FETCH EXPORT DATA
-  ============================================================ */
-  const fetchExportData = async () => {
+      FETCH DATA
+  ============================================================= */
+
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await transactionAPI.getAll({
-        type: "export",
+      const transRes = await transactionAPI.getAll({
+        type: activeTab,
         month: selectedMonth,
         year: selectedYear,
       });
 
-      setTransactions(res.data.data.items || []);
+      setTransactions(transRes.data.data.items || []);
 
       const statsRes = await transactionAPI.getStats({
         month: selectedMonth,
         year: selectedYear,
       });
 
-      setStatsExport({
-        totalExport: statsRes.data.data.totalExport,
-        totalRevenue: statsRes.data.data.totalRevenue,
-        pendingOrders: statsRes.data.data.pendingOrders,
-      });
+      setStats(statsRes.data.data || {});
     } catch (err) {
-      console.error(err);
-      toast.error("Không thể tải dữ liệu xuất chuồng!");
-    } finally {
-      setLoading(false);
+      toast.error("Lỗi tải dữ liệu");
     }
+    setLoading(false);
   };
 
-  /* ============================================================
-     FETCH IMPORT DATA (TODO – CHƯA DÙNG API)
-  ============================================================ */
-  const fetchImportData = async () => {
-    // TODO: sau này gắn API thật ở đây
-    // ví dụ:
-    // setLoadingImport(true);
-    // try {
-    //   const res = await transactionAPI.getAll({ type: "import", month: selectedMonth, year: selectedYear });
-    //   setImportTransactions(res.data.data.items || []);
-    //   const statsRes = await transactionAPI.getStats({ month: selectedMonth, year: selectedYear });
-    //   setStatsImport({
-    //     totalImport: statsRes.data.data.totalImport,
-    //     totalCost: statsRes.data.data.totalCost,
-    //     pendingOrders: statsRes.data.data.pendingOrders,
-    //   });
-    // } catch (err) {
-    //   toast.error("Không thể tải dữ liệu nhập chuồng!");
-    // } finally {
-    //   setLoadingImport(false);
-    // }
-  };
-
-  /* ============================================================
-     FETCH FLOCK LIST
-  ============================================================ */
   const fetchFlocks = async () => {
     try {
       const res = await axios.get("http://localhost:8071/v1/flocks");
       setFlocks(res.data.data || []);
     } catch (err) {
-      console.error("Lỗi tải danh sách đàn:", err);
+      console.log("Lỗi tải đàn:", err);
     }
   };
 
   useEffect(() => {
-    if (activeTab === "export") {
-      fetchExportData();
-    } else if (activeTab === "import") {
-      fetchImportData();
-    }
+    fetchData();
   }, [activeTab, selectedMonth, selectedYear]);
 
   useEffect(() => {
     fetchFlocks();
   }, []);
 
-  /* ============================================================
-     On Export Success
-  ============================================================ */
-  const handleExportSuccess = (newData) => {
-    setTransactions((prev) => [newData, ...prev]);
-    fetchExportData();
+  const handleExportSuccess = (newTrans) => {
+    setTransactions((prev) => [newTrans, ...prev]);
+    fetchData();
     fetchFlocks();
   };
 
-  const formatDate = (date) =>
-    new Date(date).toLocaleDateString("vi-VN");
-
   /* ============================================================
-     RENDER
-  ============================================================ */
+      RENDER
+  ============================================================= */
+
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
 
-      {/* HEADER */}
+      {/* PAGE HEADER */}
       <div className="flex justify-between items-center flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold">Nhập / Xuất chuồng</h1>
@@ -226,31 +180,35 @@ export default function FlockTransactions() {
 
       {/* TABS */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        
-        <div className="flex justify-between items-center">
-          <TabsList>
+
+        {/* TAB LIST */}
+        <div className="flex justify-between items-center mb-2">
+          <TabsList className="flex gap-2">
+
             <TabsTrigger
               value="import"
-              className="cursor-pointer px-4 py-2
+              className="cursor-pointer px-4 py-2 rounded 
               data-[state=active]:bg-blue-500 data-[state=active]:text-white
-              hover:bg-blue-100 rounded-md transition"
+              hover:bg-blue-100 transition-all duration-150"
             >
               Nhập chuồng
             </TabsTrigger>
 
             <TabsTrigger
               value="export"
-              className="cursor-pointer px-4 py-2
+              className="cursor-pointer px-4 py-2 rounded 
               data-[state=active]:bg-green-500 data-[state=active]:text-white
-              hover:bg-green-100 rounded-md transition ml-2"
+              hover:bg-green-100 transition-all duration-150"
             >
               Xuất chuồng
             </TabsTrigger>
           </TabsList>
 
+          {/* BUTTON */}
           {activeTab === "export" && (
             <Button
-              className="bg-green-500 hover:bg-green-600 text-white px-4 rounded-md"
+              className="bg-green-500 hover:bg-green-600 text-white px-4
+                shadow-sm hover:shadow cursor-pointer"
               onClick={() => setIsExportModalOpen(true)}
             >
               <Plus size={16} className="mr-1" /> Xuất chuồng mới
@@ -258,74 +216,56 @@ export default function FlockTransactions() {
           )}
 
           {activeTab === "import" && (
-            <Button
-              disabled
-              className="bg-blue-400 text-white px-4 rounded-md opacity-60 cursor-not-allowed"
+            <Button className="bg-blue-500 hover:bg-blue-600 text-white px-4 
+              shadow-sm hover:shadow cursor-pointer"
             >
-              Đang phát triển
+              <Plus size={16} className="mr-1" /> Nhập chuồng mới
             </Button>
           )}
         </div>
 
         {/* ============================================================
-            IMPORT TAB (KHUNG SẴN)
-        ============================================================ */}
+            IMPORT TAB
+        ============================================================= */}
         <TabsContent value="import" className="mt-4">
+
           {/* KPI */}
           <div className="grid grid-cols-3 gap-4">
-            <KPICard
-              icon={ArrowDownToLine}
-              label="Tổng nhập"
-              value={statsImport.totalImport}
-              color="bg-blue-500"
-              suffix=" con"
-            />
-            <KPICard
-              icon={DollarSign}
-              label="Tổng chi phí"
-              value={statsImport.totalCost}
-              color="bg-indigo-500"
-              suffix="₫"
-            />
-            <KPICard
-              icon={Clock}
-              label="Đơn chờ"
-              value={statsImport.pendingOrders}
-              color="bg-yellow-500"
-            />
+            <KPICard icon={ArrowDownToLine} label="Tổng nhập" value={stats.totalImport} color="bg-blue-500" suffix=" con" />
+            <KPICard icon={DollarSign} label="Chi phí nhập" value={stats.totalRevenue} color="bg-green-500" suffix="₫" />
+            <KPICard icon={Clock} label="Đơn chờ" value={stats.pendingOrders} color="bg-yellow-500" />
           </div>
 
-          {/* TABLE SKELETON */}
+          {/* TABLE */}
           <div className="bg-white border rounded-lg overflow-hidden mt-4">
             <table className="w-full text-sm">
               <thead className="bg-gray-100">
                 <tr>
                   <th className="p-3 text-left">Ngày</th>
                   <th className="p-3 text-left">Đàn</th>
-                  <th className="p-3 text-center">SL (con)</th>
+                  <th className="p-3 text-center">SL</th>
                   <th className="p-3 text-center">TL TB</th>
                   <th className="p-3 text-left">Nhà cung cấp</th>
                   <th className="p-3 text-center">Thanh toán</th>
-                  <th className="p-3 text-right">Tổng tiền</th>
                   <th className="p-3 text-center">Trạng thái</th>
                 </tr>
               </thead>
 
               <tbody>
-                {loadingImport ? (
+                {loading ? (
                   <tr>
-                    <td colSpan="8" className="p-4 text-center">
-                      Đang tải dữ liệu nhập chuồng...
+                    <td colSpan="7" className="text-center p-4">
+                      Đang tải dữ liệu...
                     </td>
                   </tr>
-                ) : importTransactions.length === 0 ? (
+                ) : transactions.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="p-4 text-center text-gray-500">
-                      Chức năng Nhập chuồng sẽ được cập nhật sau.
+                    <td colSpan="7" className="text-center p-4">
+                      Chưa có dữ liệu nhập chuồng
                     </td>
                   </tr>
                 ) : (
-                  importTransactions.map((t) => (
+                  transactions.map((t) => (
                     <tr key={t._id} className="border-b hover:bg-gray-50">
                       <td className="p-3">{formatDate(t.transactionDate)}</td>
                       <td className="p-3 font-medium">{t.flockCode}</td>
@@ -334,9 +274,6 @@ export default function FlockTransactions() {
                       <td className="p-3">{t.supplierName}</td>
                       <td className="p-3 text-center">
                         <PaymentBadge method={t.paymentMethod} />
-                      </td>
-                      <td className="p-3 text-right">
-                        {t.totalCost?.toLocaleString()}₫
                       </td>
                       <td className="p-3 text-center">
                         <StatusBadge status={t.status} />
@@ -350,31 +287,15 @@ export default function FlockTransactions() {
         </TabsContent>
 
         {/* ============================================================
-            EXPORT TAB (ĐANG DÙNG)
-        ============================================================ */}
+            EXPORT TAB
+        ============================================================= */}
         <TabsContent value="export" className="mt-4">
+
           {/* KPI */}
           <div className="grid grid-cols-3 gap-4">
-            <KPICard
-              icon={ArrowUpFromLine}
-              label="Tổng xuất"
-              value={statsExport.totalExport}
-              color="bg-orange-500"
-              suffix=" con"
-            />
-            <KPICard
-              icon={DollarSign}
-              label="Doanh thu"
-              value={statsExport.totalRevenue}
-              color="bg-green-500"
-              suffix="₫"
-            />
-            <KPICard
-              icon={Clock}
-              label="Đơn chờ"
-              value={statsExport.pendingOrders}
-              color="bg-yellow-500"
-            />
+            <KPICard icon={ArrowUpFromLine} label="Tổng xuất" value={stats.totalExport} color="bg-orange-500" suffix=" con" />
+            <KPICard icon={DollarSign} label="Doanh thu" value={stats.totalRevenue} color="bg-green-500" suffix="₫" />
+            <KPICard icon={Clock} label="Đơn chờ" value={stats.pendingOrders} color="bg-yellow-500" />
           </div>
 
           {/* TABLE */}
@@ -391,20 +312,21 @@ export default function FlockTransactions() {
                   <th className="p-3 text-center">Thanh toán</th>
                   <th className="p-3 text-right">Doanh thu</th>
                   <th className="p-3 text-center">Trạng thái</th>
+                  <th className="p-3 text-center">Hành động</th>
                 </tr>
               </thead>
 
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="9" className="p-4 text-center">
+                    <td colSpan="10" className="p-4 text-center">
                       Đang tải dữ liệu...
                     </td>
                   </tr>
                 ) : transactions.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="p-4 text-center">
-                      Chưa có đơn xuất chuồng nào.
+                    <td colSpan="10" className="p-4 text-center">
+                      Chưa có dữ liệu xuất chuồng
                     </td>
                   </tr>
                 ) : (
@@ -415,17 +337,23 @@ export default function FlockTransactions() {
                       <td className="p-3 text-center">{t.quantity}</td>
                       <td className="p-3 text-center">{t.avgWeight} kg</td>
                       <td className="p-3 text-center">
-                        {t.pricePerKg?.toLocaleString()}₫
+                        {t.pricePerKg?.toLocaleString("vi-VN")} ₫
                       </td>
                       <td className="p-3">{t.customerName}</td>
                       <td className="p-3 text-center">
                         <PaymentBadge method={t.paymentMethod} />
                       </td>
                       <td className="p-3 text-right text-green-600 font-semibold">
-                        {t.totalRevenue?.toLocaleString()}₫
+                        {t.totalRevenue?.toLocaleString("vi-VN")} ₫
                       </td>
                       <td className="p-3 text-center">
                         <StatusBadge status={t.status} />
+                      </td>
+
+                      <td className="p-3 text-center">
+                        <button className="p-2 hover:bg-gray-100 rounded">
+                          <Eye size={16} className="text-blue-500" />
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -434,6 +362,7 @@ export default function FlockTransactions() {
             </table>
           </div>
         </TabsContent>
+
       </Tabs>
 
       {/* EXPORT MODAL */}
