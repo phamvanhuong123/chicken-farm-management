@@ -1,4 +1,6 @@
+import { StatusCodes } from "http-status-codes"
 import { userService } from "~/services/user.service"
+import ApiError from "~/utils/ApiError"
 
 export const register = async (req, res, next) => {
   try {
@@ -38,6 +40,54 @@ export const login = async (req, res, next) => {
       ...result
     })
   } catch (error) {
+    next(error)
+  }
+}
+export const findUserByParentId = async (req, res, next) => {
+  try{
+    const parentId = req.params.parentId
+    if (!parentId) {
+      throw new ApiError(StatusCodes.BAD_REQUEST,"Thiếu parentId")
+    }
+    const result = await userService.findUserByParentId(parentId)
+
+    res.status(StatusCodes.ACCEPTED).json({
+      statusCode  : StatusCodes.ACCEPTED,
+      message : "Thành công",
+      data : result
+    })
+  }
+  catch(error) {
+    next(error)
+  }
+}
+
+export const addEmployee = async (req, res, next)=>{
+  try{
+    const parentId = req.params.parentId
+    const result = await userService.addEmployee(parentId,req.body)
+    res.status(StatusCodes.CREATED).json({
+      statusCode  : StatusCodes.CREATED,
+      message : "Thành công",
+      data : result
+    })
+  }
+  catch(error){
+    next(error)    
+  }
+}
+
+export const getAllUser = async (req, res, next) =>{
+  try{
+    const result = await userService.getAllUser()
+    res.status(StatusCodes.ACCEPTED).json({
+      statusCode : StatusCodes.ACCEPTED,
+      message : "Thành công",
+      data : result
+
+    })
+  }
+  catch(error){
     next(error)
   }
 }

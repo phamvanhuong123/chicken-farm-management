@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Home, Package, CircleDollarSign, NotepadText, UsersRound } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { getUserState } from '~/slices/authSlice';
 function SideBar({ isCollapsed }) {
   const [activeTooltip, setActiveTooltip] = useState(null);
-
+  const user = useSelector(state => getUserState(state))
   const menuItems = [
     // {
     //   path: "/dashboard",
@@ -62,11 +64,10 @@ function SideBar({ isCollapsed }) {
       border-r border-gray-200 transition-all bg-white duration-300 ease-in-out
       ${isCollapsed ? 'w-[105px] mt-13' : 'w-64 mt-10'}
       h-screen fixed left-0 top-0 z-40
-      flex flex-col 
     `}>
 
       {/* Navigation Section */}
-      <nav className="flex-1 px-3 py-6">
+      <nav className="flex-1 px-3 py-6 h-[calc(100%-150px)] ">
         {/* Main Menu */}
         <div>
           
@@ -143,7 +144,6 @@ function SideBar({ isCollapsed }) {
           </ul>
         </div>
       </nav>
-
       {/* User Section */}
       <div className="p-4 border-t border-gray-700/50">
         <div className={`
@@ -152,12 +152,12 @@ function SideBar({ isCollapsed }) {
           backdrop-blur-sm border border-gray-600/30
         `}>
           <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center font-semibold text-white shadow-lg flex-shrink-0">
-            V
+            H
           </div>
           
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold  truncate">Vũ FarmGo</p>
+              <p className="text-sm font-semibold  truncate">{user?.userName}</p>
               <p className="text-xs text-gray-400 truncate">Quản lý trang trại</p>
               <div className="flex items-center gap-1 mt-1">
                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>

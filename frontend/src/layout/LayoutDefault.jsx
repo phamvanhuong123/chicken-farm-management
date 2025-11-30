@@ -2,14 +2,17 @@ import { Outlet } from 'react-router-dom'
 import { useState } from 'react'
 import Header from './Header'
 import SideBar from './SideBar'
-import Footer from './Footer'
+
 
 function LayoutDefault() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
-
+  
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed)
   }
+  
+
+ 
 
   return (
     <div className="min-h-screen flex flex-col ">
