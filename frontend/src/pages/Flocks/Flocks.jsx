@@ -6,6 +6,8 @@ import FlockDelete from "./FlockDelete/FlockDelete";
 import Statistical from "./Statistical/Statistical";
 import HeaderFlock from "./HeaderFlock/HeaderFlock";
 import FilterFlock from "./FilterFlock/FilterFlock";
+import FlockDetailModal from "./FlockDetail/FlockDetailModal";
+import EditFlockModal from "./EditFlockModal/EditFlockModal";
 
 // Component FlockRow (Không thay đổi)
 const FlockRow = ({
@@ -16,7 +18,8 @@ const FlockRow = ({
   onView,
   onEdit,
   onDelete,
-  setFlocks
+  setSelectedFlockId,
+  setFlocks, // Truyền hàm setFlocks để cập nhật danh sách
 }) => {
   return (
     <tr key={flock._id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
@@ -36,9 +39,13 @@ const FlockRow = ({
       </td>
       <td className="px-4 py-2 text-center">{getStatusBadge(flock.status)}</td>
       <td className="px-4 py-2 text-center flex justify-center gap-2">
-        <button className="p-2 rounded cursor-pointer hover:bg-gray-200" title="Xem chi tiết" onClick={() => onView(flock._id)}>
-          <Eye size={16} className="w-4 h-4 text-gray-600   " />
-        </button>
+        <button className="p-2 rounded cursor-pointer hover:bg-gray-200" title="Xem chi tiết" onClick={() => { onView(flock._id);       // Giữ nguyên hàm của leader
+           setSelectedFlockId(flock._id);
+       }}
+        >
+          <Eye size={16} className="w-4 h-4 text-gray-600" />
+          </button>
+
         <button className="p-2 rounded cursor-pointer hover:bg-blue-200" title="Chỉnh sửa" onClick={() => onEdit(flock._id)}>
           <Edit size={16} className="w-4 h-4 text-blue-500" />
         </button>
@@ -64,9 +71,16 @@ function Flocks() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterSpecies, setFilterSpecies] = useState("all");
   
+  const [selectedFlockId, setSelectedFlockId] = useState(null);
+
   // === THÊM STATE CHO TÌM KIẾM ===
   const [searchTerm, setSearchTerm] = useState("");
   // ===============================
+
+  // === STATE CHO EDIT MODAL ===
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedFlock, setSelectedFlock] = useState(null);
+  // ============================
 
   // Gọi API (Không thay đổi)
   useEffect(() => {
@@ -159,7 +173,31 @@ function Flocks() {
 
   // Xử lý sự kiện (Không thay đổi)
   const handleView = (id) => console.log("👁️ Xem chi tiết đàn:", id);
-  const handleEdit = (id) => console.log("✏️ Chỉnh sửa đàn:", id);
+  
+  // Xử lý mở modal chỉnh sửa
+  const handleEdit = (id) => {
+    const flock = flocks.find((f) => f._id === id);
+    if (flock) {
+      setSelectedFlock(flock);
+      setIsEditModalOpen(true);
+    }
+  };
+
+  // Xử lý sau khi cập nhật thành công
+  const handleUpdateSuccess = (updatedFlock) => {
+    setFlocks((prev) =>
+      prev.map((f) => (f._id === updatedFlock._id ? updatedFlock : f))
+    );
+    setIsEditModalOpen(false);
+    setSelectedFlock(null);
+  };
+
+  // Đóng modal
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedFlock(null);
+  };
+
   const handleDelete = (id) => console.log("🗑️ Xóa đàn:", id);
 
   return (
@@ -219,7 +257,8 @@ function Flocks() {
                     onView={handleView}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
-                    setFlocks={setFlocks}
+                    setSelectedFlockId={setSelectedFlockId}
+                    setFlocks={setFlocks}   // Truyền hàm setFlocks để cập nhật danh sách
                   />
                 ))}
               </tbody>
@@ -257,6 +296,20 @@ function Flocks() {
           </>
         )}
       </div>
+    {selectedFlockId && (
+      <FlockDetailModal
+      flockId={selectedFlockId}
+      onClose={() => setSelectedFlockId(null)}
+      />
+    )}
+
+      {/* Edit Flock Modal */}
+      <EditFlockModal
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        flockData={selectedFlock}
+        onUpdateSuccess={handleUpdateSuccess}
+      />
     </div>
   );
 }
