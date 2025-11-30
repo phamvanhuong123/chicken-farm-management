@@ -9,9 +9,13 @@ const router = express.Router();
 router.get("/status", (req, res) => {
   res.json({ data: "ok" });
 });
-
-router.use("/flocks", flockRoute);
-router.use("/materials", materialRoute);
+// nhóm route đàn gà (Chỉ định rõ prefix /flocks)
+router.use('/flocks', flockRoute)
+// nhóm route kho, vật tư
+router.use('/materials', materialRoute)
+// nhóm route chuồng
+// nhập chuồng
+router.use('/imports', importRoute)
 router.use("/auth", authRoutes);
 router.use("/areas", areaRoute);
 
