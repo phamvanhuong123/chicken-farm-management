@@ -10,14 +10,14 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { formatDate } from "~/utils/formatter";
+import { formatDate, formatVND, getLastUpperChar } from "~/utils/formatter";
 function StaffCard() {
   const employees = useSelector(state => state.employeeReducer?.employees)
 
 
-  if (!employees){
+  if ([...employees].length === 0){
     return <>
-      CHưa có nhân viên nào
+      Chưa có nhân viên nào
     </>
   }
   return (
@@ -28,11 +28,11 @@ function StaffCard() {
             <div className="flex gap-4">
               <Avatar>
                 <AvatarFallback className="bg-blue-400 text-[16px]">
-                  VH
+                  {getLastUpperChar(employee?.username)}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <CardTitle>{employee?.userName}</CardTitle>
+                <CardTitle>{employee?.username}</CardTitle>
                 <CardDescription>{employee.role == "employee" && "Nhân viên"}</CardDescription>
                 <Badge className="bg-green-200 text-green-700">
                   {employee.status === "working" && "Đang làm việc" }
@@ -52,7 +52,7 @@ function StaffCard() {
               </div>
               <div className="flex gap-2 items-center text-gray-600 mb-1.5">
                 <CircleDollarSign size={15} />
-                <p style={{wordBreak : 'break-word'}}>15.000.000 VNĐ/Tháng</p>
+                <p style={{wordBreak : 'break-word'}}>{formatVND(employee.salary)}Đ</p>
               </div>
             </div>
           </CardContent>
