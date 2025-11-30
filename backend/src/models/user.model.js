@@ -14,7 +14,7 @@ const USER_COLLECTION_SCHEMA = Joi.object({
   otpExpires: Joi.number().allow(null).default(null),
   createdAt: Joi.date().timestamp("javascript").default(Date.now),
   updatedAt: Joi.date().timestamp("javascript").default(null),
-  role: Joi.string().valid("employer", "employee").default("employee"),
+  roleId: Joi.string().valid("employer", "employee").default("employee"),
   status: Joi.string().valid("working", "onLeave").default("working"),
   parentId: Joi.string()
     .pattern(/^[0-9a-fA-F]{24}$/)
@@ -81,7 +81,11 @@ const addEmployee = async (parentId, data) => {
   try {
     const id = data?.idEmployee;
     console.log(id);
-    delete data.idEmployee;
+    Object.keys(data).forEach(fieldName =>{
+      if (!["roleID", "salary"].includes(fieldName)){
+        delete data[fieldName]
+      }
+    })
     //Chỉ cần cật nhật trường parentId là có thêm được nhân viên
 
     const updateUserEmployee = await GET_DB()
