@@ -130,8 +130,22 @@ const getMaterialById = async (id) => {
   return material;
 };
 
+/**
+ * ➕ Thêm vật tư mới
+ */
+const createMaterial = async (data) => {
+  const valid = await materialModel.validateBeforeCreateMaterial(data);
+  const result = await materialModel.create(valid);
+
+  return {
+    _id: result.insertedId,
+    ...valid,
+  };
+};
+
 export const materialService = {
   getAllMaterials,
   importFromExcel,
   getMaterialById,
+  createMaterial,
 };

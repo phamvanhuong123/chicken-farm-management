@@ -26,6 +26,28 @@ const createNew = async (req, res, next) => {
     next(customError);
   }
 };
+
+
+const addEmployee = async (req, res, next) =>{
+  const conditionCorrect = Joi.object({
+    idEmployee : Joi.string().required().strict().trim().pattern(/^[0-9a-fA-F]{24}$/).message("'Your string fails to match the Object Id pattern!'"),
+    roleId : Joi.string().required().valid("employee").strict().trim(),
+    salary : Joi.number().min(0).default(0)
+  })
+  try{
+    await conditionCorrect.validateAsync(req.body, { abortEarly: false });
+    next()
+  }
+  catch(error){
+    const errorMessage = new Error(error).message;
+    const customError = new ApiError(
+      StatusCodes.UNPROCESSABLE_ENTITY,
+      errorMessage
+    );
+    next(customError);
+  }
+}
 export const userValidate = {
   createNew,
+  addEmployee
 };

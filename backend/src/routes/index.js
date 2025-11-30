@@ -7,24 +7,17 @@ import areaRoute from "./v1/area.route.js";
 
 const router = express.Router();
 
-// Status check
 router.get("/status", (req, res) => {
   res.json({ data: "ok" });
 });
-
-// Flocks
-router.use("/flocks", flockRoute);
-
-// Materials
-router.use("/materials", materialRoute);
-
-// Imports
-router.use("/imports", importRoute);
-
-// Auth
+// nhóm route đàn gà (Chỉ định rõ prefix /flocks)
+router.use('/flocks', flockRoute)
+// nhóm route kho, vật tư
+router.use('/materials', materialRoute)
+// nhóm route chuồng
+// nhập chuồng
+router.use('/imports', importRoute)
 router.use("/auth", authRoutes);
-
-// Areas (NEW)
 router.use("/areas", areaRoute);
 
 export const APIs_V1 = router;
