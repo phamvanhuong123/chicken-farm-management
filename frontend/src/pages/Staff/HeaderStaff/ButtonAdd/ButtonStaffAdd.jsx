@@ -25,9 +25,19 @@ import {
 import SearchUser from "./SearchUser/SearchUser";
 import { useForm, Controller } from "react-hook-form";
 import FieldErrorAlert from "~/components/FieldErrorAlert";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchAddEmployeeApi, getLoadingState } from "~/slices/employeeSlice";
+import { getUserState, updateUsers } from "~/slices/authSlice";
+import { toast } from "react-toastify";
+import { ClipLoader } from "react-spinners";
 import { useState } from "react";
 
 function ButtonStaffAdd() {
+  const dispatch = useDispatch();
+  const user = useSelector((state) => getUserState(state));
+  const loading = useSelector((state) => getLoadingState(state));
+  const [dataAddEmployee, setDataAddEmployee] = useState(null);
+
   const {
     handleSubmit,
     register,
@@ -36,17 +46,36 @@ function ButtonStaffAdd() {
     unregister,
     control,
     clearErrors,
-    resetField
-  } = useForm();
-  const handleAddEmployee = (data) => {
-    console.log(data);
-    console.log("THêm sản phẩm thành công")
+    resetField,
+  } = useForm({
+    defaultValues: {
+      roleId: "",
+    },
+  });
+
+  // Sự kiến button Thêm nhân viên
+  const handleAddEmployee = async (data) => {
+    try {
+      await dispatch(
+        fetchAddEmployeeApi({ parentId: user.id, body: data })
+      ).unwrap();
+      toast.success("Thêm nhân viên thành công");
+      resetField("idEmployee");
+      resetField("salary");
+      resetField("roleId");
+      setDataAddEmployee(null);
+      dispatch(updateUsers({id : data.idEmployee, parentId : user.id}))
+    } catch (error) {
+      toast.error("Thêm thất bại " + error.message);
+    }
   };
-  const handleClosed = ()=>{
-    resetField("idEmployee")
-    resetField("salary")
-    resetField("roleId")
-  }
+  //Đóng của sổ
+  const handleClosed = () => {
+    resetField("idEmployee");
+    resetField("salary");
+    resetField("roleId");
+  };
+
   return (
     <>
       <AlertDialog>
@@ -68,8 +97,10 @@ function ButtonStaffAdd() {
                   registerForm={register}
                   errors={errors}
                   clearErrors={clearErrors}
+                  dataAddEmployee={dataAddEmployee}
+                  setDataAddEmployee={setDataAddEmployee}
                 />
-               
+
                 <div className="flex gap-2">
                   <div className="mb-3.5">
                     <Label className="mb-2.5">
@@ -83,7 +114,7 @@ function ButtonStaffAdd() {
                         <div>
                           <Select
                             onValueChange={field.onChange}
-                            value={field.value}
+                            value={field.value ?? ""}
                           >
                             <SelectTrigger className="w-[180px]">
                               <SelectValue placeholder="Chọn vai trò" />
@@ -122,13 +153,21 @@ function ButtonStaffAdd() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-             <AlertDialogCancel asChild>
-                <Button variant="outline" onClick={handleClosed} className="cursor-pointer">
+              <AlertDialogCancel asChild>
+                <Button
+                  variant="outline"
+                  onClick={handleClosed}
+                  className="cursor-pointer"
+                >
                   Huỷ
                 </Button>
               </AlertDialogCancel>
-              <Button className="cursor-pointer bg-green-600 text-white hover:bg-green-700">
+              <Button
+                disabled={loading}
+                className="cursor-pointer bg-green-600 text-white hover:bg-green-700"
+              >
                 Thêm
+                {loading && <ClipLoader color="white" size={15} />}
               </Button>
             </AlertDialogFooter>
           </form>

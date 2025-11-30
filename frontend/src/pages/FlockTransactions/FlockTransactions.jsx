@@ -63,7 +63,7 @@ const PaymentBadge = ({ method }) => {
 export default function FlockTransactions() {
   const now = new Date();
 
-  const [activeTab, setActiveTab] = useState("export");
+  const [activeTab, setActiveTab] = useState("import");
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
 
@@ -126,48 +126,50 @@ export default function FlockTransactions() {
         {/* TAB LIST + BUTTON */}
         <div className="flex justify-between items-center">
           <TabsList>
-            <TabsTrigger value="export" className="cursor-pointer px-4 py-2
-                data-[state=active]:bg-green-500 data-[state=active]:text-white
-                hover:bg-green-100 transition-all duration-150 rounded-md"
+            <TabsTrigger value="import" className="cursor-pointer px-4 py-2 
+                data-[state=active]:bg-blue-500 data-[state=active]:text-white
+                hover:bg-blue-100 transition-all duration-150"
             >
-            Xuất chuồng
-          </TabsTrigger>
+            Nhập chuồng
+            </TabsTrigger>
+
           </TabsList>
 
-          {activeTab === "export" && (
-            <Button className="bg-green-500 hover:bg-green-600 text-white px-4 
-                transition-all duration-150 shadow-sm hover:shadow cursor-pointer rounded-md"
+          {activeTab === "import" && (
+            <Button className="bg-blue-500 hover:bg-blue-600 text-white px-4 
+                transition-all duration-150 shadow-sm hover:shadow cursor-pointer"
             >
-            <Plus size={16} className="mr-1" /> Xuất chuồng mới
+            <Plus size={16} className="mr-1" /> Nhập chuồng mới
             </Button>
+
           )}
+
         </div>
 
         {/* ============================================================== */}
-        {/* EXPORT TAB */}
+        {/* IMPORT TAB */}
         {/* ============================================================== */}
-        <TabsContent value="export" className="mt-4">
-
+        <TabsContent value="import" className="mt-4">
           {/* KPI */}
           <div className="grid grid-cols-3 gap-4">
             <KPICard
-              icon={ArrowUpFromLine}
-              label="Tổng xuất"
-              value={statsExport.totalExport}
-              color="bg-orange-500"
+              icon={ArrowDownToLine}
+              label="Tổng nhập"
+              value={statsImport.totalImport}
+              color="bg-blue-500"
               suffix=" con"
             />
             <KPICard
               icon={DollarSign}
-              label="Doanh thu"
-              value={statsExport.totalRevenue}
+              label="Chi phí nhập"
+              value={statsImport.totalRevenue}
               color="bg-green-500"
               suffix="₫"
             />
             <KPICard
               icon={Clock}
               label="Đơn chờ"
-              value={statsExport.pendingOrders}
+              value={statsImport.pendingOrders}
               color="bg-yellow-500"
             />
           </div>
@@ -181,12 +183,9 @@ export default function FlockTransactions() {
                   <th className="p-3 text-left">Đàn</th>
                   <th className="p-3 text-center">SL</th>
                   <th className="p-3 text-center">TL TB</th>
-                  <th className="p-3 text-center">Giá/kg</th>
-                  <th className="p-3 text-left">Khách hàng</th>
+                  <th className="p-3 text-left">Nhà cung cấp</th>
                   <th className="p-3 text-center">Thanh toán</th>
-                  <th className="p-3 text-right">Doanh thu</th>
                   <th className="p-3 text-center">Trạng thái</th>
-                  <th className="p-3 text-center">Hành động</th>
                 </tr>
               </thead>
             </table>
