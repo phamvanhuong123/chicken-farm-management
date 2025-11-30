@@ -125,3 +125,21 @@ export const getMaterialById = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * [POST] /v1/materials
+ * Thêm vật tư mới
+ */
+export const createMaterial = async (req, res, next) => {
+  try {
+    const newMaterial = await materialService.createMaterial(req.body);
+    
+    res.status(201).json({
+      statusCode: 201,
+      message: "Thêm vật tư thành công.",
+      data: newMaterial,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
