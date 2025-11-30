@@ -96,5 +96,4 @@ function ImportPage() {
     </div>
   );
 }
-
-export default ImportPage;
+export default FlockTransactions
