@@ -175,6 +175,24 @@ const addEmployee = async (parentId, body) => {
   }
   return users
 }
+
+const updateEmployee = async (idEmployee, body) => {
+  
+  try {
+    //tìm kiếm nhân viên rồi cật nhập trường parentId
+    const updateEmployee = await userModel.updateEmployee(idEmployee,body);
+    return updateEmployee;
+  } catch (error) {
+    throw error;
+  }
+}
+const deleteEmployee =  async(idEmployee) =>{
+  try{
+    const res = await userModel.deleteEmployee(idEmployee)
+    return res
+  }
+  catch(error){throw error}
+}
 export const userService = {
   register,
   verifyOTP,
@@ -182,5 +200,7 @@ export const userService = {
   login,
   findUserByParentId,
   addEmployee,
-  getAllUser
+  getAllUser,
+  deleteEmployee,
+  updateEmployee
 };
