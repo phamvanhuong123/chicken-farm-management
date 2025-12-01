@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useImport } from "./hooks/useImport";
-import ImportTabs from "./components/ImportTabs";
-import ImportList from "./components/ImportList";
-import ImportForm from "./components/ImportForm";
-import DashboardKPI from "./components/DashboardKPI";
+import ImportTabs from "../../components/FlockTransactions/ImportTabs";
+import ImportList from "../../components/FlockTransactions/ImportList";
+import ImportForm from "../../components/FlockTransactions/ImportForm";
+import DashboardKPI from "../../components/FlockTransactions/DashboardKPI";
 
 function FlockTransactions() {
   const { imports, loadData, createImport } = useImport();

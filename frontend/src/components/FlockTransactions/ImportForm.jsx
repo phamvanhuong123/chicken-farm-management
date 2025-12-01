@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { areaApi } from "../../../apis/areaApi"; 
+import { areaApi } from "../../apis/areaApi"; 
 
 export default function ImportForm({ onClose, onSubmit }) {
   const [form, setForm] = useState({
