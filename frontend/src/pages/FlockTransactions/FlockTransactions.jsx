@@ -58,39 +58,129 @@ function FlockTransactions() {
             Đây là giao diện xuất chuồng. Tính năng đang được phát triển.
           </p>
         </div>
-      )}
+      </div>
 
-      {/* TAB: NHẬP CHUỒNG */}
-      {tab === "nhap" && (
-        <>
-          {/* BUTTON */}
-          <div className="flex justify-between items-center mt-6">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-700">Danh sách nhập chuồng</h2>
-              <p className="text-sm text-gray-500">Quản lý các lứa gia súc nhập chuồng</p>
-            </div>
-            <button
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center gap-2"
-              onClick={() => setShowForm(true)}
-              disabled={loading}
+      {/* TABS */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+
+        {/* TAB LIST + BUTTON */}
+        <div className="flex justify-between items-center mb-2">
+          <TabsList className="flex gap-2">
+            <TabsTrigger
+              value="import"
+              className="cursor-pointer px-4 py-2 rounded 
+              data-[state=active]:bg-blue-500 data-[state=active]:text-white
+              hover:bg-blue-100 transition-all duration-150"
             >
-              <span>+</span>
-              <span>Nhập chuồng mới</span>
-            </button>
+              Nhập chuồng
+            </TabsTrigger>
+
+            <TabsTrigger
+              value="export"
+              className="cursor-pointer px-4 py-2 rounded 
+              data-[state=active]:bg-green-500 data-[state=active]:text-white
+              hover:bg-green-100 transition-all duration-150"
+            >
+              Xuất chuồng
+            </TabsTrigger>
+          </TabsList>
+
+          {/* BUTTON THÊM */}
+          {activeTab === "import" && (
+            <Button className="bg-blue-500 hover:bg-blue-600 text-white px-4 
+              transition-all duration-150 shadow-sm hover:shadow cursor-pointer">
+              <Plus size={16} className="mr-1" /> Nhập chuồng mới
+            </Button>
+          )}
+
+          {activeTab === "export" && (
+            <Button className="bg-green-500 hover:bg-green-600 text-white px-4 
+              transition-all duration-150 shadow-sm hover:shadow cursor-pointer">
+              <Plus size={16} className="mr-1" /> Xuất chuồng mới
+            </Button>
+          )}
+        </div>
+
+        {/* ==============================================================
+            IMPORT TAB
+        ============================================================== */}
+        <TabsContent value="import" className="mt-4">
+
+          {/* KPI */}
+          <div className="grid grid-cols-3 gap-4">
+            <KPICard icon={ArrowDownToLine} label="Tổng nhập" value={statsImport.totalImport} color="bg-blue-500" suffix=" con" />
+            <KPICard icon={DollarSign} label="Chi phí nhập" value={statsImport.totalRevenue} color="bg-green-500" suffix="₫" />
+            <KPICard icon={Clock} label="Đơn chờ" value={statsImport.pendingOrders} color="bg-yellow-500" />
           </div>
 
-          {/* DANH SÁCH */}
-          <ImportList list={imports} />
+          {/* TABLE */}
+          <div className="bg-white border rounded-lg overflow-hidden mt-4">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-3 text-left">Ngày</th>
+                  <th className="p-3 text-left">Đàn</th>
+                  <th className="p-3 text-center">SL</th>
+                  <th className="p-3 text-center">TL TB</th>
+                  <th className="p-3 text-left">Nhà cung cấp</th>
+                  <th className="p-3 text-center">Thanh toán</th>
+                  <th className="p-3 text-center">Trạng thái</th>
+                </tr>
+              </thead>
 
-          {/* FORM POPUP */}
-          {showForm && (
-            <ImportForm
-              onClose={() => setShowForm(false)}
-              onSubmit={handleCreateImport}
-            />
-          )}
-        </>
-      )}
+              <tbody>
+                <tr>
+                  <td colSpan="7" className="p-4 text-center">
+                    Chưa có dữ liệu nhập chuồng
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </TabsContent>
+
+        {/* ==============================================================
+            EXPORT TAB
+        ============================================================== */}
+        <TabsContent value="export" className="mt-4">
+
+          {/* KPI */}
+          <div className="grid grid-cols-3 gap-4">
+            <KPICard icon={ArrowUpFromLine} label="Tổng xuất" value={statsExport.totalExport} color="bg-orange-500" suffix=" con" />
+            <KPICard icon={DollarSign} label="Doanh thu" value={statsExport.totalRevenue} color="bg-green-500" suffix="₫" />
+            <KPICard icon={Clock} label="Đơn chờ" value={statsExport.pendingOrders} color="bg-yellow-500" />
+          </div>
+
+          {/* TABLE */}
+          <div className="bg-white border rounded-lg overflow-hidden mt-4">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-3 text-left">Ngày</th>
+                  <th className="p-3 text-left">Đàn</th>
+                  <th className="p-3 text-center">SL</th>
+                  <th className="p-3 text-center">TL TB</th>
+                  <th className="p-3 text-center">Giá/kg</th>
+                  <th className="p-3 text-left">Khách hàng</th>
+                  <th className="p-3 text-center">Thanh toán</th>
+                  <th className="p-3 text-right">Doanh thu</th>
+                  <th className="p-3 text-center">Trạng thái</th>
+                  <th className="p-3 text-center">Hành động</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr>
+                  <td colSpan="10" className="p-4 text-center">
+                    Chưa có dữ liệu xuất chuồng
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </TabsContent>
+
+      </Tabs>
     </div>
   );
 }
