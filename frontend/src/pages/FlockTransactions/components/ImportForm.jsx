@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { areaApi } from "../../../apis/areaApi"; 
 
 export default function ImportForm({ onClose, onSubmit }) {
   const [form, setForm] = useState({
@@ -12,12 +13,39 @@ export default function ImportForm({ onClose, onSubmit }) {
 
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const [areas, setAreas] = useState([]);
+  const [loadingAreas, setLoadingAreas] = useState(false);
+  const [areaError, setAreaError] = useState(null);
+
+  useEffect(() => {
+    const fetchAreas = async () => {
+      setLoadingAreas(true);
+      setAreaError(null);
+      try {
+        const response = await areaApi.getList();
+        
+        if (response.data.status === "success" && response.data.data) {
+          setAreas(response.data.data);
+        } else {
+          setAreas([]);
+          setAreaError("Không thể tải danh sách khu nuôi");
+        }
+      } catch (error) {
+        console.error('Error fetching areas:', error);
+        setAreas([]);
+        setAreaError("Lỗi khi tải danh sách khu nuôi");
+      } finally {
+        setLoadingAreas(false);
+      }
+    };
+
+    fetchAreas();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
     
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors({ ...errors, [name]: '' });
     }
@@ -293,7 +321,7 @@ export default function ImportForm({ onClose, onSubmit }) {
             </div>
           </div>
 
-          {/* Khu nuôi */}
+          {/* Khu nuôi - Lấy từ API areas */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Khu nuôi <span className="text-red-500">*</span>
@@ -303,18 +331,30 @@ export default function ImportForm({ onClose, onSubmit }) {
               value={form.barn}
               onChange={handleChange}
               onBlur={handleBlur}
+              disabled={loadingAreas}
               className={`border p-3 rounded w-full focus:ring-2 focus:ring-green-500 focus:border-transparent ${
                 shouldShowError('barn') ? 'border-red-500' : 'border-gray-300'
-              }`}
+              } ${loadingAreas ? 'bg-gray-100 cursor-not-allowed' : ''}`}
             >
-              <option value="">Chọn khu nuôi</option>
-              <option value="Khu A1">Khu A1</option>
-              <option value="Khu B2">Khu B2</option>
-              <option value="Khu C3">Khu C3</option>
-              <option value="Khu D4">Khu D4</option>
+              <option value="">
+                {loadingAreas ? 'Đang tải khu nuôi...' : 'Chọn khu nuôi'}
+              </option>
+              {areas.map((area) => (
+                <option key={area._id} value={area.name}>
+                  {area.name} {area.maxCapacity ? `(Tối đa: ${area.maxCapacity})` : ''}
+                </option>
+              ))}
             </select>
             {shouldShowError('barn') && (
               <p className="text-red-500 text-xs mt-1">{errors.barn}</p>
+            )}
+            {areaError && (
+              <p className="text-red-500 text-xs mt-1">{areaError}</p>
+            )}
+            {areas.length === 0 && !loadingAreas && !areaError && (
+              <p className="text-yellow-600 text-xs mt-1">
+                Không có khu nuôi nào khả dụng
+              </p>
             )}
           </div>
         </div>
@@ -328,11 +368,12 @@ export default function ImportForm({ onClose, onSubmit }) {
             Hủy
           </button>
           <button 
-            className="px-6 py-2.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+            className="px-6 py-2.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             onClick={handleSubmit}
             type="button"
+            disabled={loadingAreas}
           >
-            Tạo đàn
+            {loadingAreas ? 'Đang tải...' : 'Tạo đàn'}
           </button>
         </div>
       </div>

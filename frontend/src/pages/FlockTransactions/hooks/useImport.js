@@ -1,49 +1,51 @@
 import { useState, useEffect } from "react";
 import { importApi } from "../../../apis/importApi";
+import { areaApi } from "../../../apis/areaApi"; 
 
 export function useImport() {
   const [imports, setImports] = useState([]);
+  const [areas, setAreas] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [areaLoading, setAreaLoading] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
-    setError(null);
+    const res = await importApi.getList();
+    setImports(res.data.data.items);
+    setLoading(false);
+  };
+
+  const loadAreas = async () => {
+    setAreaLoading(true);
     try {
-      const res = await importApi.getList();
-      setImports(res.data.data.items || []);
-    } catch (err) {
-      setError("Không thể tải dữ liệu");
-      console.error("Error loading imports:", err);
+      const res = await areaApi.getList();
+      setAreas(res.data.data || []);
+    } catch (error) {
+      console.error("Error loading areas:", error);
+      setAreas([]);
     } finally {
-      setLoading(false);
+      setAreaLoading(false);
     }
   };
 
   const createImport = async (data) => {
-    setError(null);
-    try {
-      const importData = {
-        ...data,
-        status: "Đang nuôi",
-        quantity: parseInt(data.quantity),
-        avgWeight: parseFloat(data.avgWeight)
-      };
-      
-      const res = await importApi.create(importData);
-      await loadData(); 
-    } catch (err) {
-      setError("Không thể tạo lứa nhập chuồng");
-      console.error("Error creating import:", err);
-      throw err;
-    }
+    const res = await importApi.create(data);
+    await loadData();
+    return res;
   };
+
+  useEffect(() => {
+    loadData();
+    loadAreas();
+  }, []);
 
   return {
     imports,
+    areas,
     loading,
-    error,
+    areaLoading,
     loadData,
+    loadAreas,
     createImport,
   };
 }

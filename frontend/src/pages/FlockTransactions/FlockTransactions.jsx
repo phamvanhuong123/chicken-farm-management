@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { useImport } from "../FlockTransactions/hooks/useImport";
-import ImportTabs from "../FlockTransactions/components/ImportTabs";
-import ImportList from "../FlockTransactions/components/ImportList";
-import ImportForm from "../FlockTransactions/components/ImportForm";
-import DashboardKPI from "../FlockTransactions/components/DashboardKPI";
+import { useImport } from "./hooks/useImport";
+import ImportTabs from "./components/ImportTabs";
+import ImportList from "./components/ImportList";
+import ImportForm from "./components/ImportForm";
+import DashboardKPI from "./components/DashboardKPI";
 
-function ImportPage() {
+function FlockTransactions() {
   const { imports, loadData, createImport } = useImport();
   const [showForm, setShowForm] = useState(false);
   const [tab, setTab] = useState("nhap");
@@ -19,8 +19,6 @@ function ImportPage() {
 
   useEffect(() => {
     loadData();
-    // TODO: Gọi API lấy dashboard data từ analytics.service
-    // loadDashboardData();
   }, []);
 
   const handleCreateImport = async (data) => {
@@ -96,4 +94,5 @@ function ImportPage() {
     </div>
   );
 }
-export default FlockTransactions
+
+export default FlockTransactions; // Đảm bảo export đúng
