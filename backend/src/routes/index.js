@@ -4,6 +4,7 @@ import materialRoute from './v1/material.route.js'
 import importRoute from './v1/import.route.js'
 import authRoutes from './v1/auth.routes.js'
 import transactionRoute from './v1/transaction.route.js'
+import areaRoute from './v1/area.route'
 const router = express.Router()
 
 router.get("/status", (req, res) => {
