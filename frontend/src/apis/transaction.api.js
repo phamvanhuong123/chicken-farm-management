@@ -10,6 +10,20 @@ export const transactionAPI = {
   // Lấy thống kê KPI theo tháng
   getStats: (params = {}) => axios.get(`${API_BASE_URL}/stats`, { params }),
 
+  // Lấy chi tiết giao dịch
+  getById: (id) => axios.get(`${API_BASE_URL}/${id}`),
+
   // Tạo đơn xuất chuồng
   createExport: (data) => axios.post(`${API_BASE_URL}/export`, data),
+
+  // Cập nhật trạng thái
+updateStatus: (id, data) =>
+  axios.patch(`${API_BASE_URL}/${id}/status`, data, {
+    headers: { "Content-Type": "application/json" }
+  }),
+
+  // Xuất hóa đơn PDF
+  exportInvoice: (id) =>
+    axios.get(`${API_BASE_URL}/${id}/invoice`, { responseType: "blob" }),
+
 };
