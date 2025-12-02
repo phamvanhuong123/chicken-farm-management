@@ -176,7 +176,19 @@ function ExportTransactions({ isOpen, onClose, flocks, onExportSuccess }) {
     setLoading(true);
     try {
       // 1. Tạo ExportRecord (hiện tại)
-      const exportData = { /* ... dữ liệu hiện có */ };
+      const exportData = {
+        transactionDate: formData.transactionDate,
+        flockId: formData.flockId,
+        quantity: parseInt(formData.quantity),
+        avgWeight: parseFloat(formData.avgWeight),
+        pricePerKg: parseFloat(formData.pricePerKg),
+        customerName: formData.customerName,
+        transactionType: formData.transactionType,
+        paymentMethod: formData.paymentMethod,
+        note: formData.note,
+        totalRevenue: calculateRevenue(),
+        status: "Đang xử lý" 
+      };      
       const exportRes = await transactionAPI.createExport(exportData);
       
       // 2. Cập nhật Flock (giảm currentCount)
@@ -195,13 +207,27 @@ function ExportTransactions({ isOpen, onClose, flocks, onExportSuccess }) {
       
       // 3. Cập nhật Area (giảm currentCapacity)
       if (selectedFlock && selectedFlock.areaId) {
-        const areaRes = await areaApi.getDetail(selectedFlock.areaId);
-        if (areaRes.data) {
-          const area = areaRes.data.data || areaRes.data;
-          const updatedAreaData = {
-            currentCapacity: Math.max(0, (area.currentCapacity || 0) - parseInt(formData.quantity))
-          };
-          await areaApi.update(selectedFlock.areaId, updatedAreaData);
+        try {
+          // Lấy danh sách areas và tìm area có code = areaId
+          const areasRes = await areaApi.getAll();
+          const areas = areasRes.data?.data || areasRes.data || [];
+          
+          // Tìm area bằng code (A001, A002, ...)
+          const area = areas.find(a => a.code === selectedFlock.areaId);
+          
+          if (area) {
+            const updatedAreaData = {
+              currentCapacity: Math.max(0, (area.currentCapacity || 0) - parseInt(formData.quantity))
+            };
+            
+            // Gọi API cập nhật với _id thực của area
+            await areaApi.update(area._id, updatedAreaData);
+          } else {
+            console.warn(`Không tìm thấy area với code: ${selectedFlock.areaId}`);
+          }
+        } catch (areaError) {
+          console.error("Lỗi khi cập nhật area:", areaError);
+          // Không throw error để không ảnh hưởng đến tạo export
         }
       }
       

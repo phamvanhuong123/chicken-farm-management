@@ -5,7 +5,7 @@ import { transactionAPI } from "../../apis/transaction.api";
 import ImportTabs from "../../components/FlockTransactions/ImportTabs";
 import ImportList from "../../components/FlockTransactions/ImportList";
 import ImportForm from "../../components/FlockTransactions/ImportForm";
-import ExportFlockModal from "../../components/FlockTransactions/ExportFlockModal";
+import ExportTransactions from "../../components/FlockTransactions/ExportFlockModal";
 import DashboardKPI from "../../components/FlockTransactions/DashboardKPI";
 import MonthYearFilter from "../../components/FlockTransactions/MonthYearFilter";
 import Pagination from "../../components/FlockTransactions/Pagination";
@@ -312,7 +312,7 @@ function FlockTransactions() {
           )}
 
           {/* MODAL XUẤT CHUỒNG */}
-          <ExportFlockModal
+          <ExportTransactions 
             isOpen={showExportForm}
             onClose={() => setShowExportForm(false)}
             flocks={getActiveFlocks()}
