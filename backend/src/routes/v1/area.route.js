@@ -4,7 +4,7 @@ import {
   getOverviewController,
   getAreaList,
   exportAreas,
-  updateArea, // ⭐ NEW
+  updateArea, // NEW
 } from "../../controllers/area.controller.js";
 
 const router = express.Router();
@@ -16,6 +16,6 @@ router.get("/", getAreaList); // Danh sách + filter + paging
 router.get("/export", exportAreas); // Xuất Excel
 
 // Team 135 - Chỉnh sửa khu nuôi
-router.put("/:id", updateArea); // ⭐ NEW
+router.put("/:id", updateArea); //  NEW
 
 export default router;
