@@ -6,13 +6,10 @@ import ImportTabs from "../../components/FlockTransactions/ImportTabs";
 import ImportList from "../../components/FlockTransactions/ImportList";
 import ImportForm from "../../components/FlockTransactions/ImportForm";
 import ExportFlockModal from "../../components/FlockTransactions/ExportFlockModal";
-import InvoicePreviewModal from "../../components/FlockTransactions/InvoicePreviewModal";
 import DashboardKPI from "../../components/FlockTransactions/DashboardKPI";
 import MonthYearFilter from "../../components/FlockTransactions/MonthYearFilter";
 import Pagination from "../../components/FlockTransactions/Pagination";
 import { flockApi } from "../../apis/flockApi";
-import { Eye, Printer } from "lucide-react";
-import toast from "react-hot-toast";
 
 function FlockTransactions() {
   const { imports, loadData, createImport, areaCurrentCounts } = useImport();
@@ -21,7 +18,7 @@ function FlockTransactions() {
   const [tab, setTab] = useState("nhap");
   const [loading, setLoading] = useState(false);
   const [exports, setExports] = useState([]);
-
+  
   // State cho lọc tháng
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -47,8 +44,6 @@ function FlockTransactions() {
   // State cho dữ liệu hiển thị sau khi phân trang
   const [pagedImports, setPagedImports] = useState([]);
   const [pagedExports, setPagedExports] = useState([]);
-  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] = useState(null);
 
   // Load dữ liệu khi component mount
   useEffect(() => {
@@ -193,34 +188,7 @@ function FlockTransactions() {
       console.error("Error handling export success:", error);
     }
   };
-  // Xem trước hóa đơn (mở popup)
-  const handleOpenInvoice = (transaction) => {
-    setSelectedTransaction(transaction);
-    setShowInvoiceModal(true);
-  };
-  const mapStatus = (label) => {
-  switch (label) {
-    case "Hoàn thành":
-      return "Hoàn thành";
-    case "Đã hủy":
-      return "Đã hủy";
-    default:
-      return "Đang xử lý";
-  }
-};
 
-  const handleUpdateStatus = async (id, newStatus) => {
-  try {
-    await transactionAPI.updateStatus(id, { status: mapStatus(newStatus) });
-
-    toast.success(`Đã cập nhật trạng thái: ${newStatus}`);
-
-    await loadExports();
-  } catch (error) {
-    console.error("Status update failed:", error);
-    toast.error("Không thể cập nhật trạng thái.");
-  }
-};
   // Xử lý phân trang cho imports
   const handleImportPageChange = (page) => {
     setPagination(prev => ({
@@ -313,7 +281,6 @@ function FlockTransactions() {
                   <th className="py-4 px-4 font-medium text-right">Giá/kg</th>
                   <th className="py-4 px-4 font-medium text-right">Doanh thu</th>
                   <th className="py-4 px-4 font-medium">Trạng thái</th>
-                  <th className="py-4 px-4 font-medium text-center">Hành động</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -325,11 +292,7 @@ function FlockTransactions() {
                   </tr>
                 ) : (
                   pagedExports.map((item) => (
-                    <ExportItem
-                      key={item._id}
-                      item={item}
-                      onPreviewInvoice={handleOpenInvoice}
-                    />
+                    <ExportItem key={item._id} item={item} />
                   ))
                 )}
               </tbody>
@@ -357,14 +320,6 @@ function FlockTransactions() {
           />
         </>
       )}
-        {showInvoiceModal && selectedTransaction && (
-          <InvoicePreviewModal
-            isOpen={showInvoiceModal}
-            onClose={() => setShowInvoiceModal(false)}
-            transaction={selectedTransaction}
-            onStatusChange={handleUpdateStatus}
-          />
-        )}
 
       {/* TAB: NHẬP CHUỒNG */}
       {tab === "nhap" && (
@@ -417,7 +372,7 @@ function FlockTransactions() {
 }
 
 // Component cho item xuất chuồng
-function ExportItem({ item, onPreviewInvoice }) {
+function ExportItem({ item }) {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
@@ -438,10 +393,6 @@ function ExportItem({ item, onPreviewInvoice }) {
   const calculateRevenue = (item) => {
     if (item.totalRevenue) return item.totalRevenue;
     return (item.quantity * item.avgWeight * item.pricePerKg) || 0;
-  };
-   // 👁 Xem chi tiết
-  const handleView = () => {
-    alert("Xem chi tiết đơn: " + item._id);
   };
 
   return (
@@ -484,30 +435,8 @@ function ExportItem({ item, onPreviewInvoice }) {
            item.status === "Hoàn thành" ? "Hoàn thành" : "Đã hủy"}
         </span>
       </td>
-       {/* HÀNH ĐỘNG */}
-      <td className="py-4 px-4 text-center">
-        <div className="flex items-center justify-center gap-3">
-
-          {/* 👁 Xem */}
-          <button
-            onClick={handleView}
-            className="text-blue-600 hover:text-blue-800 transition-colors"
-          >
-            <Eye size={18} />
-          </button>
-
-          {/* 🖨 In PDF */}
-          <button
-            onClick={() => onPreviewInvoice(item)}
-            className="text-gray-600 hover:text-gray-800 transition-colors"
-          >
-            <Printer size={18} />
-          </button>
-        </div>
-      </td>
     </tr>
   );
 }
-
 
 export default FlockTransactions;
