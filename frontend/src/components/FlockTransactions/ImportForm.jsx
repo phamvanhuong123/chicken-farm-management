@@ -1,7 +1,8 @@
+// src/components/FlockTransactions/ImportForm.jsx
 import { useState, useEffect } from "react";
-import { areaApi } from "../../apis/areaApi"; 
+import { areaApi } from "../../apis/areaApi";
 
-export default function ImportForm({ onClose, onSubmit }) {
+export default function ImportForm({ onClose, onSubmit, areaCurrentCounts = {} }) { 
   const [form, setForm] = useState({
     importDate: "",
     supplier: "",
@@ -16,6 +17,9 @@ export default function ImportForm({ onClose, onSubmit }) {
   const [areas, setAreas] = useState([]);
   const [loadingAreas, setLoadingAreas] = useState(false);
   const [areaError, setAreaError] = useState(null);
+  
+  // Thêm state để theo dõi khu nuôi được chọn
+  const [selectedArea, setSelectedArea] = useState(null);
 
   useEffect(() => {
     const fetchAreas = async () => {
@@ -25,7 +29,8 @@ export default function ImportForm({ onClose, onSubmit }) {
         const response = await areaApi.getList();
         
         if (response.data.status === "success" && response.data.data) {
-          setAreas(response.data.data);
+          const areaData = response.data.data;
+          setAreas(areaData);
         } else {
           setAreas([]);
           setAreaError("Không thể tải danh sách khu nuôi");
@@ -42,9 +47,25 @@ export default function ImportForm({ onClose, onSubmit }) {
     fetchAreas();
   }, []);
 
+  // Hàm lấy số lượng hiện tại trong khu nuôi từ props
+  const getCurrentCountInBarn = (barnName) => {
+    return areaCurrentCounts?.[barnName] || 0;
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
+    
+    // Khi chọn khu nuôi, lấy thông tin khu nuôi được chọn
+    if (name === "barn") {
+      const selected = areas.find(area => area.name === value);
+      setSelectedArea(selected);
+      
+      // Kiểm tra lại số lượng nếu đã có
+      if (form.quantity) {
+        validateField('quantity', form.quantity, selected);
+      }
+    }
     
     if (errors[name]) {
       setErrors({ ...errors, [name]: '' });
@@ -54,10 +75,15 @@ export default function ImportForm({ onClose, onSubmit }) {
   const handleBlur = (e) => {
     const { name, value } = e.target;
     setTouched({ ...touched, [name]: true });
-    validateField(name, value);
+    
+    if (name === "quantity" && selectedArea) {
+      validateField(name, value, selectedArea);
+    } else {
+      validateField(name, value);
+    }
   };
 
-  const validateField = (name, value) => {
+  const validateField = (name, value, selectedAreaForValidation = selectedArea) => {
     let error = '';
 
     switch (name) {
@@ -88,6 +114,15 @@ export default function ImportForm({ onClose, onSubmit }) {
           error = 'Số lượng phải lớn hơn 0';
         } else if (value > 100000) {
           error = 'Số lượng không được vượt quá 100,000';
+        } else if (selectedAreaForValidation && selectedAreaForValidation.maxCapacity) {
+          const maxCapacity = parseInt(selectedAreaForValidation.maxCapacity);
+          const currentCount = getCurrentCountInBarn(selectedAreaForValidation.name);
+          const requestedQuantity = parseInt(value);
+          
+          if (currentCount + requestedQuantity > maxCapacity) {
+            const remainingCapacity = maxCapacity - currentCount;
+            error = `Số lượng vượt quá sức chứa. Khu nuôi còn trống: ${remainingCapacity}`;
+          }
         }
         break;
 
@@ -140,13 +175,22 @@ export default function ImportForm({ onClose, onSubmit }) {
       newErrors.breed = 'Giống không được để trống';
     }
 
-    // Validate Số lượng
+    // Validate Số lượng với ràng buộc khu nuôi
     if (!form.quantity) {
       newErrors.quantity = 'Số lượng không được để trống';
     } else if (form.quantity <= 0) {
       newErrors.quantity = 'Số lượng phải lớn hơn 0';
     } else if (form.quantity > 100000) {
       newErrors.quantity = 'Số lượng không được vượt quá 100,000';
+    } else if (selectedArea && selectedArea.maxCapacity) {
+      const maxCapacity = parseInt(selectedArea.maxCapacity);
+      const currentCount = getCurrentCountInBarn(selectedArea.name);
+      const requestedQuantity = parseInt(form.quantity);
+      
+      if (currentCount + requestedQuantity > maxCapacity) {
+        const remainingCapacity = maxCapacity - currentCount;
+        newErrors.quantity = `Số lượng vượt quá sức chứa. Khu nuôi còn trống: ${remainingCapacity}`;
+      }
     }
 
     // Validate Trọng lượng TB
@@ -192,6 +236,17 @@ export default function ImportForm({ onClose, onSubmit }) {
   // Helper function to check if should show error
   const shouldShowError = (fieldName) => {
     return touched[fieldName] && errors[fieldName];
+  };
+
+  // Tính toán số lượng còn trống trong khu nuôi được chọn
+  const getRemainingCapacity = () => {
+    if (!selectedArea) return null;
+    
+    const maxCapacity = parseInt(selectedArea.maxCapacity) || 0;
+    const currentCount = getCurrentCountInBarn(selectedArea.name);
+    const remaining = maxCapacity - currentCount;
+    
+    return remaining >= 0 ? remaining : 0;
   };
 
   return (
@@ -284,7 +339,7 @@ export default function ImportForm({ onClose, onSubmit }) {
                 value={form.quantity}
                 placeholder="0" 
                 min="1"
-                max="100000"
+                max={selectedArea ? selectedArea.maxCapacity || "100000" : "100000"}
                 onChange={handleChange}
                 onBlur={handleBlur}
                 onKeyPress={handleSubmitWithEnter}
@@ -294,6 +349,11 @@ export default function ImportForm({ onClose, onSubmit }) {
               />
               {shouldShowError('quantity') && (
                 <p className="text-red-500 text-xs mt-1">{errors.quantity}</p>
+              )}
+              {selectedArea && form.quantity && !errors.quantity && (
+                <p className="text-green-600 text-xs mt-1">
+                  Còn trống: {getRemainingCapacity()} / {selectedArea.maxCapacity}
+                </p>
               )}
             </div>
             <div>
@@ -339,11 +399,24 @@ export default function ImportForm({ onClose, onSubmit }) {
               <option value="">
                 {loadingAreas ? 'Đang tải khu nuôi...' : 'Chọn khu nuôi'}
               </option>
-              {areas.map((area) => (
-                <option key={area._id} value={area.name}>
-                  {area.name} {area.maxCapacity ? `(Tối đa: ${area.maxCapacity})` : ''}
-                </option>
-              ))}
+              {areas.map((area) => {
+                const currentCount = getCurrentCountInBarn(area.name);
+                const maxCapacity = area.maxCapacity || 0;
+                const remaining = maxCapacity - currentCount;
+                const isFull = remaining <= 0;
+                
+                return (
+                  <option 
+                    key={area._id} 
+                    value={area.name}
+                    disabled={isFull}
+                    className={isFull ? 'bg-gray-100 text-gray-400' : ''}
+                  >
+                    {area.name} {maxCapacity ? `(Tối đa: ${maxCapacity}, Còn trống: ${remaining >= 0 ? remaining : 0})` : ''}
+                    {isFull && ' - ĐẦY'}
+                  </option>
+                );
+              })}
             </select>
             {shouldShowError('barn') && (
               <p className="text-red-500 text-xs mt-1">{errors.barn}</p>
@@ -371,7 +444,7 @@ export default function ImportForm({ onClose, onSubmit }) {
             className="px-6 py-2.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             onClick={handleSubmit}
             type="button"
-            disabled={loadingAreas}
+            disabled={loadingAreas || !selectedArea}
           >
             {loadingAreas ? 'Đang tải...' : 'Tạo đàn'}
           </button>

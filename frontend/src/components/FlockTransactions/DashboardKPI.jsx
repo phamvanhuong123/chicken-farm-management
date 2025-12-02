@@ -1,4 +1,87 @@
-export default function DashboardKPI({ data }) {
+import { useState, useEffect } from "react";
+import { importApi } from "../../apis/importApi";
+import { transactionAPI } from "../../apis/transaction.api";
+
+export default function DashboardKPI({ selectedMonth }) {
+  const [dashboardData, setDashboardData] = useState({
+    totalImport: 0,
+    totalExport: 0,
+    revenue: 0,
+    pendingOrders: 0
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (selectedMonth) {
+      loadDashboardData();
+    }
+  }, [selectedMonth]);
+
+  const loadDashboardData = async () => {
+    setLoading(true);
+    try {
+      const [year, month] = selectedMonth.split('-');
+      
+      // Tải dữ liệu imports cho tháng được chọn
+      const importResponse = await importApi.getList();
+      const allImports = importResponse.data.data?.items || [];
+      
+      // Lọc imports theo tháng
+      const filteredImports = allImports.filter(imp => {
+        if (!imp.importDate) return false;
+        const importDate = new Date(imp.importDate);
+        return importDate.getFullYear() === parseInt(year) && 
+               importDate.getMonth() + 1 === parseInt(month);
+      });
+      
+      // Tính tổng nhập tháng
+      const totalImport = filteredImports.reduce((sum, imp) => sum + (imp.quantity || 0), 0);
+
+      // Tải dữ liệu exports (transactions) cho tháng được chọn
+      const exportResponse = await transactionAPI.getAll();
+      const allExports = exportResponse.data.data?.items || [];
+      
+      // Lọc exports theo tháng
+      const filteredExports = allExports.filter(exp => {
+        const transactionDate = exp.transactionDate || exp.exportDate;
+        if (!transactionDate) return false;
+        const date = new Date(transactionDate);
+        return date.getFullYear() === parseInt(year) && 
+               date.getMonth() + 1 === parseInt(month);
+      });
+      
+      // Tính tổng xuất tháng
+      const totalExport = filteredExports.reduce((sum, exp) => sum + (exp.quantity || 0), 0);
+
+      // Tính tổng doanh thu tháng
+      const revenue = filteredExports.reduce((sum, exp) => {
+        const quantity = exp.quantity || 0;
+        const avgWeight = exp.avgWeight || 0;
+        const pricePerKg = exp.pricePerKg || 0;
+        return sum + (quantity * avgWeight * pricePerKg);
+      }, 0);
+
+      // Tính tổng đơn chờ xử lý
+      const pendingOrders = filteredExports.filter(exp => {
+        const status = exp.status?.toLowerCase();
+        return status === 'pending' || status === 'đang xử lý' || status === 'chờ xử lý';
+      }).length;
+
+      setDashboardData({
+        totalImport,
+        totalExport,
+        revenue,
+        pendingOrders
+      });
+
+    } catch (error) {
+      console.error("Error loading dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
@@ -10,72 +93,177 @@ export default function DashboardKPI({ data }) {
     return new Intl.NumberFormat('vi-VN').format(number);
   };
 
+  const getCurrentMonthLabel = () => {
+    const [year, month] = selectedMonth.split('-');
+    return `Tháng ${month}/${year}`;
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      {/* Tổng nhập tháng */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-600">Tổng nhập tháng</p>
-            <p className="text-2xl font-bold text-gray-900 mt-2">
-              {formatNumber(data.totalImport)}
-            </p>
+    <div className="mb-8">
+      {/* Header với tiêu đề */}
+      <div className="mb-6">
+        <h2 className="text-xl font-bold text-gray-800">Tổng quan tháng</h2>
+        <p className="text-sm text-gray-500 mt-1">
+          Thống kê nhập/xuất chuồng {getCurrentMonthLabel()}
+        </p>
+      </div>
+
+      {/* Grid KPI */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Tổng nhập tháng */}
+        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Tổng nhập tháng</p>
+              <p className="text-2xl font-bold text-gray-900 mt-2">
+                {loading ? (
+                  <span className="inline-block w-16 h-8 bg-gray-200 rounded animate-pulse"></span>
+                ) : (
+                  formatNumber(dashboardData.totalImport)
+                )}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Số lượng gà nhập chuồng</p>
+            </div>
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </div>
           </div>
-          <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
+        </div>
+
+        {/* Tổng xuất tháng */}
+        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Tổng xuất tháng</p>
+              <p className="text-2xl font-bold text-gray-900 mt-2">
+                {loading ? (
+                  <span className="inline-block w-16 h-8 bg-gray-200 rounded animate-pulse"></span>
+                ) : (
+                  formatNumber(dashboardData.totalExport)
+                )}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Số lượng gà xuất chuồng</p>
+            </div>
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Doanh thu tháng */}
+        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Doanh thu tháng</p>
+              <p className="text-2xl font-bold text-gray-900 mt-2">
+                {loading ? (
+                  <span className="inline-block w-24 h-8 bg-gray-200 rounded animate-pulse"></span>
+                ) : (
+                  formatCurrency(dashboardData.revenue)
+                )}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Từ việc xuất chuồng</p>
+            </div>
+            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Đơn chờ xử lý */}
+        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Đơn chờ xử lý</p>
+              <p className="text-2xl font-bold text-gray-900 mt-2">
+                {loading ? (
+                  <span className="inline-block w-16 h-8 bg-gray-200 rounded animate-pulse"></span>
+                ) : (
+                  formatNumber(dashboardData.pendingOrders)
+                )}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Đơn xuất chưa xử lý</p>
+            </div>
+            <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Trong xuất tháng */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-600">Trong xuất tháng</p>
-            <p className="text-2xl font-bold text-gray-900 mt-2">
-              {formatNumber(data.totalExport)}
-            </p>
-          </div>
-          <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-            </svg>
-          </div>
-        </div>
-      </div>
-
-      {/* Doanh thu tháng */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-600">Doanh thu tháng</p>
-            <p className="text-2xl font-bold text-gray-900 mt-2">
-              {formatCurrency(data.revenue)}
-            </p>
-          </div>
-          <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-            <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-            </svg>
+      {/* Thông tin thống kê bổ sung */}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-blue-700">Tỷ lệ xuất/nhập</p>
+              <p className="text-lg font-bold text-blue-900 mt-1">
+                {loading ? (
+                  <span className="inline-block w-12 h-6 bg-blue-200 rounded animate-pulse"></span>
+                ) : dashboardData.totalImport > 0 ? (
+                  `${((dashboardData.totalExport / dashboardData.totalImport) * 100).toFixed(1)}%`
+                ) : (
+                  '0%'
+                )}
+              </p>
+            </div>
+            <div className="w-8 h-8 bg-blue-200 rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Đàn hiện có */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-600">Đàn hiện có</p>
-            <p className="text-2xl font-bold text-gray-900 mt-2">
-              {formatNumber(data.activeFarms)}
-            </p>
+        <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-green-700">Doanh thu trung bình</p>
+              <p className="text-lg font-bold text-green-900 mt-1">
+                {loading ? (
+                  <span className="inline-block w-20 h-6 bg-green-200 rounded animate-pulse"></span>
+                ) : dashboardData.totalExport > 0 ? (
+                  formatCurrency(dashboardData.revenue / dashboardData.totalExport)
+                ) : (
+                  formatCurrency(0)
+                )}
+              </p>
+            </div>
+            <div className="w-8 h-8 bg-green-200 rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
           </div>
-          <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-            <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
+        </div>
+
+        <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-yellow-700">Tỷ lệ chờ xử lý</p>
+              <p className="text-lg font-bold text-yellow-900 mt-1">
+                {loading ? (
+                  <span className="inline-block w-12 h-6 bg-yellow-200 rounded animate-pulse"></span>
+                ) : dashboardData.totalExport > 0 ? (
+                  `${((dashboardData.pendingOrders / dashboardData.totalExport) * 100).toFixed(1)}%`
+                ) : (
+                  '0%'
+                )}
+              </p>
+            </div>
+            <div className="w-8 h-8 bg-yellow-200 rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
           </div>
         </div>
       </div>
