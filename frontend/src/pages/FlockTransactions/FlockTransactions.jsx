@@ -17,203 +17,73 @@ function FlockTransactions() {
   const [showExportForm, setShowExportForm] = useState(false);
   const [tab, setTab] = useState("nhap");
   const [loading, setLoading] = useState(false);
-  const [exports, setExports] = useState([]);
-  
-  // State cho lọc tháng
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
-
-  // State cho phân trang
-  const [pagination, setPagination] = useState({
-    importPage: 1,
-    exportPage: 1,
-    rowsPerPage: 10,
-    totalImportRows: 0,
-    totalExportRows: 0
-  });
-
-  // State cho flocks (đàn gà)
+  const [transactions, setTransactions] = useState([]);
   const [flocks, setFlocks] = useState([]);
-  
-  // State cho imports và exports đã lọc
-  const [filteredImports, setFilteredImports] = useState([]);
-  const [filteredExports, setFilteredExports] = useState([]);
 
-  // State cho dữ liệu hiển thị sau khi phân trang
-  const [pagedImports, setPagedImports] = useState([]);
-  const [pagedExports, setPagedExports] = useState([]);
+  const [stats, setStats] = useState({
+    totalImport: 0,
+    totalExport: 0,
+    totalRevenue: 0,
+    pendingOrders: 0,
+  });
 
-  // Load dữ liệu khi component mount
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+  const formatDate = (d) => new Date(d).toLocaleDateString("vi-VN");
+
+  /* ============================================================
+      FETCH DATA
+  ============================================================= */
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const transRes = await transactionAPI.getAll({
+        type: activeTab,
+        month: selectedMonth,
+        year: selectedYear,
+      });
+
+      setTransactions(transRes.data.data.items || []);
+
+      const statsRes = await transactionAPI.getStats({
+        month: selectedMonth,
+        year: selectedYear,
+      });
+
+      setStats(statsRes.data.data || {});
+    } catch (err) {
+      toast.error("Lỗi tải dữ liệu");
+    }
+    setLoading(false);
+  };
+
+  const fetchFlocks = async () => {
+    try {
+      const res = await axios.get("http://localhost:8071/v1/flocks");
+      setFlocks(res.data.data || []);
+    } catch (err) {
+      console.log("Lỗi tải đàn:", err);
+    }
+  };
+
   useEffect(() => {
-    loadAllData();
+    fetchData();
+  }, [activeTab, selectedMonth, selectedYear]);
+
+  useEffect(() => {
+    fetchFlocks();
   }, []);
 
-  // Filter dữ liệu khi selectedMonth thay đổi
-  useEffect(() => {
-    if (imports.length > 0 || exports.length > 0 || flocks.length > 0) {
-      filterDataByMonth();
-    }
-  }, [selectedMonth, imports, exports, flocks]);
-
-  // Cập nhật dữ liệu phân trang khi filtered data thay đổi
-  useEffect(() => {
-    updatePagedData();
-  }, [filteredImports, filteredExports, pagination]);
-
-  // Hàm lọc flocks đang nuôi
-  const getActiveFlocks = () => {
-    return flocks.filter(f => 
-      f.status === "Raising" || f.status === "Đang nuôi"
-    );
+  const handleExportSuccess = (newTrans) => {
+    setTransactions((prev) => [newTrans, ...prev]);
+    fetchData();
+    fetchFlocks();
   };
 
-  // Hàm load flocks từ API
-  const loadFlocks = async () => {
-    try {
-      const response = await flockApi.getList();
-      const flockData = Array.isArray(response.data?.data) 
-        ? response.data.data 
-        : [];
-      
-      const filteredFlocks = flockData.filter(f => 
-        f.status === "Raising" || f.status === "Đang nuôi"
-      );
-      
-      setFlocks(filteredFlocks);
-    } catch (error) {
-      console.error("Error loading flocks:", error);
-      setFlocks([]);
-    }
-  };
-
-  const updatePagedData = () => {
-    const { importPage, exportPage, rowsPerPage } = pagination;
-    
-    // Tính toán dữ liệu phân trang cho imports
-    const importStartIndex = (importPage - 1) * rowsPerPage;
-    const importEndIndex = importStartIndex + rowsPerPage;
-    const currentImports = filteredImports.slice(importStartIndex, importEndIndex);
-    setPagedImports(currentImports);
-    
-    // Tính toán dữ liệu phân trang cho exports
-    const exportStartIndex = (exportPage - 1) * rowsPerPage;
-    const exportEndIndex = exportStartIndex + rowsPerPage;
-    const currentExports = filteredExports.slice(exportStartIndex, exportEndIndex);
-    setPagedExports(currentExports);
-  };
-
-  const loadAllData = async () => {
-    setLoading(true);
-    try {
-      await loadData();
-      await loadExports();
-      await loadFlocks();
-    } catch (error) {
-      console.error("Error loading data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Lọc dữ liệu theo tháng
-  const filterDataByMonth = () => {
-    const [year, month] = selectedMonth.split('-');
-    
-    // Lọc imports
-    const filteredImportData = imports.filter(imp => {
-      if (!imp.importDate) return false;
-      const importDate = new Date(imp.importDate);
-      return importDate.getFullYear() === parseInt(year) && 
-             importDate.getMonth() + 1 === parseInt(month);
-    });
-    setFilteredImports(filteredImportData);
-
-    // Lọc exports
-    const filteredExportData = exports.filter(exp => {
-      const transactionDate = exp.transactionDate || exp.exportDate;
-      if (!transactionDate) return false;
-      const date = new Date(transactionDate);
-      return date.getFullYear() === parseInt(year) && 
-             date.getMonth() + 1 === parseInt(month);
-    });
-    setFilteredExports(filteredExportData);
-    
-    // Cập nhật tổng số hàng
-    setPagination(prev => ({
-      ...prev,
-      totalImportRows: filteredImportData.length,
-      totalExportRows: filteredExportData.length,
-      importPage: 1,
-      exportPage: 1
-    }));
-  };
-
-  // Tải danh sách xuất chuồng
-  const loadExports = async () => {
-    try {
-      const response = await transactionAPI.getAll();
-      const exportData = response.data?.data?.items || response.data?.items || [];
-      setExports(exportData);
-    } catch (error) {
-      console.error("Error loading exports:", error);
-      setExports([]);
-    }
-  };
-
-  // Xử lý tạo nhập chuồng
-  const handleCreateImport = async (data) => {
-    setLoading(true);
-    try {
-      await createImport(data);
-      alert("Thêm lứa nhập chuồng thành công.");
-      setShowImportForm(false);
-      await loadAllData();
-    } catch (error) {
-      alert("Không thể lưu, vui lòng thử lại sau.");
-      console.error("Error creating import:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Xử lý khi export thành công
-  const handleExportSuccess = async (newExport) => {
-    try {
-      setExports(prev => [newExport, ...prev]);
-      await loadExports();
-      await loadFlocks();
-    } catch (error) {
-      console.error("Error handling export success:", error);
-    }
-  };
-
-  // Xử lý phân trang cho imports
-  const handleImportPageChange = (page) => {
-    setPagination(prev => ({
-      ...prev,
-      importPage: page
-    }));
-  };
-
-  // Xử lý phân trang cho exports
-  const handleExportPageChange = (page) => {
-    setPagination(prev => ({
-      ...prev,
-      exportPage: page
-    }));
-  };
-
-  // Thay đổi số dòng trên trang
-  const handleRowsPerPageChange = (rows) => {
-    setPagination(prev => ({
-      ...prev,
-      rowsPerPage: rows,
-      importPage: 1,
-      exportPage: 1
-    }));
-  };
+  /* ============================================================
+      RENDER
+  ============================================================= */
 
   return (
     <div className="px-8 mt-8">
@@ -259,28 +129,18 @@ function FlockTransactions() {
             </button>
           </div>
 
-          {getActiveFlocks().length === 0 && (
-            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-yellow-700">
-                Chưa có đàn gà nào để xuất chuồng. Vui lòng nhập chuồng trước.
-              </p>
-            </div>
-          )}
-
-          {/* DANH SÁCH XUẤT CHUỒNG */}
-          <div className="w-full mt-6 border border-gray-200 rounded-lg overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50 text-left text-sm font-semibold text-gray-700 border-b border-gray-200">
-                  <th className="py-4 px-4 font-medium">Mã đơn</th>
-                  <th className="py-4 px-4 font-medium">Ngày xuất</th>
-                  <th className="py-4 px-4 font-medium">Khách hàng</th>
-                  <th className="py-4 px-4 font-medium">Đàn xuất</th>
-                  <th className="py-4 px-4 font-medium text-right">Số lượng</th>
-                  <th className="py-4 px-4 font-medium text-right">Trọng lượng TB</th>
-                  <th className="py-4 px-4 font-medium text-right">Giá/kg</th>
-                  <th className="py-4 px-4 font-medium text-right">Doanh thu</th>
-                  <th className="py-4 px-4 font-medium">Trạng thái</th>
+          {/* TABLE */}
+          <div className="bg-white border rounded-lg overflow-hidden mt-4">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-3 text-left">Ngày</th>
+                  <th className="p-3 text-left">Đàn</th>
+                  <th className="p-3 text-center">SL</th>
+                  <th className="p-3 text-center">TL TB</th>
+                  <th className="p-3 text-left">Nhà cung cấp</th>
+                  <th className="p-3 text-center">Thanh toán</th>
+                  <th className="p-3 text-center">Trạng thái</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -291,152 +151,113 @@ function FlockTransactions() {
                     </td>
                   </tr>
                 ) : (
-                  pagedExports.map((item) => (
-                    <ExportItem key={item._id} item={item} />
+                  transactions.map((t) => (
+                    <tr key={t._id} className="border-b hover:bg-gray-50">
+                      <td className="p-3">{formatDate(t.transactionDate)}</td>
+                      <td className="p-3 font-medium">{t.flockCode}</td>
+                      <td className="p-3 text-center">{t.quantity}</td>
+                      <td className="p-3 text-center">{t.avgWeight} kg</td>
+                      <td className="p-3">{t.supplierName}</td>
+                      <td className="p-3 text-center">
+                        <PaymentBadge method={t.paymentMethod} />
+                      </td>
+                      <td className="p-3 text-center">
+                        <StatusBadge status={t.status} />
+                      </td>
+                    </tr>
                   ))
                 )}
               </tbody>
             </table>
           </div>
+        </TabsContent>
 
-          {/* PHÂN TRANG CHO XUẤT CHUỒNG */}
-          {filteredExports.length > 0 && (
-            <Pagination
-              currentPage={pagination.exportPage}
-              totalRows={pagination.totalExportRows}
-              rowsPerPage={pagination.rowsPerPage}
-              onPageChange={handleExportPageChange}
-              onRowsPerPageChange={handleRowsPerPageChange}
-              className="mt-4"
-            />
-          )}
+        {/* ============================================================
+            EXPORT TAB
+        ============================================================= */}
+        <TabsContent value="export" className="mt-4">
 
-          {/* MODAL XUẤT CHUỒNG */}
-          <ExportTransactions 
-            isOpen={showExportForm}
-            onClose={() => setShowExportForm(false)}
-            flocks={getActiveFlocks()}
-            onExportSuccess={handleExportSuccess}
-          />
-        </>
-      )}
-
-      {/* TAB: NHẬP CHUỒNG */}
-      {tab === "nhap" && (
-        <>
-          {/* BUTTON và thông tin */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between mt-6 gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-700">Danh sách nhập chuồng</h2>
-              <p className="text-sm text-gray-500">
-                Quản lý các lứa gia súc nhập chuồng - Tháng {selectedMonth.split('-')[1]}/{selectedMonth.split('-')[0]}
-              </p>
-            </div>
-            <button
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed w-fit"
-              onClick={() => setShowImportForm(true)}
-              disabled={loading}
-            >
-              <span>+</span>
-              <span>Nhập chuồng mới</span>
-            </button>
+          {/* KPI */}
+          <div className="grid grid-cols-3 gap-4">
+            <KPICard icon={ArrowUpFromLine} label="Tổng xuất" value={stats.totalExport} color="bg-orange-500" suffix=" con" />
+            <KPICard icon={DollarSign} label="Doanh thu" value={stats.totalRevenue} color="bg-green-500" suffix="₫" />
+            <KPICard icon={Clock} label="Đơn chờ" value={stats.pendingOrders} color="bg-yellow-500" />
           </div>
 
-          {/* DANH SÁCH NHẬP CHUỒNG */}
-          <ImportList list={pagedImports} />
+          {/* TABLE */}
+          <div className="bg-white border rounded-lg overflow-hidden mt-4">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-3 text-left">Ngày</th>
+                  <th className="p-3 text-left">Đàn</th>
+                  <th className="p-3 text-center">SL</th>
+                  <th className="p-3 text-center">TL TB</th>
+                  <th className="p-3 text-center">Giá/kg</th>
+                  <th className="p-3 text-left">Khách hàng</th>
+                  <th className="p-3 text-center">Thanh toán</th>
+                  <th className="p-3 text-right">Doanh thu</th>
+                  <th className="p-3 text-center">Trạng thái</th>
+                  <th className="p-3 text-center">Hành động</th>
+                </tr>
+              </thead>
 
-          {/* PHÂN TRANG CHO NHẬP CHUỒNG */}
-          {filteredImports.length > 0 && (
-            <Pagination
-              currentPage={pagination.importPage}
-              totalRows={pagination.totalImportRows}
-              rowsPerPage={pagination.rowsPerPage}
-              onPageChange={handleImportPageChange}
-              onRowsPerPageChange={handleRowsPerPageChange}
-              className="mt-4"
-            />
-          )}
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="10" className="p-4 text-center">
+                      Đang tải dữ liệu...
+                    </td>
+                  </tr>
+                ) : transactions.length === 0 ? (
+                  <tr>
+                    <td colSpan="10" className="p-4 text-center">
+                      Chưa có dữ liệu xuất chuồng
+                    </td>
+                  </tr>
+                ) : (
+                  transactions.map((t) => (
+                    <tr key={t._id} className="border-b hover:bg-gray-50">
+                      <td className="p-3">{formatDate(t.transactionDate)}</td>
+                      <td className="p-3 font-medium">{t.flockCode}</td>
+                      <td className="p-3 text-center">{t.quantity}</td>
+                      <td className="p-3 text-center">{t.avgWeight} kg</td>
+                      <td className="p-3 text-center">
+                        {t.pricePerKg?.toLocaleString("vi-VN")} ₫
+                      </td>
+                      <td className="p-3">{t.customerName}</td>
+                      <td className="p-3 text-center">
+                        <PaymentBadge method={t.paymentMethod} />
+                      </td>
+                      <td className="p-3 text-right text-green-600 font-semibold">
+                        {t.totalRevenue?.toLocaleString("vi-VN")} ₫
+                      </td>
+                      <td className="p-3 text-center">
+                        <StatusBadge status={t.status} />
+                      </td>
 
-          {/* FORM NHẬP CHUỒNG */}
-          {showImportForm && (
-            <ImportForm
-              onClose={() => setShowImportForm(false)}
-              onSubmit={handleCreateImport}
-              areaCurrentCounts={areaCurrentCounts}
-            />
-          )}
-        </>
-      )}
+                      <td className="p-3 text-center">
+                        <button className="p-2 hover:bg-gray-100 rounded">
+                          <Eye size={16} className="text-blue-500" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </TabsContent>
+
+      </Tabs>
+
+      {/* EXPORT MODAL */}
+      <ExportFlockModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        flocks={flocks}
+        onExportSuccess={handleExportSuccess}
+      />
     </div>
   );
 }
-
-// Component cho item xuất chuồng
-function ExportItem({ item }) {
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount);
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    try {
-      return new Date(dateString).toLocaleDateString('vi-VN');
-    } catch {
-      return 'N/A';
-    }
-  };
-
-  // Tính doanh thu nếu không có trong item
-  const calculateRevenue = (item) => {
-    if (item.totalRevenue) return item.totalRevenue;
-    return (item.quantity * item.avgWeight * item.pricePerKg) || 0;
-  };
-
-  return (
-    <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-      <td className="py-4 px-4 font-medium text-gray-900">
-        {item._id?.slice(-6).toUpperCase() || 'N/A'}
-      </td>
-      <td className="py-4 px-4 text-gray-700">
-        {formatDate(item.exportDate || item.transactionDate)}
-      </td>
-      <td className="py-4 px-4 text-gray-700">
-        {item.customerName || item.customer || 'N/A'}
-      </td>
-      <td className="py-4 px-4 text-gray-700">
-        {item.flockCode || item.flockId?.slice(-6).toUpperCase() || 'N/A'}
-      </td>
-      <td className="py-4 px-4 text-right text-gray-700">
-        {(item.quantity || 0).toLocaleString('vi-VN')}
-      </td>
-      <td className="py-4 px-4 text-right text-gray-700">
-        {item.avgWeight || 0} kg
-      </td>
-      <td className="py-4 px-4 text-right text-gray-700">
-        {formatCurrency(item.pricePerKg || 0)}
-      </td>
-      <td className="py-4 px-4 text-right text-green-600 font-semibold">
-        {formatCurrency(calculateRevenue(item))}
-      </td>
-      <td className="py-4 px-4">
-        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-          item.status === "completed" || item.status === "Hoàn thành"
-            ? "bg-green-100 text-green-800" 
-            : item.status === "pending" || item.status === "Đang xử lý"
-            ? "bg-yellow-100 text-yellow-800"
-            : "bg-gray-100 text-gray-800"
-        }`}>
-          {item.status === "completed" ? "Hoàn thành" : 
-           item.status === "pending" ? "Đang xử lý" : 
-           item.status === "Đang xử lý" ? "Đang xử lý" :
-           item.status === "Hoàn thành" ? "Hoàn thành" : "Đã hủy"}
-        </span>
-      </td>
-    </tr>
-  );
-}
-
-export default FlockTransactions;
