@@ -11,7 +11,6 @@ import {
 
 const router = express.Router();
 
-
 // [GET] /v1/transactions/stats - Lấy thống kê KPI
 router.get("/stats", getMonthlyStats);
 
@@ -23,8 +22,6 @@ router.post("/export", createExportTransaction);
 
 // [POST] /v1/transactions/import - Tạo đơn nhập chuồng
 router.post("/import", createImportTransaction);
-
-// ⚡ ROUTES WITH :id ALWAYS GO LAST
 
 // [GET] /v1/transactions/:id/invoice - Xuất hóa đơn PDF
 router.get("/:id/invoice", exportInvoicePDF);

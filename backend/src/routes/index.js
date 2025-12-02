@@ -18,6 +18,7 @@ router.use('/materials', materialRoute)
 // nhập chuồng
 router.use('/imports', importRoute)
 router.use("/auth", authRoutes);
+router.use('/transactions', transactionRoute)
 router.use("/areas", areaRoute);
 router.use('/transactions', transactionRoute)
 

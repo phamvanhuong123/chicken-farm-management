@@ -91,3 +91,32 @@ export const getAllUser = async (req, res, next) =>{
     next(error)
   }
 }
+
+export const updateEmployee = async(req, res, next) => {
+  try{
+    const idEmployee = req.params.idEmployee
+    const result = await userService.updateEmployee(idEmployee,req.body)
+    res.status(StatusCodes.ACCEPTED).json({
+      statusCode  : StatusCodes.ACCEPTED,
+      message : "Cật nhật nhân viên thành công",
+      data : result
+    })
+  }
+  catch(error){
+    next(error)    
+  }
+}
+
+
+export const deleteEmployee = async (req, res, next) => {
+  try{
+    const idEmployee = req.params.idEmployee
+    const result = await userService.deleteEmployee(idEmployee)
+    res.status(StatusCodes.ACCEPTED).json({
+      statusCode : StatusCodes.ACCEPTED,
+      message : "Xoá nhân viên thành công",
+      data : result
+    })
+  }
+  catch(erorr) {next(erorr)}
+}
