@@ -167,11 +167,40 @@ const addEmployee = async (parentId, body) => {
   }
 };
 
+ const getAllUser = async() => {
+  const users = await userModel.getAllUser();
+
+  if (users.length === 0 || !users){
+    throw new ApiError(StatusCodes.NOT_FOUND,"Không tồn tại người dùng nào")
+  }
+  return users
+}
+
+const updateEmployee = async (idEmployee, body) => {
+  
+  try {
+    //tìm kiếm nhân viên rồi cật nhập trường parentId
+    const updateEmployee = await userModel.updateEmployee(idEmployee,body);
+    return updateEmployee;
+  } catch (error) {
+    throw error;
+  }
+}
+const deleteEmployee =  async(idEmployee) =>{
+  try{
+    const res = await userModel.deleteEmployee(idEmployee)
+    return res
+  }
+  catch(error){throw error}
+}
 export const userService = {
   register,
   verifyOTP,
   resendOTP,
   login,
   findUserByParentId,
-  addEmployee
+  addEmployee,
+  getAllUser,
+  deleteEmployee,
+  updateEmployee
 };

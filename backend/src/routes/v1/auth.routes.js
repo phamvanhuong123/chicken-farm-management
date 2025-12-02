@@ -1,14 +1,44 @@
-import express from 'express'
-import { register, verifyOTP, login, resendOTP,findUserByParentId,addEmployee } from '~/controllers/authController.js'
-import rateLimiter from '~/middlewares/rateLimiter.js'
-import { userValidate } from '~/validators/user.validation'
+import express from "express";
+import {
+  register,
+  verifyOTP,
+  login,
+  resendOTP,
+  findUserByParentId,
+  addEmployee,
+  getAllUser,
+  deleteEmployee,
+  updateEmployee,
+} from "~/controllers/authController.js";
+import rateLimiter from "~/middlewares/rateLimiter.js";
+import { userValidate } from "~/validators/user.validation";
 
-const router = express.Router()
+const router = express.Router();
+router.get("/", getAllUser);
+router.post(
+  "/register",
+  userValidate.createNew,
+  rateLimiter({ windowMs: 60 * 1000, max: 5 }),
+  register
+);
+router.post("/verify-otp", verifyOTP);
+router.post(
+  "/resend-otp",
+  rateLimiter({ windowMs: 60 * 1000, max: 5 }),
+  resendOTP
+);
+router.post("/login", login);
 
-router.post('/register', userValidate.createNew, rateLimiter({ windowMs: 60 * 1000, max: 5 }), register)
-router.post('/verify-otp', verifyOTP)
-router.post('/resend-otp', rateLimiter({ windowMs: 60 * 1000, max: 5 }), resendOTP)
-router.post('/login', login)
-router.get("/:parentId",findUserByParentId)
-router.post("/addEmployee/:parentId",userValidate.addEmployee, addEmployee)
-export default router
+// Tìm nhân viên theo parentId
+router.get("/:parentId", findUserByParentId);
+
+// Thêm nhân viên
+router.post("/addEmployee/:parentId", userValidate.addEmployee, addEmployee);
+
+// Xoá nhân viên và sửa nhân viên
+router
+  .route("/:idEmployee")
+  .delete(deleteEmployee)
+  .put(userValidate.updateEmployee, updateEmployee);
+
+export default router;

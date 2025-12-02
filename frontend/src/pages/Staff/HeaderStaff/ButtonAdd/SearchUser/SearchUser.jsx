@@ -8,55 +8,27 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Button } from "~/components/ui/button";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import FieldErrorAlert from "~/components/FieldErrorAlert";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchGetAllUserApi, getUsersState } from "~/slices/authSlice";
 
-function SearchUser({ setValueForm, unregisterForm,registerForm, errors, clearErrors }) {
-  const users = [
-    {
-      id: "4",
-      userName: "Phạm Văn Hương",
-      phone: "0327707140",
-      email: "phamvanhong@gmail.com",
-    },
-    {
-      id: "3",
-      userName: "Nguyễn Thị Minh Anh",
-      phone: "0985123456",
-      email: "minhanhnguyen@gmail.com",
-    },
-    {
-      id: "2",
-      userName: "Trần Quốc Bảo",
-      phone: "0912345678",
-      email: "baotranqb@gmail.com",
-    },
-    {
-      id: "1",
-      userName: "Lê Hoàng Phúc",
-      phone: "0938765432",
-      email: "phuclehoang@gmail.com",
-    },
-    {
-      id: "8",
-      userName: "Hoàng Thị Thu Trang",
-      phone: "0974556677",
-      email: "tranghoangthu@gmail.com",
-    },
-    {
-      userName: "Đỗ Minh Tuấn",
-      phone: "0903111222",
-      email: "tuan.do.minh@gmail.com",
-    },
-  ];
-  const userRef = useRef(users);
-
-
+function SearchUser({
+  setValueForm,
+  unregisterForm,
+  registerForm,
+  errors,
+  clearErrors,
+  dataAddEmployee,
+  setDataAddEmployee,
+}) {
+  const dispatch = useDispatch();
+  const users = useSelector((state) => getUsersState(state));
   const searchTimeOut = useRef(null);
   const [dataUsers, setDataUsers] = useState(null);
   const [searchValue, setSearchValue] = useState("");
-  const [dataAddEmployee, setDataAddEmployee] = useState(null);
+  // const [dataAddEmployee, setDataAddEmployee] = useState(null);
 
   // Khi thay đổi giá trị trong input
   const onChangeValue = (e) => {
@@ -68,10 +40,10 @@ function SearchUser({ setValueForm, unregisterForm,registerForm, errors, clearEr
     }
     if (searchTimeOut.current) clearTimeout(searchTimeOut.current);
     searchTimeOut.current = setTimeout(() => {
-      const newData = userRef.current.filter((user) => {
+      const newData = users?.filter((user) => {
         if (
           user.email.toLowerCase().includes(value.trim()) ||
-          user.userName.toLowerCase().includes(value.trim()) ||
+          user.username.toLowerCase().includes(value.trim()) ||
           user.phone.toLowerCase().includes(value.trim())
         )
           return user;
@@ -84,23 +56,32 @@ function SearchUser({ setValueForm, unregisterForm,registerForm, errors, clearEr
   const handleAddEmployee = (idEmployee) => {
     setSearchValue("");
     setDataUsers(null);
-    setDataAddEmployee(userRef.current.find((user) => user.id === idEmployee));
-    setValueForm("idEmployee",idEmployee)
-    if(errors.idEmployee){
-      clearErrors("idEmployee")
+    setDataAddEmployee(users?.find((user) => user._id === idEmployee));
+    setValueForm("idEmployee", idEmployee);
+    if (errors.idEmployee) {
+      clearErrors("idEmployee");
     }
   };
 
-
-  const handleClose = ()=>{
-    setDataAddEmployee(null)
-    unregisterForm("idEmployee")
-    setValueForm("idEmployee","")
-
-  }
+  const handleClose = () => {
+    setDataAddEmployee(null);
+    unregisterForm("idEmployee");
+    setValueForm("idEmployee", "");
+  };
+  useEffect(() => {
+    dispatch(fetchGetAllUserApi());
+  }, [dispatch]);
+  console.log(users);
   return (
     <div className="mb-3.5">
-      <input type="hidden" name="" id="" {...registerForm("idEmployee", { required: "Vui lòng chọn người dùng" })} />
+      <input
+        type="hidden"
+        name=""
+        id=""
+        {...registerForm("idEmployee", {
+          required: "Vui lòng chọn người dùng",
+        })}
+      />
       {dataAddEmployee ? (
         <Item
           className={`bg-green-200 border border-green-500 relative mb-5`}
@@ -108,7 +89,7 @@ function SearchUser({ setValueForm, unregisterForm,registerForm, errors, clearEr
         >
           <ItemContent>
             <ItemTitle className={`font-bold text-black`}>
-              {dataAddEmployee.userName}
+              {dataAddEmployee.username}
             </ItemTitle>
             <ItemDescription className={` text-black`}>
               Số điện thoại : {dataAddEmployee.phone}
@@ -117,10 +98,13 @@ function SearchUser({ setValueForm, unregisterForm,registerForm, errors, clearEr
               Email : {dataAddEmployee.email}
             </ItemDescription>
           </ItemContent>
-          <X onClick={handleClose} className="absolute right-1.5 top-1.5 cursor-pointer" />
+          <X
+            onClick={handleClose}
+            className="absolute right-1.5 top-1.5 cursor-pointer"
+          />
         </Item>
       ) : (
-        <div >
+        <div>
           <Label className="mb-2.5">
             Tìm kiếm theo tên, email, số điện thoại{" "}
             <span className="text-red-600">*</span>
@@ -139,9 +123,14 @@ function SearchUser({ setValueForm, unregisterForm,registerForm, errors, clearEr
           >
             {searchValue &&
               dataUsers?.map((user) => (
-                <Item key={user.id} className="hover:bg-gray-200">
+                <Item
+                  key={user._id}
+                  className={`hover:bg-gray-200 ${
+                    user?.roleId === "employer" && "hidden"
+                  }`}
+                >
                   <ItemContent>
-                    <ItemTitle>{user.userName}</ItemTitle>
+                    <ItemTitle>{user.username}</ItemTitle>
                     <ItemDescription>
                       Số điện thoại : {user.phone}
                     </ItemDescription>
@@ -149,9 +138,10 @@ function SearchUser({ setValueForm, unregisterForm,registerForm, errors, clearEr
                   </ItemContent>
                   <ItemActions>
                     <Button
-                      id={user.id}
+                      disabled={user.parentId ? true : false}
+                      id={user._id}
                       onClick={() => {
-                        handleAddEmployee(user.id);
+                        handleAddEmployee(user._id);
                       }}
                       variant="outline"
                       size="sm"
@@ -173,8 +163,7 @@ function SearchUser({ setValueForm, unregisterForm,registerForm, errors, clearEr
           </div>
         </div>
       )}
-       <FieldErrorAlert errors={errors} fieldName={"idEmployee"} />
-
+      <FieldErrorAlert errors={errors} fieldName={"idEmployee"} />
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import Joi from "joi";
 import { GET_DB } from "../config/mongodb.js";
 import { ObjectId } from "mongodb";
+import ApiError from "~/utils/ApiError.js";
+import { StatusCodes } from "http-status-codes";
 
 const USER_COLLECTION_NAME = "users";
 
@@ -14,7 +16,7 @@ const USER_COLLECTION_SCHEMA = Joi.object({
   otpExpires: Joi.number().allow(null).default(null),
   createdAt: Joi.date().timestamp("javascript").default(Date.now),
   updatedAt: Joi.date().timestamp("javascript").default(null),
-  role: Joi.string().valid("employer", "employee").default("employee"),
+  roleId: Joi.string().valid("employer", "employee").default("employee"),
   status: Joi.string().valid("working", "onLeave").default("working"),
   parentId: Joi.string()
     .pattern(/^[0-9a-fA-F]{24}$/)
@@ -34,7 +36,9 @@ const create = async (data) => {
 };
 
 const findById = async (id) => {
-  return await GET_DB().collection(USER_COLLECTION_NAME).findOne({_id : new ObjectId(String(id))});
+  return await GET_DB()
+    .collection(USER_COLLECTION_NAME)
+    .findOne({ _id: new ObjectId(String(id)) });
 };
 
 const findByEmailOrPhone = async (email, phone) => {
@@ -75,23 +79,74 @@ const findUserByParentId = async (parentId) => {
   }
 };
 
-const addEmployee = async (parentId,data) => {
+const addEmployee = async (parentId, data) => {
   try {
-    const id = data?.idEmployee
-    console.log(id)
-    delete data.id
+    const id = data?.idEmployee;
+    console.log(id);
+    Object.keys(data).forEach((fieldName) => {
+      if (!["roleID", "salary"].includes(fieldName)) {
+        delete data[fieldName];
+      }
+    });
     //Chỉ cần cật nhật trường parentId là có thêm được nhân viên
+
     const updateUserEmployee = await GET_DB()
       .collection("users")
       .findOneAndUpdate(
         { _id: new ObjectId(String(id)) },
-        { $set: {...data, parentId} },
+        { $set: { ...data, parentId: new ObjectId(String(parentId)) } },
         { returnDocument: "after" }
       );
-    return updateUserEmployee
+    return updateUserEmployee;
   } catch (error) {
     throw new Error(error);
+  }
+};
 
+const getAllUser = async () => {
+  return GET_DB()
+    .collection(USER_COLLECTION_NAME)
+    .find({ verified: true })
+    .project({ password: 0 })
+    .toArray();
+};
+
+const updateEmployee = async (idEmployee, data) => {
+  try {
+    Object.keys(data).forEach((fieldName) => {
+      if (!["status", "salary", "roleId"].includes(fieldName)) {
+        delete data[fieldName];
+      }
+    });
+
+    const updateUserEmployee = await GET_DB()
+      .collection("users")
+      .findOneAndUpdate(
+        { _id: new ObjectId(String(idEmployee)) },
+        { $set: data },
+        { returnDocument: "after" }
+      );
+    return updateUserEmployee;
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+
+const deleteEmployee = async (idEmployee) => {
+  try {
+    const res = await GET_DB()
+      .collection(USER_COLLECTION_NAME)
+      .findOneAndUpdate(
+        { _id: new ObjectId(String(idEmployee)) },
+        { $set: { parentId: null } },
+        { returnDocument: "after" }
+
+      );
+      if( !res) throw new ApiError(StatusCodes.NOT_FOUND,"KHông tìm thấy")
+      return res
+  } catch (error) {
+    throw error
   }
 };
 export const userModel = {
@@ -102,5 +157,8 @@ export const userModel = {
   clearOTP,
   findUserByParentId,
   findById,
-  addEmployee
+  addEmployee,
+  getAllUser,
+  deleteEmployee,
+  updateEmployee
 };

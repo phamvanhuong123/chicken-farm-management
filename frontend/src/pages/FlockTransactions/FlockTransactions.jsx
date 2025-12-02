@@ -1,6 +1,377 @@
-function FlockTransactions(){
-    return <div className="px-8 mt-8">
-        Đây là trang nhập xuất chuồng
+import { useState, useEffect } from "react";
+import axios from "axios";
+import toast from "react-hot-toast";
+
+import {
+  ArrowUpFromLine,
+  ArrowDownToLine,
+  DollarSign,
+  Clock,
+  Eye,
+  Plus,
+} from "lucide-react";
+
+import { Button } from "~/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "~/components/ui/tabs";
+
+import { transactionAPI } from "~/apis/transaction.api";
+import ExportFlockModal from "./ExportFlockModal/ExportFlockModal";
+
+/* ============================================================
+   UI COMPONENTS
+============================================================ */
+
+const KPICard = ({ icon: Icon, label, value, color, suffix = "" }) => (
+  <div className="bg-white border rounded-lg p-4 flex items-center gap-3">
+    <div className={`p-3 rounded-full ${color}`}>
+      <Icon className="text-white" size={22} />
     </div>
+    <div>
+      <p className="text-gray-500 text-sm">{label}</p>
+      <p className="text-xl font-semibold">
+        {typeof value === "number" ? value.toLocaleString("vi-VN") : value}
+        {suffix}
+      </p>
+    </div>
+  </div>
+);
+
+const StatusBadge = ({ status }) => {
+  const map = {
+    "Đang xử lý": "bg-yellow-100 text-yellow-700",
+    "Hoàn thành": "bg-green-100 text-green-700",
+    "Đã hủy": "bg-red-100 text-red-700",
+  };
+  return (
+    <span className={`px-2 py-1 rounded text-xs font-medium ${map[status]}`}>
+      {status}
+    </span>
+  );
+};
+
+const PaymentBadge = ({ method }) => {
+  const map = {
+    "Tiền mặt": "bg-blue-100 text-blue-700",
+    "Chuyển khoản": "bg-purple-100 text-purple-700",
+  };
+  return (
+    <span className={`px-2 py-1 rounded text-xs font-medium ${map[method]}`}>
+      {method}
+    </span>
+  );
+};
+
+/* ============================================================
+   MAIN COMPONENT
+============================================================ */
+
+export default function FlockTransactions() {
+  const now = new Date();
+
+  const [activeTab, setActiveTab] = useState("import");
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+
+  const [loading, setLoading] = useState(false);
+  const [transactions, setTransactions] = useState([]);
+  const [flocks, setFlocks] = useState([]);
+
+  const [stats, setStats] = useState({
+    totalImport: 0,
+    totalExport: 0,
+    totalRevenue: 0,
+    pendingOrders: 0,
+  });
+
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+  const formatDate = (d) => new Date(d).toLocaleDateString("vi-VN");
+
+  /* ============================================================
+      FETCH DATA
+  ============================================================= */
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const transRes = await transactionAPI.getAll({
+        type: activeTab,
+        month: selectedMonth,
+        year: selectedYear,
+      });
+
+      setTransactions(transRes.data.data.items || []);
+
+      const statsRes = await transactionAPI.getStats({
+        month: selectedMonth,
+        year: selectedYear,
+      });
+
+      setStats(statsRes.data.data || {});
+    } catch (err) {
+      toast.error("Lỗi tải dữ liệu");
+    }
+    setLoading(false);
+  };
+
+  const fetchFlocks = async () => {
+    try {
+      const res = await axios.get("http://localhost:8071/v1/flocks");
+      setFlocks(res.data.data || []);
+    } catch (err) {
+      console.log("Lỗi tải đàn:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [activeTab, selectedMonth, selectedYear]);
+
+  useEffect(() => {
+    fetchFlocks();
+  }, []);
+
+  const handleExportSuccess = (newTrans) => {
+    setTransactions((prev) => [newTrans, ...prev]);
+    fetchData();
+    fetchFlocks();
+  };
+
+  /* ============================================================
+      RENDER
+  ============================================================= */
+
+  return (
+    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+
+      {/* PAGE HEADER */}
+      <div className="flex justify-between items-center flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Nhập / Xuất chuồng</h1>
+          <p className="text-gray-600">Quản lý giao dịch đàn</p>
+        </div>
+
+        <div className="flex gap-2">
+          <select
+            className="border rounded px-3 py-2"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+          >
+            {Array.from({ length: 12 }, (_, i) => (
+              <option key={i + 1} value={i + 1}>
+                Tháng {i + 1}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="border rounded px-3 py-2"
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+          >
+            {[2023, 2024, 2025, 2026].map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* TABS */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+
+        {/* TAB LIST */}
+        <div className="flex justify-between items-center mb-2">
+          <TabsList className="flex gap-2">
+
+            <TabsTrigger
+              value="import"
+              className="cursor-pointer px-4 py-2 rounded 
+              data-[state=active]:bg-blue-500 data-[state=active]:text-white
+              hover:bg-blue-100 transition-all duration-150"
+            >
+              Nhập chuồng
+            </TabsTrigger>
+
+            <TabsTrigger
+              value="export"
+              className="cursor-pointer px-4 py-2 rounded 
+              data-[state=active]:bg-green-500 data-[state=active]:text-white
+              hover:bg-green-100 transition-all duration-150"
+            >
+              Xuất chuồng
+            </TabsTrigger>
+          </TabsList>
+
+          {/* BUTTON */}
+          {activeTab === "export" && (
+            <Button
+              className="bg-green-500 hover:bg-green-600 text-white px-4
+                shadow-sm hover:shadow cursor-pointer"
+              onClick={() => setIsExportModalOpen(true)}
+            >
+              <Plus size={16} className="mr-1" /> Xuất chuồng mới
+            </Button>
+          )}
+
+          {activeTab === "import" && (
+            <Button className="bg-blue-500 hover:bg-blue-600 text-white px-4 
+              shadow-sm hover:shadow cursor-pointer"
+            >
+              <Plus size={16} className="mr-1" /> Nhập chuồng mới
+            </Button>
+          )}
+        </div>
+
+        {/* ============================================================
+            IMPORT TAB
+        ============================================================= */}
+        <TabsContent value="import" className="mt-4">
+
+          {/* KPI */}
+          <div className="grid grid-cols-3 gap-4">
+            <KPICard icon={ArrowDownToLine} label="Tổng nhập" value={stats.totalImport} color="bg-blue-500" suffix=" con" />
+            <KPICard icon={DollarSign} label="Chi phí nhập" value={stats.totalRevenue} color="bg-green-500" suffix="₫" />
+            <KPICard icon={Clock} label="Đơn chờ" value={stats.pendingOrders} color="bg-yellow-500" />
+          </div>
+
+          {/* TABLE */}
+          <div className="bg-white border rounded-lg overflow-hidden mt-4">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-3 text-left">Ngày</th>
+                  <th className="p-3 text-left">Đàn</th>
+                  <th className="p-3 text-center">SL</th>
+                  <th className="p-3 text-center">TL TB</th>
+                  <th className="p-3 text-left">Nhà cung cấp</th>
+                  <th className="p-3 text-center">Thanh toán</th>
+                  <th className="p-3 text-center">Trạng thái</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="7" className="text-center p-4">
+                      Đang tải dữ liệu...
+                    </td>
+                  </tr>
+                ) : transactions.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="text-center p-4">
+                      Chưa có dữ liệu nhập chuồng
+                    </td>
+                  </tr>
+                ) : (
+                  transactions.map((t) => (
+                    <tr key={t._id} className="border-b hover:bg-gray-50">
+                      <td className="p-3">{formatDate(t.transactionDate)}</td>
+                      <td className="p-3 font-medium">{t.flockCode}</td>
+                      <td className="p-3 text-center">{t.quantity}</td>
+                      <td className="p-3 text-center">{t.avgWeight} kg</td>
+                      <td className="p-3">{t.supplierName}</td>
+                      <td className="p-3 text-center">
+                        <PaymentBadge method={t.paymentMethod} />
+                      </td>
+                      <td className="p-3 text-center">
+                        <StatusBadge status={t.status} />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </TabsContent>
+
+        {/* ============================================================
+            EXPORT TAB
+        ============================================================= */}
+        <TabsContent value="export" className="mt-4">
+
+          {/* KPI */}
+          <div className="grid grid-cols-3 gap-4">
+            <KPICard icon={ArrowUpFromLine} label="Tổng xuất" value={stats.totalExport} color="bg-orange-500" suffix=" con" />
+            <KPICard icon={DollarSign} label="Doanh thu" value={stats.totalRevenue} color="bg-green-500" suffix="₫" />
+            <KPICard icon={Clock} label="Đơn chờ" value={stats.pendingOrders} color="bg-yellow-500" />
+          </div>
+
+          {/* TABLE */}
+          <div className="bg-white border rounded-lg overflow-hidden mt-4">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-3 text-left">Ngày</th>
+                  <th className="p-3 text-left">Đàn</th>
+                  <th className="p-3 text-center">SL</th>
+                  <th className="p-3 text-center">TL TB</th>
+                  <th className="p-3 text-center">Giá/kg</th>
+                  <th className="p-3 text-left">Khách hàng</th>
+                  <th className="p-3 text-center">Thanh toán</th>
+                  <th className="p-3 text-right">Doanh thu</th>
+                  <th className="p-3 text-center">Trạng thái</th>
+                  <th className="p-3 text-center">Hành động</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="10" className="p-4 text-center">
+                      Đang tải dữ liệu...
+                    </td>
+                  </tr>
+                ) : transactions.length === 0 ? (
+                  <tr>
+                    <td colSpan="10" className="p-4 text-center">
+                      Chưa có dữ liệu xuất chuồng
+                    </td>
+                  </tr>
+                ) : (
+                  transactions.map((t) => (
+                    <tr key={t._id} className="border-b hover:bg-gray-50">
+                      <td className="p-3">{formatDate(t.transactionDate)}</td>
+                      <td className="p-3 font-medium">{t.flockCode}</td>
+                      <td className="p-3 text-center">{t.quantity}</td>
+                      <td className="p-3 text-center">{t.avgWeight} kg</td>
+                      <td className="p-3 text-center">
+                        {t.pricePerKg?.toLocaleString("vi-VN")} ₫
+                      </td>
+                      <td className="p-3">{t.customerName}</td>
+                      <td className="p-3 text-center">
+                        <PaymentBadge method={t.paymentMethod} />
+                      </td>
+                      <td className="p-3 text-right text-green-600 font-semibold">
+                        {t.totalRevenue?.toLocaleString("vi-VN")} ₫
+                      </td>
+                      <td className="p-3 text-center">
+                        <StatusBadge status={t.status} />
+                      </td>
+
+                      <td className="p-3 text-center">
+                        <button className="p-2 hover:bg-gray-100 rounded">
+                          <Eye size={16} className="text-blue-500" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </TabsContent>
+
+      </Tabs>
+
+      {/* EXPORT MODAL */}
+      <ExportFlockModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        flocks={flocks}
+        onExportSuccess={handleExportSuccess}
+      />
+    </div>
+  );
 }
-export default FlockTransactions
