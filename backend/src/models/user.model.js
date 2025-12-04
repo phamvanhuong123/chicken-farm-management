@@ -72,6 +72,7 @@ const findUserByParentId = async (parentId) => {
     const record = await GET_DB()
       .collection("users")
       .find({ parentId: new ObjectId(String(parentId)) })
+      .project({ password: 0 })
       .toArray();
     return record;
   } catch (e) {
@@ -124,14 +125,13 @@ const updateEmployee = async (idEmployee, data) => {
       .findOneAndUpdate(
         { _id: new ObjectId(String(idEmployee)) },
         { $set: data },
-        { returnDocument: "after" }
+        { returnDocument: "after", projection: { password: 0 } }
       );
     return updateUserEmployee;
   } catch (error) {
     throw new Error(error);
   }
 };
-
 
 const deleteEmployee = async (idEmployee) => {
   try {
@@ -140,13 +140,12 @@ const deleteEmployee = async (idEmployee) => {
       .findOneAndUpdate(
         { _id: new ObjectId(String(idEmployee)) },
         { $set: { parentId: null } },
-        { returnDocument: "after" }
-
+        { returnDocument: "after", projection: { password: 0 } }
       );
-      if( !res) throw new ApiError(StatusCodes.NOT_FOUND,"KHông tìm thấy")
-      return res
+    if (!res) throw new ApiError(StatusCodes.NOT_FOUND, "KHông tìm thấy");
+    return res;
   } catch (error) {
-    throw error
+    throw error;
   }
 };
 export const userModel = {
@@ -160,5 +159,5 @@ export const userModel = {
   addEmployee,
   getAllUser,
   deleteEmployee,
-  updateEmployee
+  updateEmployee,
 };
