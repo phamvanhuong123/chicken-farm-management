@@ -1,4 +1,6 @@
 import React from "react";
+import { Edit } from "lucide-react";
+import { Trash } from "lucide-react";
 
 function AreaRow({ item }) {
   const statusColor = {
@@ -40,8 +42,20 @@ function AreaRow({ item }) {
       <td className="p-2">{item.note || "—"}</td>
 
       <td className="p-2 flex gap-3">
-        <button className="text-blue-600">✏</button>
-        <button className="text-red-600">🗑</button>
+        <button
+          className="p-2 rounded cursor-pointer hover:bg-blue-200"
+          title="Chỉnh sửa"
+          onClick={() => onEdit(item)}
+        >
+          <Edit size={16} className="w-4 h-4 text-blue-500" />
+        </button>
+
+        <button
+          className="p-2 rounded cursor-pointer hover:bg-red-200"
+          title="Xóa"
+        >
+          <Trash size={16} className="w-4 h-4 text-red-500" />
+        </button>
       </td>
     </tr>
   );
