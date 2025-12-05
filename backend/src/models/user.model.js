@@ -83,7 +83,6 @@ const findUserByParentId = async (parentId) => {
 const addEmployee = async (parentId, data) => {
   try {
     const id = data?.idEmployee;
-    console.log(id);
     Object.keys(data).forEach((fieldName) => {
       if (!["roleID", "salary"].includes(fieldName)) {
         delete data[fieldName];

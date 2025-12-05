@@ -66,7 +66,7 @@ function StaffCard() {
             <p>{formatDate(employee?.createdAt)}</p>
             <div className="flex gap-1">
               <EditButton employee={employee}/>
-              <DeleteButton/>
+              <DeleteButton id={employee?._id}/>
             </div>
           </CardFooter>
         </Card>

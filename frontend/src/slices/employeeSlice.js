@@ -36,6 +36,14 @@ export const fetchUpdateEmployeeApi = createAsyncThunk(
   }
 );
 
+export const fetchDeleteEmployeeApi = createAsyncThunk(
+  "employees/fetchDeleteEmployeeApi",
+  async (id) => {
+    const response = await axios.delete(`${API_ROOT}/v1/auth/${id}`)
+    return response.data;
+
+  }
+);
 //
 const employeeSlice = createSlice({
   name: "employees",
@@ -75,6 +83,18 @@ const employeeSlice = createSlice({
         state.loading = false;
       }),
       buider.addCase(fetchUpdateEmployeeApi.rejected, (state) => {
+        state.loading = false;
+      }),
+      buider.addCase(fetchDeleteEmployeeApi.pending, (state) => {
+        state.loading = true;
+      }),
+      buider.addCase(fetchDeleteEmployeeApi.fulfilled, (state, action) => {
+        const id = action.payload?.data?._id;
+       
+        state.employees = state.employees.filter(employee => employee._id !== id) 
+        state.loading = false;
+      }),
+      buider.addCase(fetchDeleteEmployeeApi.rejected, (state) => {
         state.loading = false;
       });
   },
