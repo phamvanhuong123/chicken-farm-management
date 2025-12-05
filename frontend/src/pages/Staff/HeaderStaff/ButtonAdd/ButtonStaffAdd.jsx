@@ -64,7 +64,7 @@ function ButtonStaffAdd() {
       resetField("salary");
       resetField("roleId");
       setDataAddEmployee(null);
-      dispatch(updateUsers({id : data.idEmployee, parentId : user.id}))
+      dispatch(updateUsers({ id: data.idEmployee, parentId: user.id }));
     } catch (error) {
       toast.error("Thêm thất bại " + error.message);
     }
@@ -143,7 +143,18 @@ function ButtonStaffAdd() {
                     <Input
                       min={0}
                       className={`focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[1px] `}
-                      {...register("salary", { required: "Bắt buộc nhập" })}
+                      {...register("salary", {
+                        required: "Bắt buộc nhập",
+                        valueAsNumber: true,
+                        min: {
+                          value: 0,
+                          message: "Lương phải lớn hơn hoặc bằng 0",
+                        },
+                        max: {
+                          value: 2000000000,
+                          message: "Dự liệu nhập quá lớn",
+                        },
+                      })}
                       type="number"
                       placeholder="Nhập mức lương"
                     />
