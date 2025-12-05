@@ -103,5 +103,8 @@ const employeeSlice = createSlice({
 export const getLoadingState = (state) => {
   return state.employeeReducer.loading;
 };
+export const getEmployeeState = (state) => {
+  return state.employeeReducer.employees;
+};
 
 export const employeeReducer = employeeSlice.reducer;
