@@ -18,14 +18,11 @@ function FlockTransactions() {
   const [tab, setTab] = useState("nhap");
   const [loading, setLoading] = useState(false);
   const [exports, setExports] = useState([]);
-
+  
   // State cho lọc tháng
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
-      2,
-      "0"
-    )}`;
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
 
   // State cho phân trang
@@ -34,12 +31,12 @@ function FlockTransactions() {
     exportPage: 1,
     rowsPerPage: 10,
     totalImportRows: 0,
-    totalExportRows: 0,
+    totalExportRows: 0
   });
 
   // State cho flocks (đàn gà)
   const [flocks, setFlocks] = useState([]);
-
+  
   // State cho imports và exports đã lọc
   const [filteredImports, setFilteredImports] = useState([]);
   const [filteredExports, setFilteredExports] = useState([]);
@@ -67,8 +64,8 @@ function FlockTransactions() {
 
   // Hàm lọc flocks đang nuôi
   const getActiveFlocks = () => {
-    return flocks.filter(
-      (f) => f.status === "Raising" || f.status === "Đang nuôi"
+    return flocks.filter(f => 
+      f.status === "Raising" || f.status === "Đang nuôi"
     );
   };
 
@@ -76,14 +73,14 @@ function FlockTransactions() {
   const loadFlocks = async () => {
     try {
       const response = await flockApi.getList();
-      const flockData = Array.isArray(response.data?.data)
-        ? response.data.data
+      const flockData = Array.isArray(response.data?.data) 
+        ? response.data.data 
         : [];
-
-      const filteredFlocks = flockData.filter(
-        (f) => f.status === "Raising" || f.status === "Đang nuôi"
+      
+      const filteredFlocks = flockData.filter(f => 
+        f.status === "Raising" || f.status === "Đang nuôi"
       );
-
+      
       setFlocks(filteredFlocks);
     } catch (error) {
       console.error("Error loading flocks:", error);
@@ -93,23 +90,17 @@ function FlockTransactions() {
 
   const updatePagedData = () => {
     const { importPage, exportPage, rowsPerPage } = pagination;
-
+    
     // Tính toán dữ liệu phân trang cho imports
     const importStartIndex = (importPage - 1) * rowsPerPage;
     const importEndIndex = importStartIndex + rowsPerPage;
-    const currentImports = filteredImports.slice(
-      importStartIndex,
-      importEndIndex
-    );
+    const currentImports = filteredImports.slice(importStartIndex, importEndIndex);
     setPagedImports(currentImports);
-
+    
     // Tính toán dữ liệu phân trang cho exports
     const exportStartIndex = (exportPage - 1) * rowsPerPage;
     const exportEndIndex = exportStartIndex + rowsPerPage;
-    const currentExports = filteredExports.slice(
-      exportStartIndex,
-      exportEndIndex
-    );
+    const currentExports = filteredExports.slice(exportStartIndex, exportEndIndex);
     setPagedExports(currentExports);
   };
 
@@ -128,38 +119,34 @@ function FlockTransactions() {
 
   // Lọc dữ liệu theo tháng
   const filterDataByMonth = () => {
-    const [year, month] = selectedMonth.split("-");
-
+    const [year, month] = selectedMonth.split('-');
+    
     // Lọc imports
-    const filteredImportData = imports.filter((imp) => {
+    const filteredImportData = imports.filter(imp => {
       if (!imp.importDate) return false;
       const importDate = new Date(imp.importDate);
-      return (
-        importDate.getFullYear() === parseInt(year) &&
-        importDate.getMonth() + 1 === parseInt(month)
-      );
+      return importDate.getFullYear() === parseInt(year) && 
+             importDate.getMonth() + 1 === parseInt(month);
     });
     setFilteredImports(filteredImportData);
 
     // Lọc exports
-    const filteredExportData = exports.filter((exp) => {
+    const filteredExportData = exports.filter(exp => {
       const transactionDate = exp.transactionDate || exp.exportDate;
       if (!transactionDate) return false;
       const date = new Date(transactionDate);
-      return (
-        date.getFullYear() === parseInt(year) &&
-        date.getMonth() + 1 === parseInt(month)
-      );
+      return date.getFullYear() === parseInt(year) && 
+             date.getMonth() + 1 === parseInt(month);
     });
     setFilteredExports(filteredExportData);
-
+    
     // Cập nhật tổng số hàng
-    setPagination((prev) => ({
+    setPagination(prev => ({
       ...prev,
       totalImportRows: filteredImportData.length,
       totalExportRows: filteredExportData.length,
       importPage: 1,
-      exportPage: 1,
+      exportPage: 1
     }));
   };
 
@@ -167,8 +154,7 @@ function FlockTransactions() {
   const loadExports = async () => {
     try {
       const response = await transactionAPI.getAll();
-      const exportData =
-        response.data?.data?.items || response.data?.items || [];
+      const exportData = response.data?.data?.items || response.data?.items || [];
       setExports(exportData);
     } catch (error) {
       console.error("Error loading exports:", error);
@@ -195,7 +181,7 @@ function FlockTransactions() {
   // Xử lý khi export thành công
   const handleExportSuccess = async (newExport) => {
     try {
-      setExports((prev) => [newExport, ...prev]);
+      setExports(prev => [newExport, ...prev]);
       await loadExports();
       await loadFlocks();
     } catch (error) {
@@ -205,48 +191,46 @@ function FlockTransactions() {
 
   // Xử lý phân trang cho imports
   const handleImportPageChange = (page) => {
-    setPagination((prev) => ({
+    setPagination(prev => ({
       ...prev,
-      importPage: page,
+      importPage: page
     }));
   };
 
   // Xử lý phân trang cho exports
   const handleExportPageChange = (page) => {
-    setPagination((prev) => ({
+    setPagination(prev => ({
       ...prev,
-      exportPage: page,
+      exportPage: page
     }));
   };
 
   // Thay đổi số dòng trên trang
   const handleRowsPerPageChange = (rows) => {
-    setPagination((prev) => ({
+    setPagination(prev => ({
       ...prev,
       rowsPerPage: rows,
       importPage: 1,
-      exportPage: 1,
+      exportPage: 1
     }));
   };
 
   return (
     <div className="px-8 mt-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0">
-          Nhập / Xuất chuồng
-        </h1>
-
+        <h1 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0">Nhập / Xuất chuồng</h1>
+        
         {/* Bộ lọc chung cho toàn trang */}
-        <MonthYearFilter
+        <MonthYearFilter 
           selectedMonth={selectedMonth}
           onMonthChange={setSelectedMonth}
           loading={loading}
         />
       </div>
-
+      
       {/* DASHBOARD KPI */}
       <DashboardKPI selectedMonth={selectedMonth} />
-
+      
       {/* TAB */}
       <ImportTabs tab={tab} setTab={setTab} />
 
@@ -256,12 +240,9 @@ function FlockTransactions() {
           {/* BUTTON và thông tin */}
           <div className="flex flex-col md:flex-row md:items-center justify-between mt-6 gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-gray-700">
-                Danh sách xuất chuồng
-              </h2>
+              <h2 className="text-lg font-semibold text-gray-700">Danh sách xuất chuồng</h2>
               <p className="text-sm text-gray-500">
-                Quản lý các đơn xuất gia súc - Tháng{" "}
-                {selectedMonth.split("-")[1]}/{selectedMonth.split("-")[0]}
+                Quản lý các đơn xuất gia súc - Tháng {selectedMonth.split('-')[1]}/{selectedMonth.split('-')[0]}
               </p>
               {/* Thêm thông tin số đàn đang nuôi */}
               <p className="text-sm text-blue-600 mt-1">
@@ -296,26 +277,17 @@ function FlockTransactions() {
                   <th className="py-4 px-4 font-medium">Khách hàng</th>
                   <th className="py-4 px-4 font-medium">Đàn xuất</th>
                   <th className="py-4 px-4 font-medium text-right">Số lượng</th>
-                  <th className="py-4 px-4 font-medium text-right">
-                    Trọng lượng TB
-                  </th>
+                  <th className="py-4 px-4 font-medium text-right">Trọng lượng TB</th>
                   <th className="py-4 px-4 font-medium text-right">Giá/kg</th>
-                  <th className="py-4 px-4 font-medium text-right">
-                    Doanh thu
-                  </th>
+                  <th className="py-4 px-4 font-medium text-right">Doanh thu</th>
                   <th className="py-4 px-4 font-medium">Trạng thái</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {pagedExports.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan="9"
-                      className="py-8 px-4 text-center text-gray-500"
-                    >
-                      {loading
-                        ? "Đang tải dữ liệu..."
-                        : "Không có dữ liệu xuất chuồng trong tháng này"}
+                    <td colSpan="9" className="py-8 px-4 text-center text-gray-500">
+                      {loading ? "Đang tải dữ liệu..." : "Không có dữ liệu xuất chuồng trong tháng này"}
                     </td>
                   </tr>
                 ) : (
@@ -355,12 +327,9 @@ function FlockTransactions() {
           {/* BUTTON và thông tin */}
           <div className="flex flex-col md:flex-row md:items-center justify-between mt-6 gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-gray-700">
-                Danh sách nhập chuồng
-              </h2>
+              <h2 className="text-lg font-semibold text-gray-700">Danh sách nhập chuồng</h2>
               <p className="text-sm text-gray-500">
-                Quản lý các lứa gia súc nhập chuồng - Tháng{" "}
-                {selectedMonth.split("-")[1]}/{selectedMonth.split("-")[0]}
+                Quản lý các lứa gia súc nhập chuồng - Tháng {selectedMonth.split('-')[1]}/{selectedMonth.split('-')[0]}
               </p>
             </div>
             <button
@@ -405,43 +374,43 @@ function FlockTransactions() {
 // Component cho item xuất chuồng
 function ExportItem({ item }) {
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
     }).format(amount);
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
+    if (!dateString) return 'N/A';
     try {
-      return new Date(dateString).toLocaleDateString("vi-VN");
+      return new Date(dateString).toLocaleDateString('vi-VN');
     } catch {
-      return "N/A";
+      return 'N/A';
     }
   };
 
   // Tính doanh thu nếu không có trong item
   const calculateRevenue = (item) => {
     if (item.totalRevenue) return item.totalRevenue;
-    return item.quantity * item.avgWeight * item.pricePerKg || 0;
+    return (item.quantity * item.avgWeight * item.pricePerKg) || 0;
   };
 
   return (
     <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
       <td className="py-4 px-4 font-medium text-gray-900">
-        {item._id?.slice(-6).toUpperCase() || "N/A"}
+        {item._id?.slice(-6).toUpperCase() || 'N/A'}
       </td>
       <td className="py-4 px-4 text-gray-700">
         {formatDate(item.exportDate || item.transactionDate)}
       </td>
       <td className="py-4 px-4 text-gray-700">
-        {item.customerName || item.customer || "N/A"}
+        {item.customerName || item.customer || 'N/A'}
       </td>
       <td className="py-4 px-4 text-gray-700">
-        {item.flockCode || item.flockId?.slice(-6).toUpperCase() || "N/A"}
+        {item.flockCode || item.flockId?.slice(-6).toUpperCase() || 'N/A'}
       </td>
       <td className="py-4 px-4 text-right text-gray-700">
-        {(item.quantity || 0).toLocaleString("vi-VN")}
+        {(item.quantity || 0).toLocaleString('vi-VN')}
       </td>
       <td className="py-4 px-4 text-right text-gray-700">
         {item.avgWeight || 0} kg
@@ -453,24 +422,17 @@ function ExportItem({ item }) {
         {formatCurrency(calculateRevenue(item))}
       </td>
       <td className="py-4 px-4">
-        <span
-          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-            item.status === "completed" || item.status === "Hoàn thành"
-              ? "bg-green-100 text-green-800"
-              : item.status === "pending" || item.status === "Đang xử lý"
-              ? "bg-yellow-100 text-yellow-800"
-              : "bg-gray-100 text-gray-800"
-          }`}
-        >
-          {item.status === "completed"
-            ? "Hoàn thành"
-            : item.status === "pending"
-            ? "Đang xử lý"
-            : item.status === "Đang xử lý"
-            ? "Đang xử lý"
-            : item.status === "Hoàn thành"
-            ? "Hoàn thành"
-            : "Đã hủy"}
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+          item.status === "completed" || item.status === "Hoàn thành"
+            ? "bg-green-100 text-green-800" 
+            : item.status === "pending" || item.status === "Đang xử lý"
+            ? "bg-yellow-100 text-yellow-800"
+            : "bg-gray-100 text-gray-800"
+        }`}>
+          {item.status === "completed" ? "Hoàn thành" : 
+           item.status === "pending" ? "Đang xử lý" : 
+           item.status === "Đang xử lý" ? "Đang xử lý" :
+           item.status === "Hoàn thành" ? "Hoàn thành" : "Đã hủy"}
         </span>
       </td>
     </tr>
