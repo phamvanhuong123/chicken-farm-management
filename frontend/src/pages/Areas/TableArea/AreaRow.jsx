@@ -2,7 +2,7 @@ import React from "react";
 
 import { Edit, Trash } from "lucide-react";
 
-function AreaRow({ item }) {
+function AreaRow({ item, onEdit }) {
   const statusColor = {
     ACTIVE: "bg-green-100 text-green-700",
     EMPTY: "bg-blue-100 text-blue-700",
@@ -45,7 +45,7 @@ function AreaRow({ item }) {
         <button
           className="p-2 rounded cursor-pointer hover:bg-blue-200"
           title="Chỉnh sửa"
-          TEAM-135-Chỉnh-sửa-khu-nuôi-BE
+          onClick={() => onEdit(item)}
         >
           <Edit size={16} className="w-4 h-4 text-blue-500" />
         </button>
