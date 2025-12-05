@@ -1,6 +1,6 @@
 import React from "react";
-
-import { Edit, Trash } from "lucide-react";
+import { Edit } from "lucide-react";
+import { Trash } from "lucide-react";
 
 function AreaRow({ item, onEdit }) {
   const statusColor = {
