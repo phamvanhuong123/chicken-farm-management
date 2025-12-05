@@ -155,10 +155,31 @@ const exportAreasToExcel = async (options) => {
     throw error;
   }
 };
+// Cập nhật khu nuôi
+const updateArea = async (id, data) => {
+  try {
+    const result = await areaModel.update(id, data);
+
+    if (!result || result.matchedCount === 0) {
+      const error = new Error("Không tìm thấy khu nuôi.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    return result;
+  } catch (error) {
+    if (!error.statusCode) {
+      error.statusCode = 500;
+      error.message = "Không thể cập nhật khu nuôi, vui lòng thử lại.";
+    }
+    throw error;
+  }
+};
 
 export const areaService = {
   createArea,
   getOverview,
   listAreas,
   exportAreasToExcel,
+  updateArea,
 };

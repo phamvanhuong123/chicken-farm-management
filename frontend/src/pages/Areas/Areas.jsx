@@ -18,6 +18,7 @@ function Areas() {
   });
 
   const [areas, setAreas] = useState([]);
+  const [staffList, setStaffList] = useState([]); // danh sách nhân viên
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -25,10 +26,12 @@ function Areas() {
     totalPages: 0,
   });
 
+  // Load overview 1 lần
   useEffect(() => {
     fetchOverview();
   }, []);
 
+  // Load danh sách khu khi filter thay đổi
   useEffect(() => {
     fetchAreas();
   }, [filters]);
@@ -44,6 +47,26 @@ function Areas() {
     setAreas(res.data);
     setPagination(res.pagination);
     setLoading(false);
+
+    // ⭐ GOM danh sách nhân viên từ tất cả khu
+    const staffSet = new Map();
+
+    res.data.forEach((area) => {
+      area.staff.forEach((st) => {
+        // BE KHÔNG TRẢ id → FE phải tự tạo key duy nhất
+        const key = `${st.name}-${st.avatarUrl}`;
+
+        if (!staffSet.has(key)) {
+          staffSet.set(key, {
+            id: key, // tạo ID tạm cho checkbox
+            name: st.name,
+            avatarUrl: st.avatarUrl,
+          });
+        }
+      });
+    });
+
+    setStaffList(Array.from(staffSet.values()));
   };
 
   return (
@@ -60,6 +83,7 @@ function Areas() {
         pagination={pagination}
         setFilters={setFilters}
         filters={filters}
+        staffList={staffList} // truyền đầy đủ danh sách nhân viên
       />
     </div>
   );
