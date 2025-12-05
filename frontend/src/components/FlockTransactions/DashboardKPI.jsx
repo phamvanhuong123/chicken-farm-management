@@ -2,6 +2,25 @@ import { useState, useEffect } from "react";
 import { importApi } from "../../apis/importApi";
 import { transactionAPI } from "../../apis/transaction.api";
 
+const parseDateFromImport = (dateValue) => {
+  if (!dateValue) return null;
+  
+  try {
+    if (typeof dateValue === 'object' && dateValue.$date) {
+      return new Date(dateValue.$date);
+    }
+    if (typeof dateValue === 'string') {
+      return new Date(dateValue);
+    }
+    if (dateValue instanceof Date) {
+      return dateValue;
+    }
+    return null;
+  } catch (error) {
+    return null;
+  }
+};
+
 export default function DashboardKPI({ selectedMonth }) {
   const [dashboardData, setDashboardData] = useState({
     totalImport: 0,
@@ -22,47 +41,50 @@ export default function DashboardKPI({ selectedMonth }) {
     setLoading(true);
     try {
       const [year, month] = selectedMonth.split('-');
+      const targetYear = parseInt(year);
+      const targetMonth = parseInt(month);
       
-      // Tải dữ liệu imports cho tháng được chọn
       const importResponse = await importApi.getList();
       const allImports = importResponse.data.data?.items || [];
       
-      // Lọc imports theo tháng
       const filteredImports = allImports.filter(imp => {
-        if (!imp.importDate) return false;
-        const importDate = new Date(imp.importDate);
-        return importDate.getFullYear() === parseInt(year) && 
-               importDate.getMonth() + 1 === parseInt(month);
+        const importDate = parseDateFromImport(imp.importDate);
+        if (!importDate || isNaN(importDate.getTime())) return false;
+        
+        const importYear = importDate.getFullYear();
+        const importMonth = importDate.getMonth() + 1;
+        
+        return importYear === targetYear && importMonth === targetMonth;
       });
       
-      // Tính tổng nhập tháng
-      const totalImport = filteredImports.reduce((sum, imp) => sum + (imp.quantity || 0), 0);
+      const totalImport = filteredImports.reduce((sum, imp) => {
+        return sum + (Number(imp.quantity) || 0);
+      }, 0);
 
-      // Tải dữ liệu exports (transactions) cho tháng được chọn
       const exportResponse = await transactionAPI.getAll();
       const allExports = exportResponse.data.data?.items || [];
       
-      // Lọc exports theo tháng
       const filteredExports = allExports.filter(exp => {
-        const transactionDate = exp.transactionDate || exp.exportDate;
-        if (!transactionDate) return false;
-        const date = new Date(transactionDate);
-        return date.getFullYear() === parseInt(year) && 
-               date.getMonth() + 1 === parseInt(month);
+        const transactionDate = parseDateFromImport(exp.transactionDate || exp.exportDate);
+        if (!transactionDate || isNaN(transactionDate.getTime())) return false;
+        
+        const exportYear = transactionDate.getFullYear();
+        const exportMonth = transactionDate.getMonth() + 1;
+        
+        return exportYear === targetYear && exportMonth === targetMonth;
       });
       
-      // Tính tổng xuất tháng
-      const totalExport = filteredExports.reduce((sum, exp) => sum + (exp.quantity || 0), 0);
+      const totalExport = filteredExports.reduce((sum, exp) => {
+        return sum + (Number(exp.quantity) || 0);
+      }, 0);
 
-      // Tính tổng doanh thu tháng
       const revenue = filteredExports.reduce((sum, exp) => {
-        const quantity = exp.quantity || 0;
-        const avgWeight = exp.avgWeight || 0;
-        const pricePerKg = exp.pricePerKg || 0;
+        const quantity = Number(exp.quantity) || 0;
+        const avgWeight = Number(exp.avgWeight) || 0;
+        const pricePerKg = Number(exp.pricePerKg) || 0;
         return sum + (quantity * avgWeight * pricePerKg);
       }, 0);
 
-      // Tính tổng đơn chờ xử lý
       const pendingOrders = filteredExports.filter(exp => {
         const status = exp.status?.toLowerCase();
         return status === 'pending' || status === 'đang xử lý' || status === 'chờ xử lý';
@@ -76,7 +98,6 @@ export default function DashboardKPI({ selectedMonth }) {
       });
 
     } catch (error) {
-      console.error("Error loading dashboard data:", error);
     } finally {
       setLoading(false);
     }
@@ -100,7 +121,6 @@ export default function DashboardKPI({ selectedMonth }) {
 
   return (
     <div className="mb-8">
-      {/* Header với tiêu đề */}
       <div className="mb-6">
         <h2 className="text-xl font-bold text-gray-800">Tổng quan tháng</h2>
         <p className="text-sm text-gray-500 mt-1">
@@ -108,9 +128,7 @@ export default function DashboardKPI({ selectedMonth }) {
         </p>
       </div>
 
-      {/* Grid KPI */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Tổng nhập tháng */}
         <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -132,7 +150,6 @@ export default function DashboardKPI({ selectedMonth }) {
           </div>
         </div>
 
-        {/* Tổng xuất tháng */}
         <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -154,7 +171,6 @@ export default function DashboardKPI({ selectedMonth }) {
           </div>
         </div>
 
-        {/* Doanh thu tháng */}
         <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -176,7 +192,6 @@ export default function DashboardKPI({ selectedMonth }) {
           </div>
         </div>
 
-        {/* Đơn chờ xử lý */}
         <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -199,7 +214,6 @@ export default function DashboardKPI({ selectedMonth }) {
         </div>
       </div>
 
-      {/* Thông tin thống kê bổ sung */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
           <div className="flex items-center justify-between">

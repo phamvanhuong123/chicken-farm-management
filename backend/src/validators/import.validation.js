@@ -1,5 +1,4 @@
 import Joi from "joi";
-
 export const validateImportCreate = (req, res, next) => {
   const schema = Joi.object({
     importDate: Joi.date().required(),
@@ -8,6 +7,8 @@ export const validateImportCreate = (req, res, next) => {
     quantity: Joi.number().integer().min(1).required(),
     avgWeight: Joi.number().min(0.1).required(),
     barn: Joi.string().required(),
+    flockId: Joi.string().allow('').optional(),                   
+    status: Joi.string().valid("Đang nuôi", "Hoàn thành").optional(), 
   });
 
   const { error } = schema.validate(req.body, { abortEarly: false });
@@ -36,7 +37,8 @@ export const validateImportUpdate = (req, res, next) => {
     quantity: Joi.number().integer().min(1).optional(),
     avgWeight: Joi.number().min(0.1).optional(),
     barn: Joi.string().optional(),
-    status: Joi.string().valid("Đang nuôi", "Hoàn thành").optional(),
+    flockId: Joi.string().allow('').optional(),                    
+    status: Joi.string().valid("Đang nuôi", "Hoàn thành").optional(), 
   }).min(1);
 
   const { error } = schema.validate(req.body, { abortEarly: false });

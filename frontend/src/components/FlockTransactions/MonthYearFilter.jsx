@@ -11,7 +11,6 @@ export default function MonthYearFilter({
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedMonthOnly, setSelectedMonthOnly] = useState("");
 
-  // Khởi tạo giá trị từ selectedMonth (format: "YYYY-MM")
   useEffect(() => {
     if (selectedMonth) {
       const [year, month] = selectedMonth.split('-');
@@ -20,7 +19,6 @@ export default function MonthYearFilter({
     }
   }, [selectedMonth]);
 
-  // Tạo danh sách tháng
   useEffect(() => {
     const months = [];
     for (let i = 1; i <= 12; i++) {
@@ -33,7 +31,6 @@ export default function MonthYearFilter({
     setMonthOptions(months);
   }, []);
 
-  // Tạo danh sách năm (5 năm gần nhất)
   useEffect(() => {
     const years = [];
     const currentYear = new Date().getFullYear();
@@ -48,13 +45,11 @@ export default function MonthYearFilter({
     
     setYearOptions(years);
     
-    // Nếu chưa có năm được chọn, chọn năm hiện tại
     if (!selectedYear) {
       setSelectedYear(currentYear.toString());
     }
   }, []);
 
-  // Khi thay đổi năm hoặc tháng
   useEffect(() => {
     if (selectedYear && selectedMonthOnly) {
       const newMonthYear = `${selectedYear}-${selectedMonthOnly}`;
@@ -81,7 +76,6 @@ export default function MonthYearFilter({
       )}
       
       <div className="flex flex-wrap gap-2">
-        {/* Chọn năm */}
         <select
           value={selectedYear}
           onChange={handleYearChange}
@@ -96,7 +90,6 @@ export default function MonthYearFilter({
           ))}
         </select>
 
-        {/* Chọn tháng */}
         <select
           value={selectedMonthOnly}
           onChange={handleMonthChange}
