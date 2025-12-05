@@ -4,6 +4,8 @@ import {
   getOverviewController,
   getAreaList,
   exportAreas,
+  updateArea, // NEW
+  deleteArea, // NEW
 } from "../../controllers/area.controller.js";
 
 const router = express.Router();
@@ -13,5 +15,10 @@ router.post("/", createArea); // Thêm khu nuôi mới
 router.get("/overview", getOverviewController); // KPI + biểu đồ
 router.get("/", getAreaList); // Danh sách + filter + paging
 router.get("/export", exportAreas); // Xuất Excel
+
+// Team 135 - Chỉnh sửa khu nuôi
+router.put("/:id", updateArea);
+// TEAM-136 Xóa khu nuôi
+router.delete("/:id", deleteArea); // TEAM-136
 
 export default router;

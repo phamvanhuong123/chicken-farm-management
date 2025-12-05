@@ -114,3 +114,22 @@ export const exportAreas = async (req, res, next) => {
     });
   }
 };
+//  TEAM-136: Xóa khu nuôi
+export const deleteArea = async (req, res, next) => {
+  try {
+    const id = req.params.id;
+
+    const result = await areaService.deleteArea(id);
+
+    if (result.status === "error") {
+      return res.status(400).json(result);
+    }
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Không thể xóa khu nuôi, vui lòng thử lại.",
+    });
+  }
+};

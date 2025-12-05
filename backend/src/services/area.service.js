@@ -1,5 +1,7 @@
 import ExcelJS from "exceljs";
 import { areaModel, AREA_STATUS } from "../models/area.model.js";
+import { ObjectId } from "mongodb";
+import { GET_DB } from "../config/mongodb.js";
 
 // Build query filter cho list
 const buildFilter = ({ search, status, staffName }) => {
@@ -155,10 +157,69 @@ const exportAreasToExcel = async (options) => {
     throw error;
   }
 };
+// Cập nhật khu nuôi
+const updateArea = async (id, data) => {
+  try {
+    const result = await areaModel.update(id, data);
+
+    if (!result || result.matchedCount === 0) {
+      const error = new Error("Không tìm thấy khu nuôi.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    return result;
+  } catch (error) {
+    if (!error.statusCode) {
+      error.statusCode = 500;
+      error.message = "Không thể cập nhật khu nuôi, vui lòng thử lại.";
+    }
+    throw error;
+  }
+};
+//  TEAM-136: Xóa khu nuôi
+const deleteArea = async (id) => {
+  try {
+    const areas = await areaModel.find({ _id: new ObjectId(id) });
+
+    if (!areas || areas.length === 0) {
+      return {
+        status: "error",
+        message: "Khu nuôi không tồn tại.",
+      };
+    }
+
+    const area = areas[0];
+
+    //  Không cho xóa nếu đang có đàn gà
+    if (area.currentCapacity > 0) {
+      return {
+        status: "error",
+        message: "Không thể xóa khu đang có đàn gà hoạt động.",
+      };
+    }
+
+    await GET_DB()
+      .collection(areaModel.AREA_COLLECTION_NAME)
+      .deleteOne({ _id: new ObjectId(id) });
+
+    return {
+      status: "success",
+      message: "Xóa thành công.",
+    };
+  } catch (error) {
+    return {
+      status: "error",
+      message: "Không thể xóa khu nuôi, vui lòng thử lại.",
+    };
+  }
+};
 
 export const areaService = {
   createArea,
   getOverview,
   listAreas,
   exportAreasToExcel,
+  updateArea,
+  deleteArea,
 };
