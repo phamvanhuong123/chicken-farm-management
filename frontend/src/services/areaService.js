@@ -24,8 +24,13 @@ export const exportAreasExcel = async (params = {}) => {
   return res.data; // blob file
 };
 
-// ⭐⭐ THÊM VÀO ĐÂY: TẠO KHU NUÔI MỚI
+//  TẠO KHU NUÔI MỚI
 export const createArea = async (data) => {
   const res = await axios.post(API_BASE_URL, data);
   return res.data; // backend trả { status, message, data }
+};
+// Xóa khu nuôi
+export const deleteArea = async (id) => {
+  const res = await axios.delete(`${API_BASE_URL}/${id}`);
+  return res.data; // backend trả status + message
 };

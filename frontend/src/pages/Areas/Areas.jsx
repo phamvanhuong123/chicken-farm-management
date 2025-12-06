@@ -48,7 +48,7 @@ function Areas() {
     setPagination(res.pagination);
     setLoading(false);
 
-    // ⭐ GOM danh sách nhân viên từ tất cả khu
+    //  GOM danh sách nhân viên từ tất cả khu
     const staffSet = new Map();
 
     res.data.forEach((area) => {
@@ -84,6 +84,10 @@ function Areas() {
         setFilters={setFilters}
         filters={filters}
         staffList={staffList} // truyền đầy đủ danh sách nhân viên
+        refreshAll={() => {
+          fetchAreas(); // refresh list
+          fetchOverview(); // refresh KPI
+        }}
       />
     </div>
   );
