@@ -1,6 +1,9 @@
 import React from "react";
 import AreaRow from "./AreaRow";
+import { Trash, Edit } from "lucide-react";
 import EditAreaModal from "../../../components/Areas/EditAreaModal";
+import { deleteArea } from "../../../services/areaService";
+import toast from "react-hot-toast";
 
 function TableArea({
   data,
@@ -9,6 +12,7 @@ function TableArea({
   setFilters,
   filters,
   staffList,
+  refreshAll,
 }) {
   // Modal state
   const [openEdit, setOpenEdit] = React.useState(false);
@@ -58,7 +62,8 @@ function TableArea({
               <AreaRow
                 key={area._id}
                 item={area}
-                onEdit={handleEdit} // 🔥 TRUYỀN CALLBACK NÀY
+                onEdit={handleEdit} //Chinh sửa khu nuôi
+                refreshAll={refreshAll} //xóa khu nuôi
               />
             ))
           )}

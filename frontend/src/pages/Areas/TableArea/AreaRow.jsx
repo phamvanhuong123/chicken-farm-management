@@ -1,8 +1,8 @@
 import React from "react";
-import { Edit } from "lucide-react";
-import { Trash } from "lucide-react";
+import { Edit, Trash } from "lucide-react";
+import DeleteArea from "../../../components/Areas/DeleteArea";
 
-function AreaRow({ item, onEdit }) {
+function AreaRow({ item, onEdit, refreshAll }) {
   const statusColor = {
     ACTIVE: "bg-green-100 text-green-700",
     EMPTY: "bg-blue-100 text-blue-700",
@@ -45,17 +45,15 @@ function AreaRow({ item, onEdit }) {
         <button
           className="p-2 rounded cursor-pointer hover:bg-blue-200"
           title="Chỉnh sửa"
-          onClick={() => onEdit(item)}
+          onClick={() => onEdit(item)} //Chinh sửa khu nuôi
         >
           <Edit size={16} className="w-4 h-4 text-blue-500" />
         </button>
 
-        <button
-          className="p-2 rounded cursor-pointer hover:bg-red-200"
-          title="Xóa"
-        >
-          <Trash size={16} className="w-4 h-4 text-red-500" />
-        </button>
+        <DeleteArea
+          area={item}
+          onDeleted={() => refreshAll?.()} // reload danh sách + KPI
+        />
       </td>
     </tr>
   );
