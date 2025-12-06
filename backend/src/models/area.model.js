@@ -76,6 +76,32 @@ const find = async (filter = {}, options = {}) => {
   return await cursor.toArray();
 };
 
+const update = async (id, data) => {
+  try {
+    const docToUpdate = { ...data };
+
+    // map staffId sang ObjectId nếu có
+    if (Array.isArray(docToUpdate.staff)) {
+      docToUpdate.staff = docToUpdate.staff.map((s) => ({
+        ...s,
+        staffId: s.staffId ? new ObjectId(s.staffId) : s.staffId,
+      }));
+    }
+
+    docToUpdate.updatedAt = new Date();
+
+    const result = await GET_DB()
+      .collection(AREA_COLLECTION_NAME)
+      .updateOne({ _id: new ObjectId(id) }, { $set: docToUpdate });
+
+    return result;
+  } catch (error) {
+    if (!error.statusCode) {
+      error.statusCode = 500;
+    }
+    throw error;
+  }
+};
 const aggregate = async (pipeline = []) => {
   return await GET_DB()
     .collection(AREA_COLLECTION_NAME)
@@ -91,4 +117,7 @@ export const areaModel = {
   count,
   find,
   aggregate,
+  update
 };
+
+
