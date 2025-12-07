@@ -3,8 +3,8 @@ import axios from "axios";
 const API = "http://localhost:8071/v1/imports";
 
 export const importApi = {
-  getList() {
-    return axios.get(API);
+  getList(params = {}) {
+    return axios.get(API, { params });
   },
 
   create(data) {

@@ -96,7 +96,7 @@ const Pagination = ({
   
   return (
     <div className={`flex flex-col sm:flex-row items-center justify-between p-4 bg-gray-50 rounded-lg border ${className}`}>
-      {/* Thông tin kết quả */}
+      {/* Thông tin kết quả - CẬP NHẬT HIỂN THỊ */}
       <div className="mb-3 sm:mb-0">
         <span className="text-sm text-gray-600">
           Hiển thị <span className="font-medium">{startRow} - {endRow}</span> trên tổng <span className="font-medium">{totalRows}</span> kết quả

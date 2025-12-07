@@ -11,6 +11,7 @@ export const ImportSchema = Joi.object({
   quantity: Joi.number().integer().min(1).required(),
   avgWeight: Joi.number().min(0.1).required(),
   barn: Joi.string().required(),
+  flockId: Joi.string().optional(),                   
   status: Joi.string().valid("Đang nuôi", "Hoàn thành").default("Đang nuôi"),
   createdAt: Joi.date().default(() => new Date()),
   updatedAt: Joi.date().default(() => new Date()),
