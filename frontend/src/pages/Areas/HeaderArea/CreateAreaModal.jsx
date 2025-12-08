@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { toast } from "react-hot-toast";
+import { toast } from "react-toastify";
 import { createArea } from "../../../services/areaService";
+import swal from "sweetalert";
 
 function CreateAreaModal({ open, onClose, onSuccess }) {
   const [form, setForm] = useState({
@@ -18,13 +19,16 @@ function CreateAreaModal({ open, onClose, onSuccess }) {
 
   const handleSubmit = async () => {
     // Validate FE
-    if (!form.name.trim() || !form.maxCapacity || !form.status) {
-      toast.error("Vui lòng nhập đầy đủ thông tin.");
+    if (!form.name.trim()) {
+      swal("Vui lòng nhập tên khu");
       return;
     }
-
+    if (!form.maxCapacity) {
+      swal("Vui lòng nhập sức chứa");
+      return;
+    }
     if (Number(form.maxCapacity) <= 0) {
-      toast.error("Sức chứa phải lớn hơn 0.");
+      swal("Sức chứa phải lớn hơn 0");
       return;
     }
 
@@ -39,11 +43,11 @@ function CreateAreaModal({ open, onClose, onSuccess }) {
 
       await createArea(payload);
 
-      toast.success("Thêm khu nuôi thành công!");
+      swal("Thêm khu nuôi thành công!");
       onClose();
       onSuccess(); // reload lại danh sách
     } catch (err) {
-      toast.error(
+      swal(
         err?.response?.data?.message ||
           "Không thể thêm khu nuôi, vui lòng thử lại."
       );
