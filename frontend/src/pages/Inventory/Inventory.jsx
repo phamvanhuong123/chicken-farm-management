@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { materialAPI } from "~/apis/material.api";
 import { toast } from "react-hot-toast";
 import MaterialDetail from "./MaterialDetail"; // 🆕 thêm import
+import MaterialWarningAlert from "./MaterialWarningAlert/MaterialWarningAlert"; // 🆕 Cảnh báo vật tư
+import AddMaterialModal from "./AddMaterialModal/AddMaterialModal"; // 🆕 Form thêm vật tư
 import {
   FaBox,
   FaExclamationTriangle,
@@ -38,6 +40,7 @@ export default function Inventory() {
   const [types, setTypes] = useState([]);
   const [typeColors, setTypeColors] = useState({});
   const [selectedMaterial, setSelectedMaterial] = useState(null); // 🆕 thêm đúng vị trí
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false); // 🆕 State cho modal thêm vật tư
 
   // ⏱ Debounce tìm kiếm
   useEffect(() => {
@@ -191,10 +194,13 @@ export default function Inventory() {
             </button>
           )}
 
-          <Button   className={'bg-green-400 hover:bg-green-500 cursor-pointer'}> <PlusIcon/>Thêm vật tư</Button>
+          <Button onClick={() => setIsAddModalOpen(true)}  className={'bg-green-400 hover:bg-green-500 cursor-pointer'}> <PlusIcon/>Thêm vật tư</Button>
 
         </div>
       </div>
+
+      {/* 🆕 Thông báo cảnh báo vật tư */}
+      <MaterialWarningAlert materials={materials} />
 
       {/* Thống kê */}
       <div className="grid grid-cols-4 gap-4">
@@ -357,6 +363,15 @@ export default function Inventory() {
           onClose={() => setSelectedMaterial(null)}
         />
       )}
+
+      {/* 🆕 Modal thêm vật tư */}
+      <AddMaterialModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAddSuccess={() => {
+        fetchData(); // 👉 load từ DB để có statusInfo đầy đủ
+    }}
+      />
     </div>
   );
 }

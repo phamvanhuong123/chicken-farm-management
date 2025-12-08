@@ -6,7 +6,10 @@ import { FIELD_REQUIRED_MESSAGE } from "~/utils/validators";
 import { LuEye, LuEyeClosed } from "react-icons/lu";
 import { login as apiLogin } from "~/services/authService";
 import { MoonLoader} from "react-spinners"
+import { useDispatch } from "react-redux";
+import { setUser } from "~/slices/authSlice";
 function LoginForm() {
+  const dispatch = useDispatch()
   const [loading,setLoading] = useState(false)
   const { register, handleSubmit, formState: { errors } } = useForm();
   const navigate = useNavigate();
@@ -24,6 +27,7 @@ function LoginForm() {
       const token = res.token;
       if (token) {
         localStorage.setItem("authToken", token);
+        dispatch(setUser(token))
         setStatusMessage({ type: "success", text: "Đăng nhập thành công" });
         // navigate to home or dashboard
         setTimeout(() => navigate("/dashboard/flocks"), 800);

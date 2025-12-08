@@ -10,6 +10,9 @@ export const materialAPI = {
   // 🟡 Lấy chi tiết 1 vật tư theo ID (TEAM-104)
   getById: (id) => axios.get(`${API_BASE_URL}/${id}`), // 👈 thêm dòng này
 
+  // ➕ Thêm vật tư mới
+  create: (data) => axios.post(API_BASE_URL, data),
+
   // Nhập Excel
   importExcel: (file) => {
     const formData = new FormData();
