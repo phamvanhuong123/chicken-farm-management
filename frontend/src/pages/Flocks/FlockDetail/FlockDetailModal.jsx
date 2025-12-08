@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { formatDate } from "~/utils/formatter";
 
 export default function FlockDetailModal({ flockId, onClose }) {
   const [flock, setFlock] = useState(null);
@@ -54,7 +55,7 @@ export default function FlockDetailModal({ flockId, onClose }) {
             <div className="grid grid-cols-2 gap-4 mb-6">
               <Info label="Mã lứa" value={flock.code} />
               <Info label="Giống gà" value={flock.speciesId} />
-              <Info label="Ngày nhập" value={flock.importDate} />
+              <Info label="Ngày nhập" value={formatDate(flock.createdAt)} />
               <Info label="Số lượng ban đầu" value={flock.initialCount} />
               <Info label="Số lượng hiện tại" value={flock.currentCount} />
               <Info label="Trọng lượng TB" value={`${flock.avgWeight} kg`} />
