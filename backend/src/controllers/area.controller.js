@@ -6,7 +6,7 @@ export const createArea = async (req, res, next) => {
     const { name, maxCapacity, staff, status, note } = req.body;
 
     // Validate các field bắt buộc
-    if (!name || !maxCapacity || !staff || !status) {
+    if (!name || !maxCapacity || !status) {
       return res.status(400).json({
         status: "error",
         message: "Vui lòng nhập đầy đủ thông tin.",
@@ -31,6 +31,22 @@ export const createArea = async (req, res, next) => {
       return res.status(400).json({
         status: "error",
         message: "Sức chứa phải lớn hơn 0.",
+      });
+    }
+    // 🔍 KIỂM TRA TÊN KHU ĐÃ TỒN TẠI
+    const existing = await areaService.listAreas({
+      search: name.trim(),
+      limit: 999999,
+    });
+
+    if (
+      existing.items.some(
+        (a) => a.name.trim().toLowerCase() === name.trim().toLowerCase()
+      )
+    ) {
+      return res.status(400).json({
+        status: "error",
+        message: "Tên khu nuôi đã tồn tại.",
       });
     }
 

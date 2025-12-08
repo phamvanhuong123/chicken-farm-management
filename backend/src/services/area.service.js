@@ -24,6 +24,15 @@ const buildFilter = ({ search, status, staffName }) => {
 
 const createArea = async (data) => {
   try {
+    // 🔍 Kiểm tra tên khu đã tồn tại
+    const exists = await areaModel.find({ name: data.name.trim() });
+
+    if (exists.length > 0) {
+      const error = new Error("Tên khu nuôi đã tồn tại.");
+      error.statusCode = 400;
+      throw error;
+    }
+
     const result = await areaModel.create(data);
     return result;
   } catch (error) {
