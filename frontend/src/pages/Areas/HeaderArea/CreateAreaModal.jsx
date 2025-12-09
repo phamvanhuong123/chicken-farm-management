@@ -19,7 +19,6 @@ function CreateAreaModal({ open, onClose, onSuccess }) {
   const handleSubmit = async () => {
     // Validate FE
     if (!form.name.trim()) {
-     
       swal("Vui lòng nhập tên khu");
       return;
     }

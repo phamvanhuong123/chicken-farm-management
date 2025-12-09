@@ -3,9 +3,15 @@ import HeaderArea from "./HeaderArea/HeaderArea.jsx";
 import StatisticalArea from "./StatisticalArea/StatisticalArea.jsx";
 import FilterArea from "./FilterArea/FilterArea.jsx";
 import TableArea from "./TableArea/TableArea.jsx";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchEmployeeApi } from "../../slices/employeeSlice";
+
 import { getAreaList, getAreaOverview } from "../../services/areaService";
 
 function Areas() {
+  const dispatch = useDispatch(); // dùng để lấy danh sách nhân viên
+  const employees = useSelector((state) => state.employeeReducer.employees);
+
   const [loading, setLoading] = useState(false);
   const [overview, setOverview] = useState(null);
 
@@ -18,7 +24,7 @@ function Areas() {
   });
 
   const [areas, setAreas] = useState([]);
-  const [staffList, setStaffList] = useState([]); // danh sách nhân viên
+  //const [staffList, setStaffList] = useState([]); // danh sách nhân viên
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -26,7 +32,12 @@ function Areas() {
     totalPages: 0,
   });
 
-  // Load overview 1 lần
+  // ⭐ 1) Load danh sách nhân viên ngay khi mở trang
+  useEffect(() => {
+    dispatch(fetchEmployeeApi("all")); // API lấy toàn bộ nhân viên
+  }, [dispatch]);
+
+  // ⭐ 2) Load kpi toàn bộ khu nuôi ngay khi mở trang
   useEffect(() => {
     fetchOverview();
   }, []);
@@ -49,24 +60,24 @@ function Areas() {
     setLoading(false);
 
     //  GOM danh sách nhân viên từ tất cả khu
-    const staffSet = new Map();
+    //   const staffSet = new Map();
 
-    res.data.forEach((area) => {
-      area.staff.forEach((st) => {
-        // BE KHÔNG TRẢ id → FE phải tự tạo key duy nhất
-        const key = `${st.name}-${st.avatarUrl}`;
+    //   res.data.forEach((area) => {
+    //     area.staff.forEach((st) => {
+    //       // BE KHÔNG TRẢ id → FE phải tự tạo key duy nhất
+    //       const key = `${st.name}-${st.avatarUrl}`;
 
-        if (!staffSet.has(key)) {
-          staffSet.set(key, {
-            id: key, // tạo ID tạm cho checkbox
-            name: st.name,
-            avatarUrl: st.avatarUrl,
-          });
-        }
-      });
-    });
+    //       if (!staffSet.has(key)) {
+    //         staffSet.set(key, {
+    //           id: key, // tạo ID tạm cho checkbox
+    //           name: st.name,
+    //           avatarUrl: st.avatarUrl,
+    //         });
+    //       }
+    //     });
+    //   });
 
-    setStaffList(Array.from(staffSet.values()));
+    //   setStaffList(Array.from(staffSet.values()));
   };
 
   return (
@@ -83,7 +94,7 @@ function Areas() {
         pagination={pagination}
         setFilters={setFilters}
         filters={filters}
-        staffList={staffList} // truyền đầy đủ danh sách nhân viên
+        employees={employees} // truyền đầy đủ danh sách nhân viên
         refreshAll={() => {
           fetchAreas(); // refresh list
           fetchOverview(); // refresh KPI

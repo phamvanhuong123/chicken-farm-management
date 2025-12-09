@@ -10,6 +10,13 @@ function AreaRow({ item, onEdit, refreshAll }) {
     INCIDENT: "bg-red-100 text-red-700",
   }[item.status];
 
+  const statusText = {
+    ACTIVE: "Đang hoạt động",
+    EMPTY: "Trống",
+    MAINTENANCE: "Bảo trì",
+    INCIDENT: "Sự cố",
+  };
+
   return (
     <tr className="border-b hover:bg-gray-50">
       <td className="p-2">{item.name}</td>
@@ -22,11 +29,9 @@ function AreaRow({ item, onEdit, refreshAll }) {
         <div className="flex flex-col">
           {item.staff.map((s) => (
             <div key={s.name} className="flex items-center gap-2 mb-1">
-              <img
-                src={s.avatarUrl}
-                alt=""
-                className="w-8 h-8 rounded-full object-cover"
-              />
+              <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
+                {s.name.charAt(0).toUpperCase()}
+              </div>
               <span>{s.name}</span>
             </div>
           ))}
@@ -35,7 +40,7 @@ function AreaRow({ item, onEdit, refreshAll }) {
 
       <td className="p-2">
         <span className={`px-2 py-1 rounded text-sm ${statusColor}`}>
-          {item.status}
+          {statusText[item.status]}
         </span>
       </td>
 
