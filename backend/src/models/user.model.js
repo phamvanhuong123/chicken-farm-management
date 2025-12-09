@@ -107,7 +107,12 @@ const getAllUser = async () => {
   return GET_DB()
     .collection(USER_COLLECTION_NAME)
     .find({ verified: true })
-    .project({ password: 0 })
+    .project({
+      //password: 0,
+      _id: 1,
+      username: 1,
+      avatarUrl: 1,
+    })
     .toArray();
 };
 

@@ -15,6 +15,8 @@ import { userValidate } from "~/validators/user.validation";
 
 const router = express.Router();
 router.get("/", getAllUser);
+router.get("/all", getAllUser); // THÊM DÒNG NÀY
+
 router.post(
   "/register",
   userValidate.createNew,

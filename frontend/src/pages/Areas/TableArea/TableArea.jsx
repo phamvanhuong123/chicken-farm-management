@@ -11,7 +11,7 @@ function TableArea({
   pagination,
   setFilters,
   filters,
-  staffList,
+  employees,
   refreshAll,
 }) {
   // Modal state
@@ -98,7 +98,10 @@ function TableArea({
         open={openEdit}
         onClose={() => setOpenEdit(false)}
         area={selectedArea}
-        staffList={staffList || []} // danh sách nhân viên
+        staffList={employees.map((e) => ({
+          id: e._id, // dùng '_id' làm id
+          name: e.username, // username => name
+        }))} // danh sách nhân viên
         onSuccess={() => {
           // Reload lại bảng bằng cách giữ nguyên filter
           setFilters((prev) => ({ ...prev }));

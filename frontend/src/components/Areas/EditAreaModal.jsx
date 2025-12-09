@@ -3,6 +3,9 @@ import { areaApi } from "../../apis/areaApi";
 import toast from "react-hot-toast";
 
 function EditAreaModal({ open, onClose, area, staffList, onSuccess }) {
+  // 🔥 Debug xem FE nhận đúng gì
+  console.log("👉 staffList FE nhận được:", staffList);
+  console.log("👉 area.staff từ BE:", area?.staff);
   if (!open || !area) return null;
 
   const [form, setForm] = useState({
@@ -16,11 +19,17 @@ function EditAreaModal({ open, onClose, area, staffList, onSuccess }) {
   useEffect(() => {
     setForm({
       maxCapacity: area.maxCapacity,
-      staff: area.staff?.map((s) => s.id) || [],
+      staff:
+        area.staff
+          ?.map((s) => {
+            const emp = staffList.find((e) => e.name === s.name);
+            return emp ? emp._id : null;
+          })
+          .filter(Boolean) || [],
       status: area.status,
       note: area.note || "",
     });
-  }, [area]);
+  }, [area, staffList]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -41,7 +50,6 @@ function EditAreaModal({ open, onClose, area, staffList, onSuccess }) {
       .filter((st) => form.staff.includes(st.id))
       .map((st) => ({
         name: st.name,
-        avatarUrl: st.avatarUrl,
       }));
 
     const payload = {
@@ -112,10 +120,10 @@ function EditAreaModal({ open, onClose, area, staffList, onSuccess }) {
           onChange={handleChange}
           className="border p-2 w-full mb-3"
         >
-          <option value="ACTIVE">ACTIVE</option>
-          <option value="EMPTY">EMPTY</option>
-          <option value="MAINTENANCE">MAINTENANCE</option>
-          <option value="INCIDENT">INCIDENT</option>
+          <option value="ACTIVE">Đang hoạt động</option>
+          <option value="EMPTY">Trống</option>
+          <option value="MAINTENANCE">Bảo trì</option>
+          <option value="INCIDENT">Sự cố</option>
         </select>
 
         {/* Ghi chú */}
