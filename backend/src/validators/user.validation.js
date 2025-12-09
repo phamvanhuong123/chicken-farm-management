@@ -50,7 +50,7 @@ const addEmployee = async (req, res, next) =>{
 const updateEmployee = async (req, res, next) => {
   const conditionCorrect = Joi.object({
     roleId : Joi.string().required().valid("employee").strict().trim(),
-    salary : Joi.number().min(0).max(2000000000).default(0),
+    salary : Joi.number().strict().min(0).max(2000000000).default(0).required(),
     status: Joi.string().valid("working", "onLeave").required()
   })
   try{

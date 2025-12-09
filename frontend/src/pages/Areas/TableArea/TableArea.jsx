@@ -1,13 +1,37 @@
 import React from "react";
 import AreaRow from "./AreaRow";
+import { Trash, Edit } from "lucide-react";
+import EditAreaModal from "../../../components/Areas/EditAreaModal";
+import { deleteArea } from "../../../services/areaService";
+import toast from "react-hot-toast";
 
-function TableArea({ data, loading, pagination, setFilters, filters }) {
+function TableArea({
+  data,
+  loading,
+  pagination,
+  setFilters,
+  filters,
+  staffList,
+  refreshAll,
+}) {
+  // Modal state
+  const [openEdit, setOpenEdit] = React.useState(false);
+  const [selectedArea, setSelectedArea] = React.useState(null);
+
+  // Mở modal chỉnh sửa
+  const handleEdit = (area) => {
+    setSelectedArea(area);
+    setOpenEdit(true);
+  };
+
+  // Hàm đổi trang
   const changePage = (page) => {
     setFilters((prev) => ({ ...prev, page }));
   };
 
   return (
     <div className="bg-white shadow rounded-lg p-4">
+      {/* Table */}
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b">
@@ -34,7 +58,14 @@ function TableArea({ data, loading, pagination, setFilters, filters }) {
               </td>
             </tr>
           ) : (
-            data.map((area) => <AreaRow key={area._id} item={area} />)
+            data.map((area) => (
+              <AreaRow
+                key={area._id}
+                item={area}
+                onEdit={handleEdit} //Chinh sửa khu nuôi
+                refreshAll={refreshAll} //xóa khu nuôi
+              />
+            ))
           )}
         </tbody>
       </table>
@@ -61,6 +92,18 @@ function TableArea({ data, loading, pagination, setFilters, filters }) {
           ▶
         </button>
       </div>
+
+      {/* 🔥 Edit Area Modal */}
+      <EditAreaModal
+        open={openEdit}
+        onClose={() => setOpenEdit(false)}
+        area={selectedArea}
+        staffList={staffList || []} // danh sách nhân viên
+        onSuccess={() => {
+          // Reload lại bảng bằng cách giữ nguyên filter
+          setFilters((prev) => ({ ...prev }));
+        }}
+      />
     </div>
   );
 }

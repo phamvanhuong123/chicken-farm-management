@@ -1,4 +1,4 @@
-import { CircleDollarSign, Eye, Mail, NotebookPen, Phone } from "lucide-react";
+import { CircleDollarSign, Mail, Phone } from "lucide-react";
 import { useSelector } from "react-redux";
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
@@ -11,9 +11,14 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { formatDate, formatVND, getLastUpperChar } from "~/utils/formatter";
+import EditButton from "./EditButton";
+import DeleteButton from "./DeleteButton";
 function StaffCard() {
   const employees = useSelector(state => state.employeeReducer?.employees)
-
+  const colorStatus = {
+    working : "bg-green-200 text-green-700",
+    onLeave : "bg-red-200 text-red-700"
+  }
 
   if ([...employees].length === 0){
     return <>
@@ -34,8 +39,9 @@ function StaffCard() {
               <div>
                 <CardTitle>{employee?.username}</CardTitle>
                 <CardDescription>{employee.role == "employee" && "Nhân viên"}</CardDescription>
-                <Badge className="bg-green-200 text-green-700">
+                <Badge className={colorStatus[employee.status]}>
                   {employee.status === "working" && "Đang làm việc" }
+                  {employee.status === "onLeave" && "Nghĩ phép" }
                 </Badge>
               </div>
             </div>
@@ -59,12 +65,8 @@ function StaffCard() {
           <CardFooter className="flex gap-2 justify-between">
             <p>{formatDate(employee?.createdAt)}</p>
             <div className="flex gap-1">
-              <button className="cursor-pointer hover:bg-gray-100 p-1.5 rounded-[7px]">
-                <Eye size={18} />
-              </button>
-              <button className="cursor-pointer hover:bg-gray-100 p-1.5 rounded-[7px] ">
-                <NotebookPen size={18} />
-              </button>
+              <EditButton employee={employee}/>
+              <DeleteButton id={employee?._id}/>
             </div>
           </CardFooter>
         </Card>

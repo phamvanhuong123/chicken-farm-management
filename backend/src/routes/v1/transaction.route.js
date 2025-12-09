@@ -26,10 +26,10 @@ router.post("/import", createImportTransaction);
 // [GET] /v1/transactions/:id/invoice - Xuất hóa đơn PDF
 router.get("/:id/invoice", exportInvoicePDF);
 
-// [GET] /v1/transactions/:id - Lấy chi tiết giao dịch
-router.get("/:id", getTransactionById);
-
 // [PATCH] /v1/transactions/:id/status - Cập nhật trạng thái
 router.patch("/:id/status", updateTransactionStatus);
+
+// [GET] /v1/transactions/:id - Lấy chi tiết giao dịch
+router.get("/:id", getTransactionById);
 
 export default router;

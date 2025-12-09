@@ -29,6 +29,8 @@ export const createImport = async (req, res, next) => {
       quantity: Joi.number().integer().min(1).required(),
       avgWeight: Joi.number().min(0.1).required(),
       barn: Joi.string().required(),
+      flockId: Joi.string().optional(),                    
+      status: Joi.string().valid("Đang nuôi", "Hoàn thành").default("Đang nuôi").optional(),
     });
 
     const body = await schema.validateAsync(req.body, {

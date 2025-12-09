@@ -24,7 +24,8 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { transactionAPI } from "~/apis/transaction.api";
-
+import { flockApi } from "~/apis/flockApi";
+import { areaApi } from "~/apis/areaApi";
 // Danh sách mẫu
 const TRANSACTION_TYPES = [
   { value: "Bán", label: "Bán" },
@@ -170,37 +171,75 @@ function ExportTransactions({ isOpen, onClose, flocks, onExportSuccess }) {
 
   // Handle submit
   const handleSubmit = async () => {
-    if (!validateForm()) {
-      return;
-    }
-
+    if (!validateForm()) return;
+    
     setLoading(true);
     try {
+      // 1. Tạo ExportRecord (hiện tại)
       const exportData = {
         transactionDate: formData.transactionDate,
         flockId: formData.flockId,
-        quantity: Number(formData.quantity),
-        avgWeight: Number(formData.avgWeight),
-        pricePerKg: Number(formData.pricePerKg),
-        customerName: formData.customerName.trim(),
+        quantity: parseInt(formData.quantity),
+        avgWeight: parseFloat(formData.avgWeight),
+        pricePerKg: parseFloat(formData.pricePerKg),
+        customerName: formData.customerName,
         transactionType: formData.transactionType,
         paymentMethod: formData.paymentMethod,
-        note: formData.note.trim(),
-      };
-
-      const response = await transactionAPI.createExport(exportData);
-
-      if (response.data) {
-        toast.success("Tạo đơn xuất thành công.");
-        onExportSuccess && onExportSuccess(response.data.data);
-        resetForm();
-        onClose();
+        note: formData.note,
+        totalRevenue: calculateRevenue(),
+        status: "Đang xử lý" 
+      };      
+      const exportRes = await transactionAPI.createExport(exportData);
+      
+      // 2. Cập nhật Flock (giảm currentCount)
+      const flockId = formData.flockId;
+      const selectedFlock = flocks.find(f => f._id === flockId);
+      
+      if (selectedFlock) {
+        const updatedFlockData = {
+          currentCount: selectedFlock.currentCount - parseInt(formData.quantity),
+          status: (selectedFlock.currentCount - parseInt(formData.quantity) <= 0) 
+                  ? "Sold" 
+                  : "Raising"
+        };
+        await flockApi.update(flockId, updatedFlockData);
       }
+      
+      // 3. Cập nhật Area (giảm currentCapacity)
+      if (selectedFlock && selectedFlock.areaId) {
+        try {
+          // Lấy danh sách areas và tìm area có code = areaId
+          const areasRes = await areaApi.getAll();
+          const areas = areasRes.data?.data || areasRes.data || [];
+          
+          // Tìm area bằng code (A001, A002, ...)
+          const area = areas.find(a => a.code === selectedFlock.areaId);
+          
+          if (area) {
+            const updatedAreaData = {
+              currentCapacity: Math.max(0, (area.currentCapacity || 0) - parseInt(formData.quantity))
+            };
+            
+            // Gọi API cập nhật với _id thực của area
+            await areaApi.update(area._id, updatedAreaData);
+          } else {
+            console.warn(`Không tìm thấy area với code: ${selectedFlock.areaId}`);
+          }
+        } catch (areaError) {
+          console.error("Lỗi khi cập nhật area:", areaError);
+          // Không throw error để không ảnh hưởng đến tạo export
+        }
+      }
+      
+      // 4. Success handling
+      toast.success("Tạo đơn xuất thành công.");
+      onExportSuccess && onExportSuccess(exportRes.data.data);
+      resetForm();
+      onClose();
+      
     } catch (error) {
       console.error("Lỗi tạo đơn xuất:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        "Không thể lưu đơn hàng, vui lòng thử lại sau.";
+      const errorMessage = error.response?.data?.message || "Không thể lưu đơn hàng.";
       toast.error(errorMessage);
     } finally {
       setLoading(false);

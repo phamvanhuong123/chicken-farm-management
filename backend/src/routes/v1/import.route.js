@@ -12,7 +12,6 @@ import {
 
 import {
   validateImportCreate,
-  validateImportUpdate,
 } from "../../validators/import.validation.js";
 
 const router = express.Router();

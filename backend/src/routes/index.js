@@ -1,24 +1,26 @@
-import express from 'express'
-import flockRoute from './v1/flock.route.js'
-import materialRoute from './v1/material.route.js'
-import importRoute from './v1/import.route.js'
-import authRoutes from './v1/auth.routes.js'
-import transactionRoute from './v1/transaction.route.js'
-import areaRoute from './v1/area.route'
-const router = express.Router()
+import express from "express";
+import flockRoute from "./v1/flock.route.js";
+import materialRoute from "./v1/material.route.js";
+import importRoute from "./v1/import.route.js";
+import authRoutes from "./v1/auth.routes.js";
+import areaRoute from "./v1/area.route.js";
+import transactionRoute from "./v1/transaction.route.js";
+const router = express.Router();
 
 router.get("/status", (req, res) => {
   res.json({ data: "ok" });
 });
 // nhóm route đàn gà (Chỉ định rõ prefix /flocks)
-router.use('/flocks', flockRoute)
+router.use("/flocks", flockRoute);
 // nhóm route kho, vật tư
-router.use('/materials', materialRoute)
+router.use("/materials", materialRoute);
 // nhóm route chuồng
-// nhập chuồng
-router.use('/imports', importRoute)
-router.use("/auth", authRoutes);
-router.use('/transactions', transactionRoute)
 router.use("/areas", areaRoute);
+// nhập chuồng
+router.use("/imports", importRoute);
+router.use("/auth", authRoutes);
+router.use("/transactions", transactionRoute);
+
+router.use("/transactions", transactionRoute);
 
 export const APIs_V1 = router;

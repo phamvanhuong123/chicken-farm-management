@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import swal from "sweetalert";
+import { toast } from "react-toastify";
 import { createArea } from "../../../services/areaService";
+import swal from "sweetalert";
 
 function CreateAreaModal({ open, onClose, onSuccess }) {
   const [form, setForm] = useState({
@@ -19,14 +21,14 @@ function CreateAreaModal({ open, onClose, onSuccess }) {
   const handleSubmit = async () => {
     // Validate FE
     if (!form.name.trim()) {
-      swal("Vui lòng nhập tên khu ");
+     
+      swal("Vui lòng nhập tên khu");
       return;
     }
     if (!form.maxCapacity) {
       swal("Vui lòng nhập sức chứa");
       return;
     }
-
     if (Number(form.maxCapacity) <= 0) {
       swal("Sức chứa phải lớn hơn 0");
       return;

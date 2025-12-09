@@ -8,6 +8,7 @@ import HeaderFlock from "./HeaderFlock/HeaderFlock";
 import FilterFlock from "./FilterFlock/FilterFlock";
 import FlockDetailModal from "./FlockDetail/FlockDetailModal";
 import EditFlockModal from "./EditFlockModal/EditFlockModal";
+import { set } from "date-fns";
 
 // Component FlockRow (Không thay đổi)
 const FlockRow = ({
@@ -65,6 +66,7 @@ function Flocks() {
   const [flocks, setFlocks] = useState([]); // Danh sách master
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showAddModal, setShowAddModal] = useState(false);
   const rowsPerPage = 5;
 
   // State cho bộ lọc
@@ -102,6 +104,10 @@ function Flocks() {
   const filteredFlocks = useMemo(() => {
     // Chuyển đổi searchTerm sang chữ thường một lần
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    const handleAddFlock = (newFlock) => {
+      setFlocks((prev) => [newFlock, ...prev]);  // đưa đàn mới lên đầu bảng
+    };
+
 
     return flocks.filter(flock => {
       // Logic lọc trạng thái
@@ -128,6 +134,15 @@ function Flocks() {
     [...new Set(flocks.map(flock => flock.speciesId).filter(Boolean))]
   , [flocks]);
 
+
+  //Lấy dữ liệu để thêm đàn gà
+  const addFlockData =  (data) => {
+    console.log(data)
+    const newFlockList = [...flocks];
+    newFlockList.unshift(data);
+    setFlocks(newFlockList);
+  }
+  
   // === CẬP NHẬT RESET TRANG ===
   useEffect(() => {
     setCurrentPage(1); // Quay về trang 1 mỗi khi bộ lọc HOẶC tìm kiếm thay đổi
@@ -202,7 +217,7 @@ function Flocks() {
 
   return (
     <div className="px-8 mt-8">
-      <HeaderFlock />
+      <HeaderFlock addFlockData={addFlockData}/>
       
       <Statistical flocks={filteredFlocks} />
       
