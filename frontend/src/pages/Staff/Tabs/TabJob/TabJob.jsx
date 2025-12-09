@@ -1,6 +1,8 @@
+import ListJob from "./ListJob/ListJob"
+
 function TabJob(){
     return <>
-        Công việc
+        <ListJob/>
     </>
 }
 export default TabJob

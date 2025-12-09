@@ -71,7 +71,6 @@ function SearchUser({
   useEffect(() => {
     dispatch(fetchGetAllUserApi());
   }, [dispatch]);
-  console.log(users);
   return (
     <div className="mb-3.5">
       <input

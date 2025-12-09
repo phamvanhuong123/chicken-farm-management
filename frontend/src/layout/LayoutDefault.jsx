@@ -15,7 +15,7 @@ function LayoutDefault() {
  
 
   return (
-    <div className="min-h-screen flex flex-col ">
+    <div className="min-h-screen  flex flex-col overflow-auto">
       {/* Fixed Header */}
       <Header 
         onToggleSidebar={toggleSidebar} 

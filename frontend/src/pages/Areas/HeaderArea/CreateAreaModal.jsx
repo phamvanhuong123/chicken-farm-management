@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import swal from "sweetalert";
-import { toast } from "react-toastify";
 import { createArea } from "../../../services/areaService";
-import swal from "sweetalert";
 
 function CreateAreaModal({ open, onClose, onSuccess }) {
   const [form, setForm] = useState({
