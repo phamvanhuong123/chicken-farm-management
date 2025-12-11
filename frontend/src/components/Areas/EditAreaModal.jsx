@@ -4,17 +4,18 @@ import toast from "react-hot-toast";
 
 function EditAreaModal({ open, onClose, area, staffList, onSuccess }) {
   // 🔥 Debug xem FE nhận đúng gì
-  console.log("👉 staffList FE nhận được:", staffList);
-  console.log("👉 area.staff từ BE:", area?.staff);
+  // console.log("👉 staffList FE nhận được:", staffList);
+  // console.log("👉 area.staff từ BE:", area?.staff);
+  
   if (!open || !area) return null;
 
   const [form, setForm] = useState({
     maxCapacity: area.maxCapacity,
-    staff: [],
+    staff: area?.staff,
     status: area.status,
     note: area.note || "",
   });
-
+console.log(form);
   // mỗi khi area thay đổi → load form
   useEffect(() => {
     setForm({
@@ -22,8 +23,8 @@ function EditAreaModal({ open, onClose, area, staffList, onSuccess }) {
       staff:
         area.staff
           ?.map((s) => {
-            const emp = staffList.find((e) => e.name === s.name);
-            return emp ? emp._id : null;
+            const emp = staffList.find((e) => e.id === s.id);
+            return emp?.id
           })
           .filter(Boolean) || [],
       status: area.status,
@@ -49,7 +50,8 @@ function EditAreaModal({ open, onClose, area, staffList, onSuccess }) {
     const staffObjects = staffList
       .filter((st) => form.staff.includes(st.id))
       .map((st) => ({
-        name: st.name,
+        name: st.name,  
+        staffId :st.id
       }));
 
     const payload = {

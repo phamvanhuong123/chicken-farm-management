@@ -58,7 +58,7 @@ function SideBar({ isCollapsed }) {
       badge: "6"
     }
   ];
-  console.log(user)
+  
   return (
     <aside className={`
       

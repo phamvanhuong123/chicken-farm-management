@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { PlusIcon, CalendarIcon } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 
 import { Button } from "~/components/ui/button";
 import {
@@ -30,10 +30,19 @@ import {
 import { Calendar } from "~/components/ui/calendar";
 import { formatDate } from "~/utils/formatter";
 import { getAreaList } from "~/services/areaService";
+import FieldErrorAlert from "~/components/FieldErrorAlert";
 
 function ButtonJobAdd() {
   const [open, setOpen] = useState(false);
-  const { register, handleSubmit, setValue, watch, reset } = useForm({
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    control,
+    formState: { errors },
+  } = useForm({
     defaultValues: {
       title: "",
       detail: "",
@@ -57,7 +66,6 @@ function ButtonJobAdd() {
     setOpen(false);
     // Reset form
     reset();
-    
   };
 
   useEffect(() => {
@@ -67,6 +75,7 @@ function ButtonJobAdd() {
     };
     fetchAreas();
   }, [open]);
+  console.log(employeesByFarm());
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -77,7 +86,12 @@ function ButtonJobAdd() {
           </Button>
         </DialogTrigger>
 
-        <DialogContent className="max-w-lg">
+        <DialogContent
+          onCloseAutoFocus={() => {
+            reset();
+          }}
+          className="max-w-lg"
+        >
           <DialogHeader>
             <DialogTitle>Thêm công việc</DialogTitle>
           </DialogHeader>
@@ -89,7 +103,21 @@ function ButtonJobAdd() {
             {/* Tiêu đề */}
             <div>
               <label className="text-sm font-medium">Tiêu đề công việc</label>
-              <Input placeholder="Nhập tiêu đề..." {...register("title")} />
+              <Input
+                placeholder="Nhập tiêu đề..."
+                {...register("title", {
+                  required: "Bắt buộc nhập",
+                  minLength: {
+                    value: 10,
+                    message: "Tối thiểu 10 kí tự",
+                  },
+                  maxLength: {
+                    value: 255,
+                    message: "Tối đa 255 kí tự",
+                  },
+                })}
+              />
+              <FieldErrorAlert errors={errors} fieldName={"title"} />
             </div>
 
             {/* Chi tiết */}
@@ -98,57 +126,105 @@ function ButtonJobAdd() {
               <Textarea
                 placeholder="Mô tả..."
                 rows={3}
-                {...register("detail")}
+                {...register("detail", {
+                  required: "Bắt buộc nhập",
+                  minLength: {
+                    value: 10,
+                    message: "Tối thiểu 10 kí tự",
+                  },
+                  maxLength: {
+                    value: 255,
+                    message: "Tối đa 255 kí tự",
+                  },
+                })}
               />
+              <FieldErrorAlert errors={errors} fieldName={"detail"} />
             </div>
 
             {/* Khu nuôi */}
             <div>
               <label className="text-sm font-medium">Khu nuôi</label>
-              <Select
-                onValueChange={(value) => {
-                  setValue("areaId", value);
-                  setValue("userId", ""); // Reset nhân viên
+              <Controller
+                name="areaId"
+                control={control}
+                rules={{
+                  required: "Bắt buộc nhập",
                 }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn khu nuôi" />
-                </SelectTrigger>
-                <SelectContent>
-                  {dataArea.map((area) => (
-                    <SelectItem key={area._id} value={area._id}>
-                      {area.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                render={({ field }) => (
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      setValue("userId", "");
+                    }}
+                    value={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn khu nuôi" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {dataArea.map((area) => (
+                        <SelectItem key={area._id} value={area._id}>
+                          {area.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <FieldErrorAlert errors={errors} fieldName={"areaId"} />
             </div>
 
             {/* Người phụ trách */}
             <div>
               <label className="text-sm font-medium">Người phụ trách</label>
-              <Select
-                onValueChange={(value) => {
-                  setValue("userId", value);
+              <Controller
+                name="userId"
+                control={control}
+                rules={{
+                  required: "Bắt buộc nhập",
                 }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn người phụ trách" />
-                </SelectTrigger>
-                <SelectContent>
-                  {employeesByFarm()?.map((emp) => (
-                    <SelectItem key={emp.staffId} value={emp.staffId}>
-                      {emp.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                render={({ field }) => (
+                  <Select
+                    disabled={!selectedFarm}
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn người phụ trách" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {employeesByFarm()?.map((emp) => (
+                        <SelectItem key={emp.staffId} value={emp.staffId}>
+                          {emp.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <FieldErrorAlert errors={errors} fieldName={"userId"} />
             </div>
 
             {/* Date Picker */}
             <div>
               <label className="text-sm font-medium">Ngày hoàn thành</label>
+              <input
+                type="hidden"
+                {...register("dueDate", {
+                  required: "Vui lòng chọn ngày hoàn thành",
+                  validate: (value) => {
+                    if (!value) return "Vui lòng chọn ngày hoàn thành";
 
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    return (
+                      value >= today.getTime() ||
+                      "Ngày hoàn thành phải lớn hơn hoặc bằng ngày hiện tại"
+                    );
+                  },
+                })}
+              />
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -166,17 +242,24 @@ function ButtonJobAdd() {
                   <Calendar
                     mode="single"
                     selected={watch("dueDate")}
-                    onSelect={(date) => {setValue("dueDate", date.getTime());}}
+                    onSelect={(date) => {
+                      setValue("dueDate", date?.getTime());
+                    }}
                   />
                 </PopoverContent>
               </Popover>
+              <FieldErrorAlert errors={errors} fieldName={"dueDate"} />
+
             </div>
 
             <DialogFooter className="mt-4">
               <Button
                 variant="outline"
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  setOpen(false);
+                  reset();
+                }}
               >
                 Huỷ
               </Button>
