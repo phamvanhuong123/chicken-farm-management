@@ -31,9 +31,17 @@ import { Calendar } from "~/components/ui/calendar";
 import { formatDate } from "~/utils/formatter";
 import { getAreaList } from "~/services/areaService";
 import FieldErrorAlert from "~/components/FieldErrorAlert";
+import { useDispatch, useSelector } from "react-redux";
+import { getUserState } from "~/slices/authSlice";
+import { fetchAddTaskApi, getLoadingState } from "~/slices/taskSlice";
+import { toast } from "react-toastify";
+import { ClipLoader } from "react-spinners";
 
 function ButtonJobAdd() {
   const [open, setOpen] = useState(false);
+  const user = useSelector(state => getUserState(state))
+  const loading = useSelector(state => getLoadingState(state))
+  const dispatch = useDispatch()
   const {
     register,
     handleSubmit,
@@ -45,10 +53,11 @@ function ButtonJobAdd() {
   } = useForm({
     defaultValues: {
       title: "",
-      detail: "",
+      description: "",
       areaId: "",
       userId: "",
       dueDate: null,
+      employeerId : user.id
     },
   });
 
@@ -60,12 +69,20 @@ function ButtonJobAdd() {
     return dataArea[index]?.staff;
   };
 
-  const onSubmit = (data) => {
+  const onSubmit = async(data) => {
     console.log(data);
-    // Close dialog
-    setOpen(false);
-    // Reset form
-    reset();
+    try{
+      await dispatch(fetchAddTaskApi(data)).unwrap()
+      toast.success("Thêm công việc thành công");
+      setOpen(false);
+      reset();
+    }
+    catch (e){
+      console.log(e)
+      toast.error("Thêm công việc thất bại" + e.message);
+
+    }
+
   };
 
   useEffect(() => {
@@ -75,7 +92,6 @@ function ButtonJobAdd() {
     };
     fetchAreas();
   }, [open]);
-  console.log(employeesByFarm());
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -126,7 +142,7 @@ function ButtonJobAdd() {
               <Textarea
                 placeholder="Mô tả..."
                 rows={3}
-                {...register("detail", {
+                {...register("description", {
                   required: "Bắt buộc nhập",
                   minLength: {
                     value: 10,
@@ -138,7 +154,7 @@ function ButtonJobAdd() {
                   },
                 })}
               />
-              <FieldErrorAlert errors={errors} fieldName={"detail"} />
+              <FieldErrorAlert errors={errors} fieldName={"description"} />
             </div>
 
             {/* Khu nuôi */}
@@ -263,8 +279,9 @@ function ButtonJobAdd() {
               >
                 Huỷ
               </Button>
-              <Button className="bg-green-500 hover:bg-green-600" type="submit">
+              <Button disabled={loading} className="bg-green-500 hover:bg-green-600" type="submit">
                 Thêm
+                {loading && <ClipLoader color="white" size={15} />}
               </Button>
             </DialogFooter>
           </form>
