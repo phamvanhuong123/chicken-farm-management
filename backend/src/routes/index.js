@@ -22,6 +22,6 @@ router.use("/imports", importRoute);
 router.use("/auth", authRoutes);
 router.use("/transactions", transactionRoute);
 
-router.use("/task",taskRoute);
+router.use("/tasks",taskRoute);
 
 export const APIs_V1 = router;
