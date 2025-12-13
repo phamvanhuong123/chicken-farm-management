@@ -29,7 +29,50 @@ const create = async (req, res, next) => {
       .strict()
       .pattern(OBJECT_ID_RULE)
       .message(OBJECT_ID_RULE_MESSAGE),
-    dueDate: Joi.date().required(),
+    dueDate: Joi.date().required().min('now'),
+    createdAt: Joi.date().default(() => new Date()),
+    updatedAt: Joi.date().default(null),
+  });
+
+  try {
+    await correctCondition.validateAsync(req.body, { abortEarly: false });
+    next();
+  } catch (error) {
+    const errorMessage = new Error(error).message;
+    const customError = new ApiError(
+      StatusCodes.UNPROCESSABLE_ENTITY,
+      errorMessage
+    );
+    next(customError);
+  }
+};
+
+
+const update = async (req, res, next) => {
+  const correctCondition = Joi.object({
+    title: Joi.string().trim().strict().min(10).max(255),
+    description: Joi.string().trim().strict().min(10).max(255),
+    status: Joi.string().valid("toDo", "inProgress", "done").default("toDo"),
+    employeerId: Joi.string()
+      
+      .trim()
+      .strict()
+      .pattern(OBJECT_ID_RULE)
+      .message(OBJECT_ID_RULE_MESSAGE),
+
+    userId: Joi.string()
+      
+      .trim()
+      .strict()
+      .pattern(OBJECT_ID_RULE)
+      .message(OBJECT_ID_RULE_MESSAGE),
+    areaId: Joi.string()
+      
+      .trim()
+      .strict()
+      .pattern(OBJECT_ID_RULE)
+      .message(OBJECT_ID_RULE_MESSAGE),
+    dueDate: Joi.date().min('now'),
     createdAt: Joi.date().default(() => new Date()),
     updatedAt: Joi.date().default(null),
   });
@@ -49,4 +92,5 @@ const create = async (req, res, next) => {
 
 export const taskValidate = {
   create,
+  update
 };
