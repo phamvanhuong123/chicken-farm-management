@@ -44,6 +44,7 @@ const create = async (data) => {
       ...validateData,
       userId : new ObjectId(String(validateData.userId)),
       areaId : new ObjectId(String(validateData.areaId)),
+      employeerId : new ObjectId(String(validateData.employeerId)),
     })
     return createNewTask
   }
