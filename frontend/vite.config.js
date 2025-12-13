@@ -10,8 +10,13 @@ export default defineConfig({
     alias : [
       { 
         find : '~', 
-        replacement  : path.resolve(__dirname, './src') // 👈 SỬA LẠI ĐƯỜNG DẪN
+        replacement  : path.resolve(__dirname, './src')
       }
     ]
+  },
+   test: {
+    environment: "jsdom",
+    globals: true,
+    setupFiles: "./src/test/setup.js"
   }
 })

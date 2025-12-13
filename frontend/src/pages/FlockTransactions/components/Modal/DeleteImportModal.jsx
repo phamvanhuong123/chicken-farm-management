@@ -46,7 +46,6 @@ function ConfirmModal({ open, title, message, onConfirm, onCancel, loading }) {
   );
 }
 
-
 export default function DeleteImportModal({ importItem, onDeleteSuccess }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -56,26 +55,18 @@ export default function DeleteImportModal({ importItem, onDeleteSuccess }) {
   };
 
   const confirmDelete = async () => {
-    if (isDeleting) return; // ⛔ NGĂN GỌI LẦN 2
+    if (isDeleting) return;
 
     setIsDeleting(true);
 
     try {
-      const success = await onDeleteSuccess(importItem._id);
-
-      if (success) {
-        setModalOpen(false); // đóng modal trước khi reload
-        swal("Thành công", "Xóa đơn nhập thành công!", "success");
-      } else {
-        swal("Thất bại", "Không thể xóa đơn nhập!", "error");
-      }
-
-    } catch (err) {
-      swal("Lỗi", "Không thể xóa đơn nhập!", "error");
+      await onDeleteSuccess(importItem._id);
+      setModalOpen(false); 
+    } finally {
+      setIsDeleting(false);
     }
-
-    setIsDeleting(false);
   };
+
 
   return (
     <>

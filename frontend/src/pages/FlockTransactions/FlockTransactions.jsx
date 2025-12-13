@@ -1,27 +1,37 @@
 // src/pages/FlockTransactions/FlockTransactions.jsx
 import { useEffect, useState } from "react";
-import { useImport } from "./hooks/useImport";
+import { useImport } from "../FlockTransactions/hooks/useImport";
 import { transactionAPI } from "../../apis/transaction.api";
-import ImportTabs from "../../components/FlockTransactions/ImportTabs";
-import ImportList from "../../components/FlockTransactions/ImportList";
-import ImportForm from "../../components/FlockTransactions/ImportForm";
-import ExportFlockModal from "../../components/FlockTransactions/ExportFlockModal";
-import DashboardKPI from "../../components/FlockTransactions/DashboardKPI";
-import MonthYearFilter from "../../components/FlockTransactions/MonthYearFilter";
-import Pagination from "../../components/FlockTransactions/Pagination";
-import InvoicePreviewModal from "../../components/FlockTransactions/InvoicePreviewModal";
+import ImportTabs from "../FlockTransactions/components/ImportTabs";
+import ImportList from "../FlockTransactions/components/ImportList";
+import ImportForm from "../FlockTransactions/components/ImportForm";
+import ExportFlockModal from "../FlockTransactions/components/ExportFlockModal";
+import DashboardKPI from "../FlockTransactions/components/DashboardKPI";
+import MonthYearFilter from "../FlockTransactions/components/MonthYearFilter";
+import Pagination from "../FlockTransactions/components/Pagination";
+import InvoicePreviewModal from "../FlockTransactions/components/InvoicePreviewModal";
 import { flockApi } from "../../apis/flockApi";
 import { Eye, Printer } from "lucide-react";
 import toast from "react-hot-toast";
 
 function FlockTransactions() {
-  const { imports, loadData, createImport, areaCurrentCounts } = useImport();
+  const { 
+    imports,
+    areas,             
+    areaCurrentCounts,
+    loadData,
+    loadAreas,
+    createImport,
+    updateImport,
+    deleteImport
+  } = useImport();
   const [showImportForm, setShowImportForm] = useState(false);
   const [showExportForm, setShowExportForm] = useState(false);
   const [tab, setTab] = useState("nhap");
   const [loading, setLoading] = useState(false);
   const [exports, setExports] = useState([]);
-  
+  const [editImport, setEditImport] = useState(null);
+
   // State cho lọc tháng
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -112,15 +122,16 @@ function FlockTransactions() {
   const loadAllData = async () => {
     setLoading(true);
     try {
-      await loadData();
-      await loadExports();
-      await loadFlocks();
-    } catch (error) {
-      console.error("Error loading data:", error);
+      await Promise.all([    
+        loadData(),
+        loadExports(),
+        loadFlocks()
+      ])
     } finally {
       setLoading(false);
     }
   };
+
 
   // Lọc dữ liệu theo tháng
   const filterDataByMonth = () => {
@@ -174,7 +185,7 @@ function FlockTransactions() {
       await createImport(data);
       alert("Thêm lứa nhập chuồng thành công.");
       setShowImportForm(false);
-      await loadAllData();
+      await loadData();
     } catch (error) {
       alert("Không thể lưu, vui lòng thử lại sau.");
       console.error("Error creating import:", error);
@@ -187,8 +198,8 @@ function FlockTransactions() {
   const handleExportSuccess = async (newExport) => {
     try {
       setExports(prev => [newExport, ...prev]);
-      await loadExports();
-      await loadFlocks();
+      loadExports();
+      loadFlocks();
     } catch (error) {
       console.error("Error handling export success:", error);
     }
@@ -216,7 +227,7 @@ function FlockTransactions() {
 
     toast.success(`Đã cập nhật trạng thái: ${newStatus}`);
 
-    await loadExports();
+    loadExports();
   } catch (error) {
     console.error("Status update failed:", error);
     toast.error("Không thể cập nhật trạng thái.");
@@ -249,6 +260,47 @@ function FlockTransactions() {
     }));
   };
 
+  const handleCreate = () => {
+    setEditImport(null);
+    setShowImportForm(true);
+  };
+
+  const handleEditImport = (item) => {
+  setEditImport(item);      
+  setShowImportForm(true);  
+  };
+
+  const handleSubmitImport = async (formData) => {
+    if (editImport) {
+      const ok = await updateImport(editImport._id, formData);
+      if (ok?.success) {
+          swal("Thành công", editImport ? "Cập nhật thành công!" : "Thêm lứa nhập thành công!", "success");
+          setShowImportForm(false);
+      }
+    } else {
+      const result = await createImport(formData);
+      if (result?.success) {
+        swal("Thành công", "Thêm lứa nhập thành công!", "success");
+        setShowImportForm(false);
+      }
+    }
+  };
+
+  const handleDeleteImport = async (id) => {
+    const result = await deleteImport(id);
+    if (result?.success) {
+      swal("Đã xóa", "Xóa lứa nhập thành công!", "success");
+
+      await loadData();
+
+      filterDataByMonth();
+      updatePagedData();
+    } else {
+      swal("Lỗi", "Không thể xóa lứa nhập!", "error");
+    }
+  };
+
+
   return (
     <div className="px-8 mt-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
@@ -263,7 +315,12 @@ function FlockTransactions() {
       </div>
       
       {/* DASHBOARD KPI */}
-      <DashboardKPI selectedMonth={selectedMonth} />
+      <DashboardKPI
+        selectedMonth={selectedMonth}
+        imports={filteredImports}
+        exports={filteredExports}
+      />
+
       
       {/* TAB */}
       <ImportTabs tab={tab} setTab={setTab} />
@@ -387,7 +444,13 @@ function FlockTransactions() {
           </div>
 
           {/* DANH SÁCH NHẬP CHUỒNG */}
-          <ImportList list={pagedImports} />
+          <ImportList
+            list={pagedImports}
+            areas={areas}
+            onEdit={handleEditImport}
+            onDelete={handleDeleteImport}
+          />
+
 
           {/* PHÂN TRANG CHO NHẬP CHUỒNG */}
           {filteredImports.length > 0 && (
@@ -404,8 +467,13 @@ function FlockTransactions() {
           {/* FORM NHẬP CHUỒNG */}
           {showImportForm && (
             <ImportForm
-              onClose={() => setShowImportForm(false)}
-              onSubmit={handleCreateImport}
+              onClose={() => {
+                setShowImportForm(false);
+                setEditImport(null);
+              }}
+              onSubmit={handleSubmitImport}
+              editData={editImport}           
+              areas={areas}
               areaCurrentCounts={areaCurrentCounts}
             />
           )}
