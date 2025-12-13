@@ -13,53 +13,41 @@ export function useImport() {
 
   const loadingRef = useRef(false);
 
-  const loadAllImportPages = async () => {
-    let allItems = [];
+  // LOAD IMPORT
 
+  const loadAllImportPages = async () => {
     try {
       const firstRes = await importApi.getList({ page: 1 });
       const data = firstRes.data?.data;
-
       if (!data) return [];
 
       const totalPages = data.totalPages || 1;
-      const firstItems = data.items || [];
-      allItems.push(...firstItems);
+      const allItems = [...(data.items || [])];
 
-      if (totalPages === 1) {
-        return removeDuplicateImports(allItems);
+      if (totalPages > 1) {
+        const promises = [];
+        for (let p = 2; p <= totalPages; p++) {
+          promises.push(importApi.getList({ page: p }));
+        }
+
+        const results = await Promise.all(promises);
+
+        results.forEach((res) => {
+          const items = res.data?.data?.items || [];
+          allItems.push(...items);
+        });
       }
 
-      const pagePromises = [];
-      for (let page = 2; page <= totalPages; page++) {
-        pagePromises.push(importApi.getList({ page }));
-      }
-
-      const results = await Promise.all(pagePromises);
-
-      results.forEach((res) => {
-        const items = res?.data?.data?.items || [];
-        allItems.push(...items);
-      });
-
-      return removeDuplicateImports(allItems);
-
+      return Array.from(
+        new Map(allItems.map((i) => [i._id, i])).values()
+      );
     } catch (err) {
       console.error("Load import error:", err);
       return [];
     }
   };
 
-  const removeDuplicateImports = (arr) => {
-    const map = new Map();
-    arr.forEach((item) => {
-      if (!map.has(item._id)) {
-        map.set(item._id, item);
-      }
-    });
-    return Array.from(map.values());
-  };
-
+  // LOAD IMPORT
   const loadData = useCallback(async () => {
     if (loadingRef.current) return;
 
@@ -67,49 +55,53 @@ export function useImport() {
     setLoading(true);
 
     try {
-      const allImports = await loadAllImportPages();
-      setImports(allImports);
-      return allImports;
-    } catch (error) {
-      console.error("Error loading imports:", error);
+      const list = await loadAllImportPages();
+      setImports(list);
+      return list;
+    } catch (err) {
+      console.error("Error load imports:", err);
       setImports([]);
       return [];
     } finally {
-      setLoading(false);
       loadingRef.current = false;
+      setLoading(false);
     }
   }, []);
 
+  // LOAD AREAS
   const loadAreas = useCallback(async () => {
     setAreaLoading(true);
 
     try {
       const res = await areaApi.getList();
-      const list = res.data?.data?.items || res.data?.data || [];
+      const list =
+        res.data?.data?.items ||
+        res.data?.data ||
+        [];
+
       setAreas(list);
 
       const countMap = {};
       list.forEach((area) => {
-        const itemsInArea = imports.filter((i) => i.barn === area.name);
-        const total = itemsInArea.reduce(
-          (sum, item) => sum + (item.quantity || 0),
+        const inArea = imports.filter((i) => i.barn === area.name);
+        countMap[area.name] = inArea.reduce(
+          (sum, i) => sum + (i.quantity || 0),
           0
         );
-        countMap[area.name] = total;
       });
 
       setAreaCurrentCounts(countMap);
-    } catch (error) {
+    } catch (err) {
       setAreas([]);
-      swal("Lỗi", "Không thể tải danh sách khu nuôi.", "error");
+      swal("Lỗi", "Không thể tải khu nuôi!", "error");
     } finally {
       setAreaLoading(false);
     }
   }, [imports]);
 
+  // CREATE IMPORT
   const createImport = async (data) => {
     try {
-      // 1. Tạo flock mới
       const flockData = {
         initialCount: Number(data.quantity),
         speciesId: data.breed,
@@ -124,8 +116,7 @@ export function useImport() {
       const flockRes = await flockApi.create(flockData);
       const flockId = flockRes.data?.data?._id;
 
-      // 2. Tạo import record
-      const importPayload = {
+      await importApi.create({
         importDate: new Date(data.importDate).toISOString(),
         supplier: data.supplier,
         breed: data.breed,
@@ -134,142 +125,85 @@ export function useImport() {
         barn: data.barn,
         flockId,
         status: "Đang nuôi",
-      };
-
-      await importApi.create(importPayload);
+      });
 
       await loadData();
       await loadAreas();
-
+      
+      return { success: true };
     } catch (err) {
-      console.error("Create import error:", err);
+      console.error("Create error:", err);
       swal("Lỗi", "Không thể tạo lứa nhập!", "error");
       throw err;
     }
   };
-  
-  // Hàm cập nhật import
+
+  // UPDATE IMPORT
   const updateImport = async (id, data) => {
     try {
-      // 1. Lấy thông tin import cũ
-      const oldImportRes = await importApi.getDetail(id);
-      const oldImport = oldImportRes.data?.data;
-      
-      if (!oldImport) {
-        throw new Error("Không tìm thấy đơn nhập");
-      }
+      const detailRes = await importApi.getDetail(id);
+      const oldImport = detailRes.data?.data;
+      if (!oldImport) throw new Error("Không tìm thấy import");
 
-      // 2. Cập nhật import record
-      const importPayload = {
+      await importApi.update(id, {
         importDate: new Date(data.importDate).toISOString(),
         supplier: data.supplier,
         breed: data.breed,
         quantity: Number(data.quantity),
         avgWeight: Number(data.avgWeight),
         barn: data.barn,
+        flockId: oldImport.flockId,
         status: "Đang nuôi",
-        flockId: oldImport.flockId
-      };
+      });
 
-      await importApi.update(id, importPayload);
-
-      // 3. Nếu có flockId, cập nhật flock tương ứng
       if (oldImport.flockId) {
-        try {
-          const flockUpdateData = {
-            speciesId: data.breed,
-            areaId: data.barn,
-            avgWeight: Number(data.avgWeight),
-            currentCount: Number(data.quantity),
-            initialCount: Number(data.quantity),
-            status: "Raising",
-            note: `Cập nhật từ import ${id}`
-          };
-          
-          await flockApi.update(oldImport.flockId, flockUpdateData);
-        } catch (flockError) {
-          console.error("Lỗi cập nhật flock:", flockError);
-        }
+        await flockApi.update(oldImport.flockId, {
+          speciesId: data.breed,
+          areaId: data.barn,
+          avgWeight: Number(data.avgWeight),
+          currentCount: Number(data.quantity),
+          initialCount: Number(data.quantity),
+          status: "Raising",
+          note: `Cập nhật import ${id}`,
+        });
       }
 
-      // 4. Reload dữ liệu
       await loadData();
       await loadAreas();
-
-      return true;
+      
+      return { success: true };
     } catch (err) {
-      console.error("Update import error:", err);
-      swal("Thao tác không thành công, vui lòng thử lại.", "", "error");
+      swal("Lỗi cập nhật!", "", "error");
       return false;
     }
   };
 
-  // Hàm xóa import - SỬA LỖI Ở ĐÂY
-    const deleteImport = async (id) => {
+  // DELETE IMPORT
+  const deleteImport = async (id) => {
     try {
-      // 1. Lấy thông tin import để xóa flock tương ứng
-      let importItem = null;
-      try {
-        const importRes = await importApi.getDetail(id);
-        importItem = importRes.data?.data;
-      } catch (getError) {
-        console.warn("Không thể lấy thông tin import:", getError.message);
-      }
-      
-      // 2. Xóa import record
-      const deleteResponse = await importApi.delete(id);
-      
-      // Kiểm tra phản hồi từ server
-      if (deleteResponse.status !== 200 && deleteResponse.status !== 204) {
-        throw new Error(`HTTP ${deleteResponse.status}: ${deleteResponse.statusText}`);
-      }
+      await importApi.delete(id);
 
-      // 3. Nếu có flockId, xóa flock tương ứng
-      if (importItem?.flockId) {
-        try {
-          await flockApi.delete(importItem.flockId);
-        } catch (flockError) {
-          console.warn("Lỗi xóa flock:", flockError.message);
-        }
-      }
-
-      // 4. Reload dữ liệu
+      // reload dữ liệu
       await loadData();
       await loadAreas();
 
-      return { success: true, message: "Xóa đơn nhập thành công!" };
-      
+      return { success: true };
     } catch (err) {
-      console.error("Delete import error:", err);
-      
-      // Xác định thông báo lỗi
-      let errorMessage = "Không thể xóa đơn nhập!";
-      
-      if (err.response) {
-        const status = err.response.status;
-        const serverMessage = err.response.data?.message;
-        
-        if (status === 404) {
-          // Đơn nhập đã bị xóa, nhưng vẫn coi là thành công
-          await loadData();
-          await loadAreas();
-          return { success: true, message: "Đơn nhập đã được xóa thành công!" };
-          
-        } else if (serverMessage) {
-          errorMessage = serverMessage;
-        }
-      } else if (err.request) {
-        errorMessage = "Không thể kết nối đến server.";
+      if (err.response?.status === 404) {
+        await loadData();
+        await loadAreas();
+        return { success: true };
       }
-      
-      return { success: false, message: errorMessage };
+
+      return { success: false, message: "Không thể xóa!" };
     }
   };
+
 
   useEffect(() => {
     loadData();
   }, [loadData]);
-  
+
   useEffect(() => {
     if (imports.length > 0) loadAreas();
   }, [imports, loadAreas]);
@@ -284,6 +218,6 @@ export function useImport() {
     loadAreas,
     createImport,
     updateImport,
-    deleteImport
+    deleteImport,
   };
 }

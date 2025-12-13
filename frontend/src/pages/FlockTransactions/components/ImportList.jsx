@@ -1,4 +1,4 @@
-import ImportItem from "./ImportItem";
+import ImportItem from "../components/ImportItem";
 
 export default function ImportList({ list, onEdit, onDelete }) {
   if (!list || list.length === 0) {
