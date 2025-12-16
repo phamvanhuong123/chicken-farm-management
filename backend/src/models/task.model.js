@@ -84,14 +84,9 @@ const getTaskByEmployeer = async (employeerId) => {
           },
         },
         {
-          $project: {
-            area: 0,
-            user: 0,
-          },
-        },
-        {
           $group: {
             _id: "$areaId",
+            areaName : {$first : "$areaName"},
             tasks: {
               $push: {
                 _id: "$_id",

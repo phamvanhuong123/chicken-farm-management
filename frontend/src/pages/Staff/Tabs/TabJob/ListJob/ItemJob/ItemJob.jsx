@@ -6,7 +6,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "~/components/ui/collapsible";
-import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar"; // Giả sử bạn có component Avatar, nếu không có thể dùng div tròn
+// import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar"; 
 import JobOption from "./JobOption/JobOption";
 
 
@@ -54,7 +54,7 @@ const TaskCard = ({ title, description, assignee, status, hasMenu }) => {
   );
 };
 
-function ItemJob() {
+function ItemJob({task}) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -67,8 +67,8 @@ function ItemJob() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
             <div className="h-8 w-1 bg-indigo-500 rounded-full"></div> {/* Điểm nhấn trang trí */}
-            <h4 className="text-lg font-bold text-slate-800">Khu nuôi A</h4>
-            <span className="bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded-full font-medium">4 task</span>
+            <h4 className="text-lg font-bold text-slate-800">{task?.areaName}</h4>
+            <span className="bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded-full font-medium">{task?.tasks.length || 0} Công việc</span>
         </div>
         <CollapsibleTrigger asChild>
           <Button variant="ghost" size="sm" className="hover:bg-slate-200">
@@ -94,6 +94,8 @@ function ItemJob() {
             
             {/* Background cột task */}
             <div className="bg-slate-100/50 p-2 rounded-xl border border-slate-100 min-h-[200px] flex flex-col gap-3">
+                
+                
                 <TaskCard 
                     title="Kiểm tra sức khoẻ" 
                     description="Kiểm tra tổng thể sức khỏe và cân nặng đàn gà A001" 

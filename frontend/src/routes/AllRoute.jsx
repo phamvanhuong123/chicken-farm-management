@@ -5,6 +5,7 @@ import LayoutDefault from "~/layout/LayoutDefault";
 import Areas from "~/pages/Areas/Areas";
 import Auth from "~/pages/Auth/Auth";
 import Dashboard from "~/pages/Dashboard/Dashboard";
+import Finance from "~/pages/Finance/Finance";
 import Flocks from "~/pages/Flocks/Flocks";
 import FlockTransactions from "~/pages/FlockTransactions/FlockTransactions";
 import Inventory from "~/pages/Inventory/Inventory";
@@ -41,6 +42,7 @@ function AllRoute() {
           <Route path="flock-transactions" element={<FlockTransactions />} />
           <Route path="areas" element={<Areas />} />
           <Route path="staff" element={<Staff />} />
+          <Route path="finance" element={<Finance />} />
         </Route>
       </Route>
      <Route element={<UnAuthorizeRoute/>}>

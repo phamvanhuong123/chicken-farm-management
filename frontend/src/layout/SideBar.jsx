@@ -1,23 +1,27 @@
 import { useEffect, useState } from 'react';
-import { Home, Package, CircleDollarSign, NotepadText, UsersRound } from 'lucide-react';
+import { MdOutlineHomeWork } from "react-icons/md";
+import { MdOutlineCompareArrows } from "react-icons/md";
+import { Home, Package, CircleDollarSign, NotepadText, UsersRound, BarChart3 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { getUserState } from '~/slices/authSlice';
 import { getLastUpperChar } from '~/utils/formatter';
+import { AiOutlineDashboard } from "react-icons/ai";
 function SideBar({ isCollapsed }) {
   const [activeTooltip, setActiveTooltip] = useState(null);
   const user = useSelector(state => getUserState(state))
   const menuItems = [
-    // {
-    //   path: "/dashboard",
-    //   icon: BarChart3,
-    //   label: "Tổng quan",
-    //   end: true,
-    //   badge: null
-    // },
+    {
+      path: "/dashboard",
+      icon: AiOutlineDashboard,
+      
+      label: "Tổng quan",
+      end: true,
+      badge: null
+    },
     {
       path: "/dashboard/flocks",
-      icon: Home,
+      icon: MdOutlineHomeWork,
       label: "Đàn gà",
       end: false,
       badge: "1"
@@ -38,14 +42,14 @@ function SideBar({ isCollapsed }) {
     },
     {
       path: "/dashboard/flock-transactions",
-      icon: CircleDollarSign,
+      icon: MdOutlineCompareArrows,
       label: "Nhập/xuất chuồng",
       end: false,
       badge: "4"
     },
     {
       path: "/dashboard/areas",
-      icon: CircleDollarSign,
+      icon: Home,
       label: "Khu nuôi",
       end: false,
       badge: "5"
@@ -56,6 +60,13 @@ function SideBar({ isCollapsed }) {
       label: "Nhân sự và công việc",
       end: false,
       badge: "6"
+    },
+    {
+      path: "/dashboard/finance",
+      icon: BarChart3,
+      label: "Chi phí & Tài chính",
+      end: false,
+      badge: "7"
     }
   ];
   
