@@ -33,7 +33,7 @@ import { getAreaList } from "~/services/areaService";
 import FieldErrorAlert from "~/components/FieldErrorAlert";
 import { useDispatch, useSelector } from "react-redux";
 import { getUserState } from "~/slices/authSlice";
-import { fetchAddTaskApi, getLoadingState } from "~/slices/taskSlice";
+import { fetchAddTaskApi, fetchGetAllTaskApi, getLoadingState } from "~/slices/taskSlice";
 import { toast } from "react-toastify";
 import { ClipLoader } from "react-spinners";
 
@@ -73,6 +73,8 @@ function ButtonJobAdd() {
     console.log(data);
     try{
       await dispatch(fetchAddTaskApi(data)).unwrap()
+      await dispatch(fetchGetAllTaskApi(user.id)).unwrap();
+      
       toast.success("Thêm công việc thành công");
       setOpen(false);
       reset();

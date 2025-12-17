@@ -9,6 +9,9 @@ const route = express.Router()
 route.post("/",taskValidate.create,taskController.create)
 
 route.put("/:id",taskValidate.update,taskController.update)
+
+route.delete("/:id",taskController.deleteTask)
 // Lấy danh sách công việc theo employeerId
 route.get("/:employeerId",taskController.getTaskByEmployeer)
+
 export const taskRoute = route
