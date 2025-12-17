@@ -1,6 +1,9 @@
 import Joi from "joi";
 import { GET_DB } from "../config/mongodb.js";
 import { ObjectId } from "mongodb";
+import { userModel } from "./user.model.js";
+import ApiError from "~/utils/ApiError.js";
+import { StatusCodes } from "http-status-codes";
 const TASK_COLLECTION_NAME = "tasks";
 
 export const OBJECT_ID_RULE = /^[0-9a-fA-F]{24}$/;
@@ -101,6 +104,9 @@ const getTaskByEmployeer = async (employeerId) => {
             },
           },
         },
+        {
+          $sort : {areaName : 1}
+        }
       ])
       .toArray();
 
@@ -143,6 +149,10 @@ const findById = async (id) => {
 const create = async (data) => {
   try {
     const validateData = await validateBeforeCreateTask(data);
+    const existUser = await userModel.findById(validateData.userId)
+    if (!existUser){
+      throw new ApiError(StatusCodes.NOT_FOUND,"Không tìm thấy id người dùng")
+    }
     console.log(validateData);
     const createNewTask = GET_DB()
       .collection(TASK_COLLECTION_NAME)
@@ -154,6 +164,14 @@ const create = async (data) => {
       });
     return createNewTask;
   } catch (error) {
+    throw error
+  }
+};
+const deleteTask = async (id) => {
+  try {
+    const res = GET_DB().collection(TASK_COLLECTION_NAME).deleteOne({ _id: new ObjectId(String(id))});
+    return res;
+  } catch (error) {
     throw new Error(error);
   }
 };
@@ -162,4 +180,5 @@ export const taskModel = {
   create,
   getTaskByEmployeer,
   update,
+  deleteTask
 };
