@@ -760,7 +760,6 @@ class DashboardService {
 
     for (let i = dataPoints - 1; i >= 0; i--) {
       const date = this._getDateForTrend(now, i, period);
-
       // Tạo xu hướng tăng nhẹ
       const value = baseValue + (Math.random() * 0.3) - 0.15;
       baseValue = value;
@@ -900,5 +899,4 @@ class DashboardService {
   }
 }
 
-// Export singleton instance
 export const dashboardService = new DashboardService();
