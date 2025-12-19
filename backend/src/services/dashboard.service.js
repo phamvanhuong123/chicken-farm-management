@@ -327,7 +327,7 @@ class DashboardService {
   async _calculateAvgWeight(period) {
     try {
       const flocks = await this._getFlocksData();
-
+      
       const filteredFlocks = this._filterFlocksByPeriod(flocks, period);
       // Lọc các đàn đang nuôi có trọng lượng > 0
       const flocksWithWeight = filteredFlocks.filter(f =>
@@ -660,36 +660,7 @@ class DashboardService {
     if (change < -0.1) return "red";
     return "gray";
   }
-  /**
-   * Helper: Xác định trạng thái và màu cho tỷ lệ chết
-   * @param {number} change - Phần trăm thay đổi
-   * @returns {object} Trạng thái, màu sắc và xu hướng
-   */
-  _getDeathRateStatus(change) {
-    let status, color, trend, icon;
 
-    if (change < 0) {
-      // Tỷ lệ chết GIẢM → TỐT
-      status = "down";
-      color = "green";
-      trend = "improving";
-      icon = "arrow_downward";
-    } else if (change > 0) {
-      // Tỷ lệ chết TĂNG → XẤU
-      status = "up";
-      color = "red";
-      trend = "worsening";
-      icon = "arrow_upward";
-    } else {
-      // Không thay đổi
-      status = "neutral";
-      color = "gray";
-      trend = "stable";
-      icon = "minimize";
-    }
-
-    return { status, color, trend, icon };
-  }
   /**
    * Helper: Xác định trạng thái thức ăn
    */
@@ -760,6 +731,7 @@ class DashboardService {
 
     for (let i = dataPoints - 1; i >= 0; i--) {
       const date = this._getDateForTrend(now, i, period);
+
       // Tạo xu hướng tăng nhẹ
       const value = baseValue + (Math.random() * 0.3) - 0.15;
       baseValue = value;

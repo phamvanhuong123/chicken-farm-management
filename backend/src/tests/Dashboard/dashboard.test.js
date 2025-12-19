@@ -1,6 +1,5 @@
-import { dashboardService } from "../../services/dashboard.service";
+import { dashboardService } from "../../services/dashboard.service.js";
 
-// Mock các service phụ thuộc
 vi.mock("../../services/flock.service.js", () => ({
   flockService: {
     getAllFlocks: vi.fn().mockResolvedValue([
@@ -54,7 +53,7 @@ describe("Dashboard Service", () => {
   });
 
   describe("getDashboardKPIs", () => {
-    it("should return all KPI data for 7d period", async () => {
+    it("nên trả về tất cả dữ liệu KPI cho khoảng thời gian 7 ngày", async () => {
       const kpis = await dashboardService.getDashboardKPIs("7d");
 
       // Kiểm tra cấu trúc KPI
@@ -82,7 +81,7 @@ describe("Dashboard Service", () => {
       expect(typeof kpis.todayFeed.change).toBe("number");
     });
 
-    it("should handle different periods correctly", async () => {
+    it("nên xử lý các khoảng thời gian khác nhau chính xác", async () => {
       const periods = ["24h", "7d", "30d", "90d", "all"];
 
       for (const period of periods) {
@@ -96,7 +95,7 @@ describe("Dashboard Service", () => {
   });
 
   describe("getTrendData", () => {
-    it("should return trend data for weight chart", async () => {
+    it("nên trả về dữ liệu xu hướng cho biểu đồ trọng lượng", async () => {
       const trendData = await dashboardService.getTrendData("7d", "weight");
 
       expect(trendData).toHaveProperty("data");
@@ -107,7 +106,7 @@ describe("Dashboard Service", () => {
       expect(trendData.data.length).toBeGreaterThan(0);
     });
 
-    it("should handle different chart types", async () => {
+    it("nên xử lý các loại biểu đồ khác nhau", async () => {
       const chartTypes = ["weight", "feed", "revenue", "death"];
 
       for (const chartType of chartTypes) {
@@ -119,7 +118,7 @@ describe("Dashboard Service", () => {
   });
 
   describe("getDashboardAlerts", () => {
-    it("should return alerts structure", async () => {
+    it("nên trả về cấu trúc cảnh báo", async () => {
       const alerts = await dashboardService.getDashboardAlerts();
 
       expect(alerts).toHaveProperty("alerts");
@@ -130,15 +129,15 @@ describe("Dashboard Service", () => {
     });
   });
 
-  describe("Helper Functions", () => {
-    it("should correctly determine change status", () => {
+  describe("Các Hàm Helper", () => {
+    it("nên xác định trạng thái thay đổi chính xác", () => {
       expect(dashboardService._getChangeStatus(5)).toBe("up");
       expect(dashboardService._getChangeStatus(-5)).toBe("down");
       expect(dashboardService._getChangeStatus(0)).toBe("neutral");
       expect(dashboardService._getChangeStatus(0.05)).toBe("neutral");
     });
 
-    it("should correctly determine feed status", () => {
+    it("nên xác định trạng thái thức ăn chính xác", () => {
       expect(dashboardService._getFeedStatus(400)).toEqual({
         status: "low",
         label: "Thiếu",
@@ -156,28 +155,50 @@ describe("Dashboard Service", () => {
       });
     });
 
-    it("should format currency correctly", () => {
+    it("nên định dạng tiền tệ chính xác", () => {
       const formatted = dashboardService._formatCurrency(245000000);
       expect(formatted).toContain("₫");
       expect(formatted).toContain("245");
     });
   });
 
-  describe("Death Rate Logic", () => {
-    it("should show green and down arrow when death rate decreases", () => {
+  describe("Logic Tỷ Lệ Chết", () => {
+    it("nên hiển thị màu xanh và mũi tên xuống khi tỷ lệ chết giảm", async () => {
       // Test với change âm
-      const result = dashboardService._getDeathRateStatus(-0.5);
+      const originalMockData = dashboardService.config.MOCK_DATA;
+      dashboardService.config.MOCK_DATA = {
+        ...originalMockData,
+        DEATH_RATE_7D: 2.0,
+        DEATH_RATE_CHANGE: -0.5
+      };
+
+      const result = await dashboardService._getDeathRateData("7d");
+
       expect(result.status).toBe("down");
       expect(result.color).toBe("green");
       expect(result.trend).toBe("improving");
+
+      // Khôi phục mock data
+      dashboardService.config.MOCK_DATA = originalMockData;
     });
 
-    it("should show red and up arrow when death rate increases", () => {
+    it("nên hiển thị màu đỏ và mũi tên lên khi tỷ lệ chết tăng", async () => {
       // Test với change dương
-      const result = dashboardService._getDeathRateStatus(1.2);
+      const originalMockData = dashboardService.config.MOCK_DATA;
+      dashboardService.config.MOCK_DATA = {
+        ...originalMockData,
+        DEATH_RATE_7D: 2.5,
+        DEATH_RATE_CHANGE: 1.2
+      };
+
+      const result = await dashboardService._getDeathRateData("7d");
+
       expect(result.status).toBe("up");
       expect(result.color).toBe("red");
       expect(result.trend).toBe("worsening");
+
+      // Khôi phục mock data
+      dashboardService.config.MOCK_DATA = originalMockData;
     });
   });
 });
