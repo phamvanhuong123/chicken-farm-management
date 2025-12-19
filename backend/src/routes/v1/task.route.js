@@ -1,17 +1,17 @@
 import express from 'express'
 import { taskController } from '~/controllers/task.controller'
 import { taskValidate } from '~/validators/task.validate'
-const route = express.Router()
+const router = express.Router()
 
 
 //THêm công việc
 
-route.post("/",taskValidate.create,taskController.create)
+router.post("/", taskValidate.create, taskController.create)
 
-route.put("/:id",taskValidate.update,taskController.update)
+router.put("/:id", taskValidate.update, taskController.update)
 
-route.delete("/:id",taskController.deleteTask)
+router.delete("/:id", taskController.deleteTask)
 // Lấy danh sách công việc theo employeerId
-route.get("/:employeerId",taskController.getTaskByEmployeer)
+router.get("/:employeerId", taskController.getTaskByEmployeer)
 
-export const taskRoute = route
+export default router

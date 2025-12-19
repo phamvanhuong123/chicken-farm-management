@@ -5,12 +5,14 @@ import importRoute from "./v1/import.route.js";
 import authRoutes from "./v1/auth.routes.js";
 import areaRoute from "./v1/area.route.js";
 import transactionRoute from "./v1/transaction.route.js";
-import { taskRoute } from "./v1/task.route.js";
+import taskRoute from "./v1/task.route.js";
+import dashboardRoute from "./v1/dashboard.route.js";
 const router = express.Router();
 
 router.get("/status", (req, res) => {
   res.json({ data: "ok" });
 });
+
 // nhóm route đàn gà (Chỉ định rõ prefix /flocks)
 router.use("/flocks", flockRoute);
 // nhóm route kho, vật tư
@@ -22,6 +24,7 @@ router.use("/imports", importRoute);
 router.use("/auth", authRoutes);
 router.use("/transactions", transactionRoute);
 
-router.use("/tasks",taskRoute);
+router.use("/tasks", taskRoute);
+router.use("/dashboard", dashboardRoute);
 
 export const APIs_V1 = router;
