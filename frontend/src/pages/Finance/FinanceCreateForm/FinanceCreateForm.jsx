@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { financeApi } from "../../../apis/financeApi";
+import swal from "sweetalert";
 
 function FinanceCreateForm({ onClose, onSuccess }) {
   const [form, setForm] = useState({
@@ -20,17 +21,17 @@ function FinanceCreateForm({ onClose, onSuccess }) {
     const { financeDate, type, category, amount, description } = form;
 
     if (!financeDate || !type || !category || !amount || !description) {
-      alert("Vui lòng nhập đầy đủ thông tin bắt buộc.");
+      swal("Vui lòng nhập đầy đủ thông tin bắt buộc.");
       return;
     }
 
     if (new Date(financeDate) > new Date()) {
-      alert("Ngày giao dịch không hợp lệ.");
+      swal("Ngày giao dịch không hợp lệ.");
       return;
     }
 
     if (Number(amount) <= 0) {
-      alert("Số tiền phải lớn hơn 0.");
+      swal("Số tiền phải lớn hơn 0.");
       return;
     }
 
@@ -42,7 +43,7 @@ function FinanceCreateForm({ onClose, onSuccess }) {
       });
       onSuccess();
     } catch (err) {
-      alert(
+      swal(
         err?.response?.data?.message ||
           "Không thể thêm giao dịch, vui lòng thử lại."
       );
