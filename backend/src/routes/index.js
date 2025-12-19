@@ -7,6 +7,8 @@ import areaRoute from "./v1/area.route.js";
 import transactionRoute from "./v1/transaction.route.js";
 import taskRoute from "./v1/task.route.js";
 import dashboardRoute from "./v1/dashboard.route.js";
+import dashboardChartRoutes from "./v1/dashboard.chart.routes.js";
+
 const router = express.Router();
 
 router.get("/status", (req, res) => {
@@ -25,6 +27,8 @@ router.use("/auth", authRoutes);
 router.use("/transactions", transactionRoute);
 
 router.use("/tasks", taskRoute);
+//Nhóm route dashboard
 router.use("/dashboard", dashboardRoute);
+router.use("/dashboard/charts", dashboardChartRoutes);
 
 export const APIs_V1 = router;

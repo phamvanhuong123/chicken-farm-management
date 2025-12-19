@@ -327,7 +327,7 @@ class DashboardService {
   async _calculateAvgWeight(period) {
     try {
       const flocks = await this._getFlocksData();
-      
+
       const filteredFlocks = this._filterFlocksByPeriod(flocks, period);
       // Lọc các đàn đang nuôi có trọng lượng > 0
       const flocksWithWeight = filteredFlocks.filter(f =>
@@ -867,6 +867,233 @@ class DashboardService {
           label: date.toLocaleDateString('vi-VN', { month: 'short', year: '2-digit' }),
           timestamp: date.toISOString()
         };
+    }
+  }
+
+  /**
+ * Lấy dữ liệu cho biểu đồ Tiêu thụ hàng tuần (U1.2)
+ * @returns {Promise<object>} Dữ liệu biểu đồ stacked column
+ */
+  async getWeeklyConsumptionChart() {
+    try {
+      // TODO: Thay bằng dữ liệu thật từ log/material khi có
+      // Tạo dữ liệu cho 7 ngày (T2 đến CN)
+      const days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+
+      // Tạo dữ liệu mock - có thể random nhưng đảm bảo logic
+      const weeklyData = days.map((day, index) => {
+        const baseFood = 120 + Math.random() * 80; // 120-200kg
+        const baseMedicine = 20 + Math.random() * 30; // 20-50kg
+
+        return {
+          day,
+          dayIndex: index + 1,
+          food: Math.round(baseFood),
+          medicine: Math.round(baseMedicine),
+          total: Math.round(baseFood + baseMedicine),
+          date: new Date(Date.now() - (6 - index) * 24 * 60 * 60 * 1000) // 7 ngày gần nhất
+        };
+      });
+
+      return {
+        chartType: "stacked_column",
+        title: "Tiêu thụ hàng tuần",
+        description: "Thống kê tiêu thụ thức ăn và thuốc 7 ngày gần nhất",
+        data: weeklyData,
+        series: [
+          {
+            name: "Thức ăn",
+            key: "food",
+            color: "#4CAF50", 
+            unit: "kg",
+            description: "Khối lượng thức ăn tiêu thụ"
+          },
+          {
+            name: "Thuốc & Vaccine",
+            key: "medicine",
+            color: "#FF9800", 
+            unit: "kg",
+            description: "Khối lượng thuốc và vaccine sử dụng"
+          }
+        ],
+        period: "7d",
+        calculatedAt: new Date().toISOString(),
+        total: {
+          food: weeklyData.reduce((sum, day) => sum + day.food, 0),
+          medicine: weeklyData.reduce((sum, day) => sum + day.medicine, 0),
+          overall: weeklyData.reduce((sum, day) => sum + day.total, 0)
+        },
+        metadata: {
+          source: "mock",
+          implementLater: "Lấy từ material.type='feed' và 'medicine' trong 7 ngày"
+        }
+      };
+    } catch (error) {
+      console.error("Error getting weekly consumption chart:", error);
+
+      // Fallback mock data cố định
+      return {
+        chartType: "stacked_column",
+        title: "Tiêu thụ hàng tuần",
+        data: [
+          { day: 'T2', food: 150, medicine: 25, total: 175 },
+          { day: 'T3', food: 145, medicine: 30, total: 175 },
+          { day: 'T4', food: 160, medicine: 28, total: 188 },
+          { day: 'T5', food: 140, medicine: 32, total: 172 },
+          { day: 'T6', food: 155, medicine: 27, total: 182 },
+          { day: 'T7', food: 165, medicine: 35, total: 200 },
+          { day: 'CN', food: 130, medicine: 22, total: 152 }
+        ],
+        series: [
+          { name: "Thức ăn", key: "food", color: "#4CAF50", unit: "kg" },
+          { name: "Thuốc & Vaccine", key: "medicine", color: "#FF9800", unit: "kg" }
+        ],
+        period: "7d",
+        calculatedAt: new Date().toISOString(),
+        total: {
+          food: 1045,
+          medicine: 199,
+          overall: 1244
+        }
+      };
+    }
+  }
+
+  /**
+   * Lấy dữ liệu cho biểu đồ Cơ cấu chi phí (U1.2)
+   * @returns {Promise<object>} Dữ liệu biểu đồ phân bổ chi phí
+   */
+  async getCostStructureChart() {
+    try {
+      // TODO: Thay bằng dữ liệu thật từ transaction/material khi có
+      const costStructure = [
+        {
+          category: "Thức ăn",
+          value: 159000000, // 159 triệu
+          percentage: 65,
+          color: "#4CAF50", // Xanh lá
+          icon: "restaurant",
+          description: "Chi phí thức ăn chăn nuôi",
+          formattedValue: "159.000.000 ₫"
+        },
+        {
+          category: "Thuốc & Vaccine",
+          value: 37000000, // 37 triệu
+          percentage: 15,
+          color: "#FF9800", // Cam
+          icon: "medication",
+          description: "Chi phí thuốc thú y và vaccine",
+          formattedValue: "37.000.000 ₫"
+        },
+        {
+          category: "Nhân công",
+          value: 30000000, // 30 triệu
+          percentage: 12,
+          color: "#2196F3", // Xanh dương
+          icon: "groups",
+          description: "Chi phí lương nhân viên",
+          formattedValue: "30.000.000 ₫"
+        },
+        {
+          category: "Điện nước & Khác",
+          value: 19000000, // 19 triệu
+          percentage: 8,
+          color: "#9C27B0", // Tím
+          icon: "bolt",
+          description: "Chi phí điện, nước, bảo trì",
+          formattedValue: "19.000.000 ₫"
+        }
+      ];
+
+      const totalCost = costStructure.reduce((sum, item) => sum + item.value, 0);
+
+      return {
+        chartType: "cost_structure",
+        title: "Cơ cấu chi phí",
+        description: "Phân bổ chi phí hoạt động trang trại",
+        data: costStructure,
+        total: {
+          value: totalCost,
+          formatted: this._formatCurrency(totalCost),
+          period: "month",
+          currency: "VND"
+        },
+        displayType: "pie", // Hoặc "donut"
+        calculatedAt: new Date().toISOString(),
+        metadata: {
+          period: "Tháng hiện tại",
+          lastUpdated: new Date().toISOString(),
+          source: "mock",
+          implementLater: "Tính từ transaction.type='expense' và material.type"
+        }
+      };
+    } catch (error) {
+      console.error("Error getting cost structure chart:", error);
+
+      // Fallback mock data
+      return {
+        chartType: "cost_structure",
+        title: "Cơ cấu chi phí",
+        data: [
+          {
+            category: "Thức ăn",
+            value: 159000000,
+            percentage: 65,
+            color: "#4CAF50",
+            formattedValue: "159.000.000 ₫"
+          },
+          {
+            category: "Thuốc & Vaccine",
+            value: 37000000,
+            percentage: 15,
+            color: "#FF9800",
+            formattedValue: "37.000.000 ₫"
+          },
+          {
+            category: "Nhân công",
+            value: 30000000,
+            percentage: 12,
+            color: "#2196F3",
+            formattedValue: "30.000.000 ₫"
+          },
+          {
+            category: "Điện nước & Khác",
+            value: 19000000,
+            percentage: 8,
+            color: "#9C27B0",
+            formattedValue: "19.000.000 ₫"
+          }
+        ],
+        total: {
+          value: 245000000,
+          formatted: "245.000.000 ₫",
+          period: "month"
+        },
+        calculatedAt: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Lấy tất cả dữ liệu biểu đồ cho U1.2
+   * @returns {Promise<object>} Tổng hợp dữ liệu 2 biểu đồ
+   */
+  async getDashboardCharts() {
+    try {
+      const [weeklyConsumption, costStructure] = await Promise.all([
+        this.getWeeklyConsumptionChart(),
+        this.getCostStructureChart()
+      ]);
+
+      return {
+        weeklyConsumption,
+        costStructure,
+        period: "current", // current week/month
+        calculatedAt: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error("Error getting dashboard charts:", error);
+      throw new Error("Không thể lấy dữ liệu biểu đồ: " + error.message);
     }
   }
 }
