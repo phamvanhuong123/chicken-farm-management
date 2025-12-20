@@ -75,7 +75,14 @@ const find = async (filter = {}, options = {}) => {
     .find(filter, options);
   return await cursor.toArray();
 };
-
+const findById = async (id) => {
+  try {
+      const area = GET_DB().collection(AREA_COLLECTION_NAME).findOne({ _id: new ObjectId(String(id)) });
+      return area;
+    } catch (error) {
+      throw new Error(error);
+    }
+}
 const update = async (id, data) => {
   try {
     const docToUpdate = { ...data };
@@ -117,7 +124,8 @@ export const areaModel = {
   count,
   find,
   aggregate,
-  update
+  update,
+  findById
 };
 
 

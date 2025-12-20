@@ -42,9 +42,9 @@ function SearchUser({
     searchTimeOut.current = setTimeout(() => {
       const newData = users?.filter((user) => {
         if (
-          user.email.toLowerCase().includes(value.trim()) ||
-          user.username.toLowerCase().includes(value.trim()) ||
-          user.phone.toLowerCase().includes(value.trim())
+          user.email?.toLowerCase().includes(value.trim()) ||
+          user.username?.toLowerCase().includes(value.trim()) ||
+          user.phone?.toLowerCase().includes(value.trim())
         )
           return user;
       });
@@ -71,6 +71,7 @@ function SearchUser({
   useEffect(() => {
     dispatch(fetchGetAllUserApi());
   }, [dispatch]);
+  console.log(dataUsers)
   return (
     <div className="mb-3.5">
       <input
