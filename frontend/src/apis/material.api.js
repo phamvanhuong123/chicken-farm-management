@@ -12,6 +12,10 @@ export const materialAPI = {
 
   // ➕ Thêm vật tư mới
   create: (data) => axios.post(API_BASE_URL, data),
+  //sửa vat tư
+  update: (id, data) => {
+    return axios.put(`${API_BASE_URL}/${id}`, data);
+  },
 
   // Nhập Excel
   importExcel: (file) => {

@@ -133,11 +133,27 @@ export const getMaterialById = async (req, res, next) => {
 export const createMaterial = async (req, res, next) => {
   try {
     const newMaterial = await materialService.createMaterial(req.body);
-    
+
     res.status(201).json({
       statusCode: 201,
       message: "Thêm vật tư thành công.",
       data: newMaterial,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+//cap nhat vat tu
+export const updateMaterial = async (req, res, next) => {
+  try {
+    const id = req.params.id;
+
+    const updated = await materialService.updateMaterial(id, req.body);
+
+    res.status(200).json({
+      statusCode: 200,
+      message: "Cập nhật vật tư thành công.",
+      data: updated,
     });
   } catch (error) {
     next(error);

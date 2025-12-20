@@ -121,7 +121,7 @@ const create = async (data) => {
     .insertOne(normalizedData);
 };
 /**
- * TEAM-104: 🔍 Lấy chi tiết vật tư theo ID
+ * TEAM-104:  Lấy chi tiết vật tư theo ID
  */
 const findById = async (id) => {
   try {
@@ -151,7 +151,22 @@ const findById = async (id) => {
     throw err;
   }
 };
+//Chỉnh sửa vật tư
+const updateById = async (id, data) => {
+  const db = GET_DB();
+  const updateData = {
+    ...data,
+    normalizedName: normalizeVietnamese(data.name),
+    normalizedType: normalizeVietnamese(data.type),
+    updatedAt: new Date(),
+  };
 
+  const result = await db
+    .collection(MATERIAL_COLLECTION_NAME)
+    .updateOne({ _id: new ObjectId(id) }, { $set: updateData });
+
+  return result;
+};
 export const materialModel = {
   MATERIAL_COLLECTION_NAME,
   MATERIAL_SCHEMA,
@@ -160,4 +175,5 @@ export const materialModel = {
   count,
   create,
   findById,
+  updateById,
 };

@@ -7,6 +7,7 @@ import {
   importExcel,
   getMaterialById,
   createMaterial,
+  updateMaterial,
 } from "../../controllers/material.controller";
 import multer from "multer";
 
@@ -21,5 +22,7 @@ router.post("/", createMaterial);
 router.post("/import", upload.single("file"), importExcel);
 // [GET] /v1/materials/:id - Xem chi tiết 1 vật tư  🆕 TEAM-104
 router.get("/:id", getMaterialById);
+// [PUT] /v1/materials/:id - Cập nhật thông tin vật tư
+router.put("/:id", updateMaterial);
 
 export default router;

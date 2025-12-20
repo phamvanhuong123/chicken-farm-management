@@ -142,10 +142,28 @@ const createMaterial = async (data) => {
     ...valid,
   };
 };
+//cap nhat vat tu
+const updateMaterial = async (id, data) => {
+  const validData = await materialModel.validateBeforeCreateMaterial(data);
+
+  const result = await materialModel.updateById(id, validData);
+
+  if (result.matchedCount === 0) {
+    const error = new Error("Không tìm thấy vật tư để cập nhật.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return {
+    _id: id,
+    ...validData,
+  };
+};
 
 export const materialService = {
   getAllMaterials,
   importFromExcel,
   getMaterialById,
   createMaterial,
+  updateMaterial,
 };

@@ -4,6 +4,8 @@ import { toast } from "react-hot-toast";
 import MaterialDetail from "./MaterialDetail"; // 🆕 thêm import
 import MaterialWarningAlert from "./MaterialWarningAlert/MaterialWarningAlert"; // 🆕 Cảnh báo vật tư
 import AddMaterialModal from "./AddMaterialModal/AddMaterialModal"; // 🆕 Form thêm vật tư
+import EditMaterialModal from "./EditMaterialModal/EditMaterialModal";
+
 import {
   FaBox,
   FaExclamationTriangle,
@@ -11,7 +13,14 @@ import {
   FaMoneyBillWave,
   FaSearch,
 } from "react-icons/fa";
-import { ArrowDownFromLine, ArrowDownToLine, Edit, Eye, PlusIcon, Trash2 } from "lucide-react";
+import {
+  ArrowDownFromLine,
+  ArrowDownToLine,
+  Edit,
+  Eye,
+  PlusIcon,
+  Trash2,
+} from "lucide-react";
 import { Button } from "~/components/ui/button";
 
 // 🎨 Badge màu động (nếu có)
@@ -32,6 +41,7 @@ export default function Inventory() {
   // 🧠 Toàn bộ state
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(false);
+
   const [keyword, setKeyword] = useState("");
   const [debouncedKeyword, setDebouncedKeyword] = useState("");
   const [typeFilter, setTypeFilter] = useState("Tất cả");
@@ -39,8 +49,9 @@ export default function Inventory() {
   const [file, setFile] = useState(null);
   const [types, setTypes] = useState([]);
   const [typeColors, setTypeColors] = useState({});
-  const [selectedMaterial, setSelectedMaterial] = useState(null); // 🆕 thêm đúng vị trí
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false); // 🆕 State cho modal thêm vật tư
+  const [selectedMaterial, setSelectedMaterial] = useState(null); //  thêm đúng vị trí
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false); // State cho modal thêm vật tư
+  const [editingMaterialId, setEditingMaterialId] = useState(null);
 
   // ⏱ Debounce tìm kiếm
   useEffect(() => {
@@ -182,7 +193,7 @@ export default function Inventory() {
             onClick={handleExport}
             className="px-2 py-2 border rounded-md bg-white hover:bg-gray-100 text-sm cursor-pointer flex items-center gap-1.5"
           >
-            <ArrowDownFromLine size={15} className="rotate-180"  /> Xuất Excel
+            <ArrowDownFromLine size={15} className="rotate-180" /> Xuất Excel
           </button>
 
           {file && (
@@ -190,12 +201,18 @@ export default function Inventory() {
               onClick={handleImport}
               className="px-3 py-2 bg-green-500 text-white rounded-md text-sm hover:bg-green-600"
             >
-             Xác nhận
+              Xác nhận
             </button>
           )}
 
-          <Button onClick={() => setIsAddModalOpen(true)}  className={'bg-green-400 hover:bg-green-500 cursor-pointer'}> <PlusIcon/>Thêm vật tư</Button>
-
+          <Button
+            onClick={() => setIsAddModalOpen(true)}
+            className={"bg-green-400 hover:bg-green-500 cursor-pointer"}
+          >
+            {" "}
+            <PlusIcon />
+            Thêm vật tư
+          </Button>
         </div>
       </div>
 
@@ -342,12 +359,20 @@ export default function Inventory() {
                   <td className="p-3 text-center">
                     <button
                       className="p-2 rounded cursor-pointer hover:bg-gray-200"
-                      onClick={() => setSelectedMaterial(m._id)} // 🆕 mở popup
+                      onClick={() => setSelectedMaterial(m._id)} // mở popup
                     >
-                        <Eye size={16} className="w-4 h-4 text-gray-600 " />
+                      <Eye size={16} className="w-4 h-4 text-gray-600 " />
                     </button>
-                    <button className="p-2 rounded cursor-pointer hover:bg-blue-200"> <Edit size={16} className="w-4 h-4 text-blue-500" /></button>
-                    <button className="p-2 rounded hover:bg-red-50 text-red-600 disabled:opacity-50 cursor-pointer"> <Trash2 size={16} /></button>
+                    <button
+                      className="p-2 rounded cursor-pointer hover:bg-blue-200"
+                      onClick={() => setEditingMaterialId(m._id)} //mở modal sửa
+                    >
+                      <Edit size={16} className="w-4 h-4 text-blue-500" />
+                    </button>
+                    <button className="p-2 rounded hover:bg-red-50 text-red-600 disabled:opacity-50 cursor-pointer">
+                      {" "}
+                      <Trash2 size={16} />
+                    </button>
                   </td>
                 </tr>
               ))
@@ -356,7 +381,7 @@ export default function Inventory() {
         </table>
       </div>
 
-      {/* 🆕 Popup chi tiết vật tư */}
+      {/*  Popup chi tiết vật tư */}
       {selectedMaterial && (
         <MaterialDetail
           materialId={selectedMaterial}
@@ -364,14 +389,21 @@ export default function Inventory() {
         />
       )}
 
-      {/* 🆕 Modal thêm vật tư */}
+      {/* Modal thêm vật tư */}
       <AddMaterialModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAddSuccess={() => {
-        fetchData(); // 👉 load từ DB để có statusInfo đầy đủ
-    }}
+          fetchData(); // 👉 load từ DB để có statusInfo đầy đủ
+        }}
       />
+      {editingMaterialId && (
+        <EditMaterialModal
+          materialId={editingMaterialId}
+          onClose={() => setEditingMaterialId(null)}
+          onSuccess={fetchData} // refresh list
+        />
+      )}
     </div>
   );
 }
