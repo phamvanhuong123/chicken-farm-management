@@ -1,6 +1,6 @@
 import { flockService } from "./flock.service.js";
 import { materialService } from "./material.service.js";
-import { logService } from "./log.service.js"; // Thêm import log service
+import { logService } from "./log.service.js";
 
 /**
  * Dịch vụ Dashboard - Xử lý logic KPI và biểu đồ
@@ -10,25 +10,18 @@ class DashboardService {
     // Cấu hình mặc định
     this.config = {
       FEED_THRESHOLD: {
-        LOW: 500, // Dưới 500kg là "Thiếu"
-        NORMAL: 800, // 500-1200 là "Bình thường"
-        HIGH: 1200, // Trên 1200 là "Dư thừa"
+        LOW: 500,
+        NORMAL: 800,
+        HIGH: 1200,
       },
       MOCK_DATA: {
-        // Dữ liệu giả lập cho các KPI chưa có module
         DAILY_FEED: 850,
-        DAILY_FEED_CHANGE: 0, // Thêm change cho feed
+        DAILY_FEED_CHANGE: 0,
         MONTHLY_REVENUE: 245000000,
-        REVENUE_CHANGE: 123, // %
-
-        // Tỷ lệ chết (sẽ thay bằng log service sau)
+        REVENUE_CHANGE: 123,
         DEATH_RATE_7D: 2.1,
         DEATH_RATE_CHANGE: -0.5,
-
-        // Trọng lượng (sẽ tính từ flock service)
-        AVG_WEIGHT_CHANGE: 42, // %
-
-        // Mock flocks data cho test
+        AVG_WEIGHT_CHANGE: 42,
         MOCK_FLOCKS: [
           {
             _id: "1",
@@ -39,7 +32,7 @@ class DashboardService {
             speciesId: "ri",
             areaId: "khu-a",
             ownerId: "user1",
-            createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 ngày trước
+            createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
             updatedAt: null,
           },
           {
@@ -51,14 +44,13 @@ class DashboardService {
             speciesId: "tam-hoang",
             areaId: "khu-b",
             ownerId: "user1",
-            createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 ngày trước
+            createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
             updatedAt: null,
           },
         ],
       },
     };
 
-    // Flag để kiểm tra môi trường test
     this.isTestEnvironment =
       process.env.NODE_ENV === "test" ||
       typeof jest !== "undefined" ||
@@ -67,11 +59,10 @@ class DashboardService {
 
   /**
    * Tính toán KPI cho Dashboard
-   * @param {string} period - Khoảng thời gian (24h, 7d, 30d, 90d)
+   * @param {string} period - Khoảng thời gian (7d, 30d, 90d, all)
    */
   async getDashboardKPIs(period = "7d") {
     try {
-      // Lấy dữ liệu từ các service
       const [
         flocksData,
         totalChickensKPI,
@@ -90,7 +81,6 @@ class DashboardService {
         this._getRevenueData(period),
       ]);
 
-      // Tổng hợp KPI
       const kpis = {
         totalChickens: totalChickensKPI,
         totalFlocks: totalFlocksKPI,
@@ -98,8 +88,6 @@ class DashboardService {
         avgWeight: avgWeightKPI,
         todayFeed: feedKPI,
         monthlyRevenue: revenueKPI,
-
-        // Metadata
         period,
         calculatedAt: new Date().toISOString(),
       };
@@ -107,7 +95,6 @@ class DashboardService {
       return kpis;
     } catch (error) {
       console.error("DashboardService.getDashboardKPIs error:", error);
-      // Trong môi trường test, trả về mock data
       if (this.isTestEnvironment) {
         return this._getMockKPIs(period);
       }
@@ -115,12 +102,8 @@ class DashboardService {
     }
   }
 
-  /**
-   * Lấy dữ liệu đàn gà - với fallback cho test
-   */
   async _getFlocksData() {
     try {
-      // Trong môi trường test, dùng mock data
       if (this.isTestEnvironment) {
         return this.config.MOCK_DATA.MOCK_FLOCKS;
       }
@@ -129,7 +112,6 @@ class DashboardService {
       return flocks;
     } catch (error) {
       console.error("Error getting flocks data:", error);
-      // Fallback: dùng mock data nếu service lỗi
       if (this.isTestEnvironment) {
         return this.config.MOCK_DATA.MOCK_FLOCKS;
       }
@@ -137,17 +119,11 @@ class DashboardService {
     }
   }
 
-  /**
-   * 1. Tính tổng số gà
-   */
   async _calculateTotalChickens(period) {
     try {
       const flocks = await this._getFlocksData();
-
-      // Filter theo period
       const filteredFlocks = this._filterFlocksByPeriod(flocks, period);
 
-      // Tính toán trên filteredFlocks
       const activeFlocks = filteredFlocks.filter(
         (flock) => flock.status === "Raising" || flock.status === "Đang nuôi"
       );
@@ -157,8 +133,7 @@ class DashboardService {
         0
       );
 
-      // Tính tổng kỳ trước (tạm fix cứng)
-      const previousTotal = this._getMockPreviousValue(totalCurrent, 42); // +42%
+      const previousTotal = this._getMockPreviousValue(totalCurrent, 42);
 
       const change =
         previousTotal > 0
@@ -172,8 +147,9 @@ class DashboardService {
         previousValue: previousTotal,
         period,
         unit: "con",
-        description: "Tổng số gà đang nuôi",
+        description: `Tổng số gà đang nuôi (cập nhật trong ${period})`,
         color: this._getChangeColor(change),
+        note: `Dựa trên ${activeFlocks.length} đàn có cập nhật trong khoảng thời gian này`,
       };
     } catch (error) {
       console.error("Error calculating total chickens:", error);
@@ -190,15 +166,11 @@ class DashboardService {
     }
   }
 
-  // Helper để filter flocks theo period
   _filterFlocksByPeriod(flocks, period) {
     const now = new Date();
     let cutoffDate = new Date();
 
     switch (period) {
-      case "24h":
-        cutoffDate.setDate(now.getDate() - 1);
-        break;
       case "7d":
         cutoffDate.setDate(now.getDate() - 7);
         break;
@@ -213,24 +185,24 @@ class DashboardService {
         return flocks;
     }
 
-    return flocks.filter((flock) => new Date(flock.createdAt) >= cutoffDate);
+    return flocks.filter((flock) => {
+      const dateToCheck = flock.updatedAt
+        ? new Date(flock.updatedAt)
+        : new Date(flock.createdAt);
+      return dateToCheck >= cutoffDate;
+    });
   }
-  /**
-   * 2. Tính tổng số đàn
-   */
+
   async _calculateTotalFlocks(period) {
     try {
       const flocks = await this._getFlocksData();
-
       const filteredFlocks = this._filterFlocksByPeriod(flocks, period);
 
-      // Chỉ tính đàn đang nuôi
       const activeFlocks = filteredFlocks.filter(
         (flock) => flock.status === "Raising" || flock.status === "Đang nuôi"
       );
 
       const totalCurrent = activeFlocks.length;
-      // Tính tổng kỳ trước (tạm fix cứng)
       const previousTotal = this._getMockPreviousValue(totalCurrent, 0);
 
       const change =
@@ -245,12 +217,11 @@ class DashboardService {
         previousValue: previousTotal,
         period,
         unit: "đàn",
-        description: "Tổng số đàn đang nuôi",
+        description: `Tổng số đàn đang nuôi (cập nhật trong ${period})`,
         color: this._getChangeColor(change),
       };
     } catch (error) {
       console.error("Error calculating total flocks:", error);
-      // Fallback cho test
       return {
         value: 8,
         change: 0,
@@ -264,63 +235,77 @@ class DashboardService {
     }
   }
 
-  /**
-   * 3. Tính tỷ lệ chết (SỬ DỤNG LOG SERVICE THAY VÌ MOCK DATA)
-   */
   async _getDeathRateData(period) {
     try {
-      // Tính toán thời gian dựa trên period
       const endDate = new Date();
       let startDate = new Date();
+      let previousStartDate = new Date();
 
       switch (period) {
-        case "24h":
-          startDate.setDate(startDate.getDate() - 1);
-          break;
         case "7d":
           startDate.setDate(startDate.getDate() - 7);
+          previousStartDate.setDate(previousStartDate.getDate() - 14);
           break;
         case "30d":
           startDate.setDate(startDate.getDate() - 30);
+          previousStartDate.setDate(previousStartDate.getDate() - 60);
           break;
         case "90d":
           startDate.setDate(startDate.getDate() - 90);
+          previousStartDate.setDate(previousStartDate.getDate() - 180);
+          break;
+        case "all":
+          startDate = new Date(0);
+          previousStartDate = null;
           break;
         default:
-          startDate.setDate(startDate.getDate() - 7); // Mặc định 7 ngày
+          startDate.setDate(startDate.getDate() - 7);
+          previousStartDate.setDate(previousStartDate.getDate() - 14);
       }
 
-      // Lấy tổng số gà chết từ log service
-      const totalDeath = await logService.getTotalQuantityByTypeAndPeriod(
+      const totalDeathCurrent = await logService.getTotalQuantityByTypeAndPeriod(
         "DEATH",
         startDate,
         endDate
       );
 
-      // Lấy tổng số gà hiện tại
-      const totalChickensKPI = await this._calculateTotalChickens(period);
-      const totalChickens = totalChickensKPI.value;
+      let totalDeathPrev = 0;
+      if (previousStartDate) {
+        totalDeathPrev = await logService.getTotalQuantityByTypeAndPeriod(
+          "DEATH",
+          previousStartDate,
+          startDate
+        );
+      }
 
-      // Tính tỷ lệ chết
-      const currentRate =
-        totalChickens > 0 ? (totalDeath / totalChickens) * 100 : 0;
+      const flocks = await this._getFlocksData();
+      const activeFlocks = flocks.filter(
+        (f) => f.status === "Raising" || f.status === "Đang nuôi"
+      );
+      const totalChickens = activeFlocks.reduce(
+        (sum, f) => sum + (f.currentCount || f.initialCount || 0), 0
+      );
 
-      // Tính tỷ lệ chết kỳ trước (tạm thời dùng mock để tính change)
-      const previousRate = this.config.MOCK_DATA.DEATH_RATE_7D;
-      const change = currentRate - previousRate;
+      const currentRate = totalChickens > 0 ? (totalDeathCurrent / totalChickens) * 100 : 0;
 
-      // Xác định trạng thái và màu sắc cho tỷ lệ chết
+      let prevRate = 0;
+      let change = 0;
+
+      if (previousStartDate && totalDeathPrev > 0) {
+        prevRate = totalChickens > 0 ? (totalDeathPrev / totalChickens) * 100 : 0;
+        change = currentRate - prevRate;
+      } else {
+        change = this.config.MOCK_DATA.DEATH_RATE_CHANGE;
+      }
+
       let status, color;
       if (change < 0) {
-        // Tỷ lệ chết GIẢM → TỐT
         status = "down";
-        color = "green"; // Màu xanh vì tốt
+        color = "green";
       } else if (change > 0) {
-        // Tỷ lệ chết TĂNG → XẤU
         status = "up";
-        color = "red"; // Màu đỏ vì xấu
+        color = "red";
       } else {
-        // Không thay đổi
         status = "neutral";
         color = "gray";
       }
@@ -333,29 +318,21 @@ class DashboardService {
         unit: "%",
         description: `Tỷ lệ chết (${period} gần nhất)`,
         color: color,
-        note:
-          change < 0
-            ? "Giảm " + Math.abs(change).toFixed(2) + "% so với kỳ trước"
-            : change > 0
-              ? "Tăng " + change.toFixed(2) + "% so với kỳ trước"
-              : "Không thay đổi so với kỳ trước",
-        source: "log", // Đánh dấu dữ liệu từ log service
-        // Thêm field giải thích cho frontend
+        note: previousStartDate
+          ? `So sánh với ${period} trước đó`
+          : "Không có dữ liệu kỳ trước để so sánh",
+        source: "log",
         trend: change < 0 ? "improving" : "worsening",
         icon: change < 0 ? "arrow_downward" : "arrow_upward",
-        totalDeath: totalDeath,
+        totalDeath: totalDeathCurrent,
         totalChickens: totalChickens,
       };
     } catch (error) {
       console.error("Error getting death rate from log service:", error);
-      // Fallback: dùng mock data nếu không lấy được từ log service
       return this._getMockDeathRateData(period);
     }
   }
 
-  /**
-   * Helper: Mock data cho tỷ lệ chết (fallback)
-   */
   _getMockDeathRateData(period) {
     const currentRate = this.config.MOCK_DATA.DEATH_RATE_7D;
     const change = this.config.MOCK_DATA.DEATH_RATE_CHANGE;
@@ -376,9 +353,9 @@ class DashboardService {
       value: currentRate,
       change: change,
       status: status,
-      period: "7d",
+      period: period,
       unit: "%",
-      description: "Tỷ lệ chết (7 ngày gần nhất)",
+      description: `Tỷ lệ chết (${period} gần nhất)`,
       color: color,
       note:
         change < 0
@@ -390,20 +367,17 @@ class DashboardService {
     };
   }
 
-  /**
-   * 4. Tính trọng lượng trung bình
-   */
   async _calculateAvgWeight(period) {
     try {
       const flocks = await this._getFlocksData();
-
       const filteredFlocks = this._filterFlocksByPeriod(flocks, period);
-      // Lọc các đàn đang nuôi có trọng lượng > 0
+
       const flocksWithWeight = filteredFlocks.filter(
         (f) =>
           (f.status === "Raising" || f.status === "Đang nuôi") &&
           (f.avgWeight || 0) > 0
       );
+
       if (flocksWithWeight.length === 0) {
         return {
           value: 0,
@@ -415,7 +389,6 @@ class DashboardService {
         };
       }
 
-      // Tính trọng lượng trung bình có trọng số theo số lượng gà
       let totalWeight = 0;
       let totalChickens = 0;
 
@@ -427,7 +400,6 @@ class DashboardService {
 
       const currentAvg = totalChickens > 0 ? totalWeight / totalChickens : 0;
 
-      // Tính kỳ trước (tạm fix cứng)
       const change = this.config.MOCK_DATA.AVG_WEIGHT_CHANGE;
       const previousAvg = this._getMockPreviousValue(currentAvg, change);
 
@@ -438,14 +410,13 @@ class DashboardService {
         previousValue: previousAvg,
         period,
         unit: "kg/con",
-        description: "Trọng lượng trung bình",
+        description: `Trọng lượng trung bình (cập nhật trong ${period})`,
         color: this._getChangeColor(change),
         sampleSize: flocksWithWeight.length,
         totalChickensInSample: totalChickens,
       };
     } catch (error) {
       console.error("Error calculating avg weight:", error);
-      // Fallback cho test
       return {
         value: 1.8,
         change: 42,
@@ -461,43 +432,41 @@ class DashboardService {
     }
   }
 
-  /**
-   * 5. Lấy thông tin thức ăn
-   * TODO: Thay bằng material service khi có
-   */
   async _getFeedData(period) {
     try {
-      // Ưu tiên lấy từ material service nếu có
       if (materialService && materialService.getFeedInfoForDashboard) {
         try {
           const feedInfo = await materialService.getFeedInfoForDashboard();
+
           if (feedInfo.source !== "fallback") {
             return {
               value: feedInfo.value,
-              change: feedInfo.change || 0, // Thêm change
-              unit: feedInfo.unit,
-              status: feedInfo.status,
-              label: feedInfo.label,
+              change: feedInfo.change || 0,
+              unit: feedInfo.unit || 'kg',
+              status: feedInfo.status || 'normal',
+              label: feedInfo.label || 'Bình thường',
               description: "Thức ăn hôm nay",
-              color: this._getFeedColor(feedInfo.status),
-              threshold: feedInfo.threshold,
+              color: this._getFeedColor(feedInfo.status || 'normal'),
+              threshold: feedInfo.threshold || this.config.FEED_THRESHOLD,
               source: "material_service",
               date: new Date().toISOString().split("T")[0],
+              period: "today",
+              materialCount: feedInfo.materialCount,
+              note: feedInfo.note || `Tổng hợp từ ${feedInfo.materialCount || 0} loại thức ăn`,
             };
           }
         } catch (error) {
-          console.log("Material service not available, using mock data");
+          console.log("Material service getFeedInfoForDashboard error:", error.message);
         }
       }
 
-      // Fallback: Dùng mock data
       const todayFeed = this.config.MOCK_DATA.DAILY_FEED;
       const feedChange = this.config.MOCK_DATA.DAILY_FEED_CHANGE;
       const status = this._getFeedStatus(todayFeed);
 
       return {
         value: todayFeed,
-        change: feedChange, // Thêm change = 0
+        change: feedChange,
         unit: "kg",
         status: status.status,
         label: status.label,
@@ -506,7 +475,8 @@ class DashboardService {
         threshold: this.config.FEED_THRESHOLD,
         source: "mock",
         date: new Date().toISOString().split("T")[0],
-        implementLater: "Lấy từ material.type='feed'",
+        period: "today",
+        implementLater: "Đã thay bằng material.type='feed' - kiểm tra material service",
       };
     } catch (error) {
       console.error("Error getting feed data:", error);
@@ -518,14 +488,11 @@ class DashboardService {
         label: "Bình thường",
         description: "Thức ăn hôm nay",
         color: "green",
+        period: "today",
       };
     }
   }
 
-  /**
-   * 6. Lấy thông tin doanh thu
-   * TODO: Thay bằng transaction service khi có
-   */
   async _getRevenueData(period) {
     try {
       const currentRevenue = this.config.MOCK_DATA.MONTHLY_REVENUE;
@@ -535,7 +502,7 @@ class DashboardService {
         value: currentRevenue,
         change: change,
         status: this._getChangeStatus(change),
-        description: "Doanh thu tháng",
+        description: "Doanh thu tháng này",
         period: "month",
         currency: "VND",
         formatted: this._formatCurrency(currentRevenue),
@@ -549,7 +516,7 @@ class DashboardService {
         value: 245000000,
         change: 123,
         status: "up",
-        description: "Doanh thu tháng",
+        description: "Doanh thu tháng này",
         period: "month",
         currency: "VND",
         formatted: "245.000.000 ₫",
@@ -558,14 +525,10 @@ class DashboardService {
     }
   }
 
-  /**
-   * Lấy dữ liệu cho biểu đồ xu hướng (SỬ DỤNG LOG SERVICE)
-   */
   async getTrendData(period, chartType) {
     try {
       let data = [];
 
-      // Sử dụng log service cho các biểu đồ có dữ liệu từ log
       if (["weight", "death", "feed"].includes(chartType)) {
         try {
           data = await logService.getTrendDataForDashboard(chartType, period);
@@ -582,7 +545,6 @@ class DashboardService {
             `Error getting trend data from log service for ${chartType}:`,
             error
           );
-          // Fallback to mock data
           data = this._generateMockTrendData(period, chartType);
           return {
             data,
@@ -594,7 +556,6 @@ class DashboardService {
           };
         }
       } else {
-        // Các biểu đồ khác (revenue) vẫn dùng mock data
         data = this._generateMockTrendData(period, chartType);
         return {
           data,
@@ -618,14 +579,10 @@ class DashboardService {
     }
   }
 
-  /**
-   * Lấy các cảnh báo cho dashboard (SỬ DỤNG LOG SERVICE)
-   */
   async getDashboardAlerts() {
     try {
       const alerts = [];
 
-      // 1. Lấy cảnh báo từ log service
       try {
         const logAlerts = await logService.getAlertsFromLogs();
         alerts.push(...logAlerts);
@@ -633,7 +590,6 @@ class DashboardService {
         console.error("Error getting alerts from log service:", error);
       }
 
-      // 2. Kiểm tra thức ăn
       const feedData = await this._getFeedData("today");
       if (feedData.status === "low") {
         alerts.push({
@@ -646,10 +602,8 @@ class DashboardService {
         });
       }
 
-      // 3. Kiểm tra tỷ lệ chết cao từ KPI
       const deathData = await this._getDeathRateData("7d");
       if (deathData.value > 5) {
-        // Ngưỡng cảnh báo: >5%
         alerts.push({
           type: "high_death_rate_kpi",
           title: "Tỷ lệ chết cao",
@@ -677,9 +631,6 @@ class DashboardService {
     }
   }
 
-  /**
-   * Helper: Mock KPI cho test
-   */
   _getMockKPIs(period) {
     return {
       totalChickens: {
@@ -735,12 +686,13 @@ class DashboardService {
         color: "green",
         threshold: this.config.FEED_THRESHOLD,
         source: "mock",
+        period: "today",
       },
       monthlyRevenue: {
         value: 245000000,
         change: 123,
         status: "up",
-        description: "Doanh thu tháng",
+        description: "Doanh thu tháng này",
         period: "month",
         currency: "VND",
         formatted: "245.000.000 ₫",
@@ -752,27 +704,18 @@ class DashboardService {
     };
   }
 
-  /**
-   * Helper: Xác định trạng thái thay đổi
-   */
   _getChangeStatus(change) {
-    if (change > 0.1) return "up"; // Tăng > 0.1%
-    if (change < -0.1) return "down"; // Giảm > 0.1%
-    return "neutral"; // Không đổi
+    if (change > 0.1) return "up";
+    if (change < -0.1) return "down";
+    return "neutral";
   }
 
-  /**
-   * Helper: Xác định màu cho thay đổi
-   */
   _getChangeColor(change) {
     if (change > 0.1) return "green";
     if (change < -0.1) return "red";
     return "gray";
   }
 
-  /**
-   * Helper: Xác định trạng thái thức ăn
-   */
   _getFeedStatus(quantity) {
     const { LOW, NORMAL, HIGH } = this.config.FEED_THRESHOLD;
 
@@ -785,9 +728,6 @@ class DashboardService {
     }
   }
 
-  /**
-   * Helper: Xác định màu cho thức ăn
-   */
   _getFeedColor(status) {
     const colors = {
       low: "red",
@@ -798,16 +738,10 @@ class DashboardService {
     return colors[status] || "gray";
   }
 
-  /**
-   * Helper: Tạo giá trị kỳ trước giả lập
-   */
   _getMockPreviousValue(currentValue, percentChange = 0) {
     return currentValue * (100 / (100 + percentChange));
   }
 
-  /**
-   * Helper: Format tiền tệ
-   */
   _formatCurrency(value) {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -816,9 +750,6 @@ class DashboardService {
     }).format(value);
   }
 
-  /**
-   * Helper: Lấy đơn vị cho biểu đồ
-   */
   _getChartUnit(chartType) {
     const units = {
       weight: "kg/con",
@@ -829,9 +760,6 @@ class DashboardService {
     return units[chartType] || "";
   }
 
-  /**
-   * Helper: Tạo dữ liệu trend mock (fallback)
-   */
   _generateMockTrendData(period, chartType) {
     switch (chartType) {
       case "weight":
@@ -847,19 +775,14 @@ class DashboardService {
     }
   }
 
-  /**
-   * Helper: Tạo dữ liệu trend cho trọng lượng
-   */
   _generateWeightTrendData(period) {
     const dataPoints = this._getDataPointCount(period);
     const data = [];
     const now = new Date();
-    let baseValue = 1.5; // kg
+    let baseValue = 1.5;
 
     for (let i = dataPoints - 1; i >= 0; i--) {
       const date = this._getDateForTrend(now, i, period);
-
-      // Tạo xu hướng tăng nhẹ
       const value = baseValue + Math.random() * 0.3 - 0.15;
       baseValue = value;
 
@@ -873,19 +796,14 @@ class DashboardService {
     return data;
   }
 
-  /**
-   * Helper: Tạo dữ liệu trend cho thức ăn
-   */
   _generateFeedTrendData(period) {
     const dataPoints = this._getDataPointCount(period);
     const data = [];
     const now = new Date();
-    let baseValue = 800; // kg
+    let baseValue = 800;
 
     for (let i = dataPoints - 1; i >= 0; i--) {
       const date = this._getDateForTrend(now, i, period);
-
-      // Biến động ngẫu nhiên
       const value = baseValue + Math.random() * 200 - 100;
 
       data.push({
@@ -898,44 +816,34 @@ class DashboardService {
     return data;
   }
 
-  /**
-   * Helper: Tạo dữ liệu trend cho doanh thu
-   */
   _generateRevenueTrendData(period) {
     const dataPoints = this._getDataPointCount(period);
     const data = [];
     const now = new Date();
-    let baseValue = 200000000; // VND
+    let baseValue = 200000000;
 
     for (let i = dataPoints - 1; i >= 0; i--) {
       const date = this._getDateForTrend(now, i, period);
-
-      // Tăng dần theo thời gian
       const value = baseValue * (1 + i * 0.02);
 
       data.push({
         date: date.label,
         timestamp: date.timestamp,
-        value: Math.round(value / 1000000) * 1000000, // Làm tròn đến triệu
+        value: Math.round(value / 1000000) * 1000000,
       });
     }
 
     return data;
   }
 
-  /**
-   * Helper: Tạo dữ liệu trend cho tỷ lệ chết
-   */
   _generateDeathTrendData(period) {
     const dataPoints = this._getDataPointCount(period);
     const data = [];
     const now = new Date();
-    let baseValue = 2.0; // %
+    let baseValue = 2.0;
 
     for (let i = dataPoints - 1; i >= 0; i--) {
       const date = this._getDateForTrend(now, i, period);
-
-      // Giảm dần theo thời gian (quản lý tốt hơn)
       const value = baseValue - i * 0.05 + Math.random() * 0.5 - 0.25;
 
       data.push({
@@ -948,36 +856,20 @@ class DashboardService {
     return data;
   }
 
-  /**
-   * Helper: Tính số điểm dữ liệu cho period
-   */
   _getDataPointCount(period) {
     const counts = {
-      "24h": 24, // Mỗi giờ
-      "7d": 7, // Mỗi ngày
-      "30d": 30, // Mỗi ngày
-      "90d": 12, // Mỗi tuần (12 tuần)
-      all: 12, // Mỗi tháng
+      "7d": 7,
+      "30d": 30,
+      "90d": 12,
+      all: 12,
     };
     return counts[period] || 7;
   }
 
-  /**
-   * Helper: Tạo date label cho trend
-   */
   _getDateForTrend(now, index, period) {
     const date = new Date(now);
 
     switch (period) {
-      case "24h":
-        date.setHours(now.getHours() - index);
-        return {
-          label: date.toLocaleTimeString("vi-VN", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          timestamp: date.toISOString(),
-        };
       case "7d":
       case "30d":
         date.setDate(now.getDate() - index);
@@ -989,7 +881,7 @@ class DashboardService {
           timestamp: date.toISOString(),
         };
       case "90d":
-        date.setDate(now.getDate() - index * 7); // Mỗi tuần
+        date.setDate(now.getDate() - index * 7);
         return {
           label: `Tuần ${index + 1}`,
           timestamp: date.toISOString(),
