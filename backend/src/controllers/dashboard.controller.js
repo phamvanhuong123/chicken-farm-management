@@ -7,17 +7,16 @@ import { dashboardService } from "../services/dashboard.service.js";
 export const getDashboardSummary = async (req, res, next) => {
   try {
     const { period = "7d" } = req.query;
-    
-    // Validate period
-    const validPeriods = ["24h", "7d", "30d", "90d", "all"];
+
+    const validPeriods = ["7d", "30d", "90d", "all"];
     if (!validPeriods.includes(period)) {
       return res.status(400).json({
-        message: "Khoảng thời gian không hợp lệ. Chọn: 24h, 7d, 30d, 90d, all",
+        message: "Khoảng thời gian không hợp lệ. Chọn: 7d, 30d, 90d, all",
       });
     }
 
     const kpiData = await dashboardService.getDashboardKPIs(period);
-    
+
     res.status(200).json({
       message: "Lấy dữ liệu dashboard thành công",
       data: kpiData,
@@ -36,16 +35,16 @@ export const getDashboardSummary = async (req, res, next) => {
 export const getDashboardTrend = async (req, res, next) => {
   try {
     const { period = "30d", chartType = "weight" } = req.query;
-    
+
     const validChartTypes = ["weight", "feed", "revenue", "death"];
     if (!validChartTypes.includes(chartType)) {
       return res.status(400).json({
         message: "Loại biểu đồ không hợp lệ. Chọn: weight, feed, revenue, death"
       });
     }
-    
+
     const trendData = await dashboardService.getTrendData(period, chartType);
-    
+
     res.status(200).json({
       message: "Lấy dữ liệu biểu đồ thành công",
       data: trendData,
@@ -64,7 +63,7 @@ export const getDashboardTrend = async (req, res, next) => {
 export const getDashboardAlerts = async (req, res, next) => {
   try {
     const alerts = await dashboardService.getDashboardAlerts();
-    
+
     res.status(200).json({
       message: "Lấy cảnh báo dashboard thành công",
       data: alerts,
