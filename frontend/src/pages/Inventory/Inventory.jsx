@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { materialAPI } from "~/apis/material.api";
 import { toast } from "react-hot-toast";
-import MaterialDetail from "./MaterialDetail"; // 🆕 thêm import
-import MaterialWarningAlert from "./MaterialWarningAlert/MaterialWarningAlert"; // 🆕 Cảnh báo vật tư
-import AddMaterialModal from "./AddMaterialModal/AddMaterialModal"; // 🆕 Form thêm vật tư
+import MaterialDetail from "./MaterialDetail"; // thêm import
+import MaterialWarningAlert from "./MaterialWarningAlert/MaterialWarningAlert"; //  Cảnh báo vật tư
+import AddMaterialModal from "./AddMaterialModal/AddMaterialModal"; //  Form thêm vật tư
 import EditMaterialModal from "./EditMaterialModal/EditMaterialModal";
-
+import DeleteMaterialModal from "./DeleteMaterialModal/DeleteMaterialModal";
 import {
   FaBox,
   FaExclamationTriangle,
@@ -52,6 +52,7 @@ export default function Inventory() {
   const [selectedMaterial, setSelectedMaterial] = useState(null); //  thêm đúng vị trí
   const [isAddModalOpen, setIsAddModalOpen] = useState(false); // State cho modal thêm vật tư
   const [editingMaterialId, setEditingMaterialId] = useState(null);
+  const [deletingMaterial, setDeletingMaterial] = useState(null);
 
   // ⏱ Debounce tìm kiếm
   useEffect(() => {
@@ -369,8 +370,10 @@ export default function Inventory() {
                     >
                       <Edit size={16} className="w-4 h-4 text-blue-500" />
                     </button>
-                    <button className="p-2 rounded hover:bg-red-50 text-red-600 disabled:opacity-50 cursor-pointer">
-                      {" "}
+                    <button
+                      className="p-2 rounded hover:bg-red-50 text-red-600 disabled:opacity-50 cursor-pointer"
+                      onClick={() => setDeletingMaterial(m)}
+                    >
                       <Trash2 size={16} />
                     </button>
                   </td>
@@ -402,6 +405,13 @@ export default function Inventory() {
           materialId={editingMaterialId}
           onClose={() => setEditingMaterialId(null)}
           onSuccess={fetchData} // refresh list
+        />
+      )}
+      {deletingMaterial && (
+        <DeleteMaterialModal
+          material={deletingMaterial}
+          onClose={() => setDeletingMaterial(null)}
+          onSuccess={fetchData}
         />
       )}
     </div>

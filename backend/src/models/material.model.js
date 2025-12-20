@@ -167,6 +167,13 @@ const updateById = async (id, data) => {
 
   return result;
 };
+//Xóa vật tư
+
+const deleteById = async (id) => {
+  return await GET_DB()
+    .collection(MATERIAL_COLLECTION_NAME)
+    .deleteOne({ _id: new ObjectId(id) });
+};
 export const materialModel = {
   MATERIAL_COLLECTION_NAME,
   MATERIAL_SCHEMA,
@@ -176,4 +183,5 @@ export const materialModel = {
   create,
   findById,
   updateById,
+  deleteById,
 };

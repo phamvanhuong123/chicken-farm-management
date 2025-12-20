@@ -159,6 +159,18 @@ const updateMaterial = async (id, data) => {
     ...validData,
   };
 };
+//Xóa vật tư
+const deleteMaterial = async (id) => {
+  const result = await materialModel.deleteById(id);
+
+  if (result.deletedCount === 0) {
+    const error = new Error("Vật tư không tồn tại.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return { deleted: true };
+};
 
 export const materialService = {
   getAllMaterials,
@@ -166,4 +178,5 @@ export const materialService = {
   getMaterialById,
   createMaterial,
   updateMaterial,
+  deleteMaterial,
 };
