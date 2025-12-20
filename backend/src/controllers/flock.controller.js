@@ -36,13 +36,12 @@ export const updateFlock = async (req, res, next) => {
 export const getFlockDetail = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { flock, logs } = await flockService.getFlockDetail(id);
+    const { flock } = await flockService.getFlockDetail(id);
 
     res.status(200).json({
       message: "Tải thông tin đàn thành công",
       data: {
-        flock,
-        logs: Array.isArray(logs) ? logs : [],
+        flock
       },
     });
   } catch (error) {

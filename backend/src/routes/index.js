@@ -6,6 +6,7 @@ import authRoutes from "./v1/auth.routes.js";
 import areaRoute from "./v1/area.route.js";
 import transactionRoute from "./v1/transaction.route.js";
 import { taskRoute } from "./v1/task.route.js";
+import { logRoute } from "./v1/log.route.js";
 const router = express.Router();
 
 router.get("/status", (req, res) => {
@@ -23,5 +24,6 @@ router.use("/auth", authRoutes);
 router.use("/transactions", transactionRoute);
 
 router.use("/tasks",taskRoute);
+router.use("/logs",logRoute);
 
 export const APIs_V1 = router;
