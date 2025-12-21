@@ -24,6 +24,7 @@ router.use("/auth", authRoutes);
 router.use("/transactions", transactionRoute);
 
 router.use("/tasks",taskRoute);
+router.use("/logs",logRoute);
 
 // Route tài chính
 router.use("/finance", financeRoute);

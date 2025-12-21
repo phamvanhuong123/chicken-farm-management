@@ -2,9 +2,7 @@ import Joi from "joi";
 import { GET_DB } from "../config/mongodb.js";
 import { ObjectId } from "mongodb";
 
-// Định nghĩa schema Joi
-// TEAM-93: Cung cấp API chi tiết đàn và nhật ký liên quan
-import { logService } from "../services/log.service.js";
+
 
 const FLOCK_COLLECTION_NAME = "flocks";
 
@@ -150,10 +148,9 @@ const findDetailById = async (id) => {
       throw err;
     }
 
-    // Lấy danh sách nhật ký liên quan
-    const logs = await logService.getLogsByFlockId(id);
+    
 
-    return { flock, logs };
+    return { flock };
   } catch (error) {
     if (!error.statusCode) error.statusCode = 500;
     error.message = "Không thể tải thông tin đàn: " + error.message;
