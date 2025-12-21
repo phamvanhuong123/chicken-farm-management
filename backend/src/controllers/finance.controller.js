@@ -143,4 +143,29 @@ export const deleteTransaction = async (req, res, next) => {
   }
 };
 
+/**
+ * [GET] /v1/finance/transactions/search?type=income&category=Thức ăn&search=gà&page=1&limit=20
+ * Tìm kiếm và lọc giao dịch
+ */
+export const searchTransactions = async (req, res, next) => {
+  try {
+    const { type, category, search, page, limit } = req.query;
+
+    const result = await financeService.searchTransactions({
+      type: type || "all",
+      category: category || "all",
+      search: search || "",
+      page: page ? parseInt(page) : 1,
+      limit: limit ? parseInt(limit) : 20
+    });
+
+    res.status(200).json({
+      statusCode: 200,
+      message: "Tìm kiếm giao dịch thành công",
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 

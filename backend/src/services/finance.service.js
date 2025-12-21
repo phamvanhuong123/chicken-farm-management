@@ -261,6 +261,72 @@ const getTransactionById = async (id) => {
   }
 };
 
+/**
+ * Tìm kiếm & lọc giao dịch
+ * @param {Object} filters - { type, category, search, page, limit }
+ * @returns {Object} - { transactions, total, page, totalPages }
+ */
+const searchTransactions = async (filters = {}) => {
+  try {
+    const {
+      type = "all",
+      category = "all",
+      search = "",
+      page = 1,
+      limit = 20
+    } = filters;
+
+    // Xây dựng query filters
+    const query = {};
+
+    // Filter theo loại
+    if (type && type !== "all") {
+      query.type = type;
+    }
+
+    // Filter theo danh mục
+    if (category && category !== "all") {
+      query.category = category;
+    }
+
+    // Search theo mô tả hoặc hóa đơn
+    if (search && search.trim() !== "") {
+      const searchRegex = { $regex: search.trim(), $options: "i" };
+      query.$or = [
+        { description: searchRegex },
+        { invoiceCode: searchRegex }
+      ];
+    }
+
+    // Tính skip cho pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Lấy danh sách giao dịch
+    const transactions = await financialTransactionModel.findAll(query, {
+      sort: "date",
+      order: "desc",
+      limit: parseInt(limit),
+      skip: skip
+    });
+
+    // Đếm tổng số records
+    const total = await financialTransactionModel.count(query);
+
+    // Tính tổng số trang
+    const totalPages = Math.ceil(total / parseInt(limit));
+
+    return {
+      transactions,
+      total,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalPages
+    };
+  } catch (error) {
+    throw new Error("Không thể tìm kiếm giao dịch: " + error.message);
+  }
+};
+
 export const financeService = {
   getFinancialOverview,
   getExpenseBreakdown,
@@ -268,5 +334,6 @@ export const financeService = {
   getRecentTransactions,
   createTransaction,
   deleteTransaction,
-  getTransactionById
+  getTransactionById,
+  searchTransactions
 };

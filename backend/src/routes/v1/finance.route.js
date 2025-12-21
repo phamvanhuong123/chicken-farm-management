@@ -6,7 +6,8 @@ import {
   getRecentTransactions,
   createTransaction,
   getTransactionById,
-  deleteTransaction
+  deleteTransaction,
+  searchTransactions
 } from "../../controllers/finance.controller.js";
 import { validateCreateTransaction } from "../../validators/finance.validation.js";
 
@@ -23,6 +24,9 @@ router.get("/trend", getFinancialTrend);
 
 // Giao dịch gần đây
 router.get("/recent-transactions", getRecentTransactions);
+
+// Tìm kiếm & lọc giao dịch
+router.get("/transactions/search", searchTransactions);
 
 // CRUD Giao dịch
 router.post("/transactions", validateCreateTransaction, createTransaction);
