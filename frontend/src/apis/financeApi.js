@@ -54,4 +54,17 @@ getTransactions: ({ page = 1, limit = 10 }) => {
     params: { page, limit }
   });
 },
+
+ // Tìm kiếm & lọc giao dịch
+  searchTransactions: (filters = {}) => {
+    const params = {};
+    if (filters.type && filters.type !== "all") params.type = filters.type;
+    if (filters.category && filters.category !== "all") params.category = filters.category;
+    if (filters.search) params.search = filters.search;
+    if (filters.page) params.page = filters.page;
+    if (filters.limit) params.limit = filters.limit;
+    
+    return axios.get(`${FINANCE_API}/transactions/search`, { params });
+  }
 };
+

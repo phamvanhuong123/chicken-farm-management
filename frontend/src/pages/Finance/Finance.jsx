@@ -9,7 +9,8 @@ import {
   Eye,
   Trash2,
   Plus,
-  Filter
+  Search,
+  RotateCcw
 } from "lucide-react";
 import Chart from "react-apexcharts";
 import FinanceCreateForm from "./components/FinanceCreateForm";
@@ -23,17 +24,17 @@ export default function Finance() {
   const [totalTransactions, setTotalTransactions] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  
+
   // Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
-  
+
   // Filter tháng
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
   const [selectedYear] = useState(currentDate.getFullYear());
 
-   // Filters cho bảng giao dịch
-  const [filters] = useState({
+  // Filters cho bảng giao dịch
+  const [filters, setFilters] = useState({
     type: "all",
     category: "all",
     search: ""
@@ -45,11 +46,10 @@ export default function Finance() {
   }, [selectedMonth]);
 
   // Load transactions khi page thay đổi
- useEffect(() => {
+  useEffect(() => {
     loadRecentTransactions();
   }, [filters, currentPage]);
 
-  // Load dữ liệu tổng quan
   const loadOverviewData = async () => {
     setLoading(true);
     try {
@@ -71,43 +71,68 @@ export default function Finance() {
   };
 
   // Load giao dịch gần đây
- const ITEMS_PER_PAGE = 10;
+  const ITEMS_PER_PAGE = 10;
 
   const loadRecentTransactions = async () => {
-  try {
-    const response = await financeApi.getRecentTransactions(1000);
-    let data = response.data.data || [];
+    try {
+      const response = await financeApi.getRecentTransactions(1000);
+      let data = response.data.data || [];
 
-    // FILTER
-    if (filters.type !== "all") {
-      data = data.filter(t => t.type === filters.type);
-    }
+      // FILTER
+      if (filters.type !== "all") {
+        data = data.filter(t => t.type === filters.type);
+      }
 
-    if (filters.category !== "all") {
-      data = data.filter(t => t.category === filters.category);
-    }
+      if (filters.category !== "all") {
+        data = data.filter(t => t.category === filters.category);
+      }
 
-    if (filters.search) {
-      const keyword = filters.search.toLowerCase();
-      data = data.filter(t =>
-        t.description?.toLowerCase().includes(keyword)
+      if (filters.search) {
+        const keyword = filters.search.toLowerCase();
+        data = data.filter(t =>
+          t.description?.toLowerCase().includes(keyword)
+        );
+      }
+
+      setTotalTransactions(data.length);
+
+      const pages = Math.ceil(data.length / ITEMS_PER_PAGE);
+      setTotalPages(pages || 1);
+
+      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+      setTransactions(
+        data.slice(startIndex, startIndex + ITEMS_PER_PAGE)
       );
+    } catch (error) {
+      console.error("Lỗi tải giao dịch:", error);
+      toast.error("Không thể tải danh sách giao dịch");
     }
+  };
 
-    setTotalTransactions(data.length);
+  // Debounce search
+  const [searchDebounce, setSearchDebounce] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters(prev => ({ ...prev, search: searchDebounce }));
+      setCurrentPage(1);
+    }, 500);
 
-    const pages = Math.ceil(data.length / ITEMS_PER_PAGE);
-    setTotalPages(pages || 1);
+    return () => clearTimeout(timer);
+  }, [searchDebounce]);
 
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    setTransactions(
-      data.slice(startIndex, startIndex + ITEMS_PER_PAGE)
-    );
-  } catch (error) {
-    console.error("Lỗi tải giao dịch:", error);
-    toast.error("Không thể tải danh sách giao dịch");
-  }
-};
+  // Reset filters
+  const handleResetFilters = () => {
+    setFilters({ type: "all", category: "all", search: "" });
+    setSearchDebounce("");
+    setCurrentPage(1);
+  };
+
+  // Change filter
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1);
+  };
+
   // Format tiền VND
   const formatCurrency = (value) => {
     if (!value) return "0 VND";
@@ -211,7 +236,7 @@ export default function Finance() {
           <h1 className="text-2xl font-bold text-gray-800">Chi phí & Tài chính</h1>
           <p className="text-gray-600">Tổng quan tài chính và giao dịch gần đây</p>
         </div>
-        
+
         {/* Nút thêm giao dịch */}
         <button
           onClick={() => setShowCreateModal(true)}
@@ -364,6 +389,73 @@ export default function Finance() {
               Tổng: {totalTransactions} giao dịch
             </div>
           </div>
+
+          {/* Filter Bar */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Filter Loại */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Loại
+              </label>
+              <select
+                value={filters.type}
+                onChange={(e) => handleFilterChange("type", e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">Tất cả loại</option>
+                <option value="income">Thu</option>
+                <option value="expense">Chi</option>
+              </select>
+            </div>
+
+            {/* Filter Danh mục */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Danh mục
+              </label>
+              <select
+                value={filters.category}
+                onChange={(e) => handleFilterChange("category", e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">Tất cả danh mục</option>
+                <option value="Thức ăn">Thức ăn</option>
+                <option value="Thuốc">Thuốc</option>
+                <option value="Nhân công">Nhân công</option>
+                <option value="Điện nước">Điện nước</option>
+                <option value="Bán hàng">Bán hàng</option>
+                <option value="Khác">Khác</option>
+              </select>
+            </div>
+
+            {/* Search */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tìm kiếm
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Mô tả hoặc hóa đơn..."
+                  value={searchDebounce}
+                  onChange={(e) => setSearchDebounce(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Reset Button */}
+            <div className="flex items-end">
+              <button
+                onClick={handleResetFilters}
+                className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Làm mới
+              </button>
+            </div>
+          </div>
         </div>
 
         {transactions.length === 0 ? (
@@ -471,7 +563,7 @@ export default function Finance() {
       </div>
 
       {/* Modal thêm giao dịch */}
-       {showCreateModal && (
+      {showCreateModal && (
         <FinanceCreateForm
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => {
