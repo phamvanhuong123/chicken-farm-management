@@ -130,16 +130,16 @@ const createMaterial = async (data) => {
 
 const getFeedInfoForDashboard = async () => {
   try {
+    // Lấy vật tư loại thức ăn
     const filters = {
       $or: [
         { type: { $regex: 'feed', $options: 'i' } },
-        { type: { $regex: 'thức ăn', $options: 'i' } },
-        { normalizedType: { $regex: 'feed', $options: 'i' } },
-        { normalizedType: { $regex: 'thuc an', $options: 'i' } }
+        { type: { $regex: 'thức ăn', $options: 'i' } }
       ]
     };
 
-    const materials = await materialModel.findAll(filters, 'createdAt', 'desc', 0, 0);
+    const result = await getAllMaterials({ ...filters, page: 1, limit: 100 });
+    const materials = result.items || [];
 
     if (!materials || materials.length === 0) {
       return {
@@ -159,6 +159,7 @@ const getFeedInfoForDashboard = async () => {
     let status = 'normal';
     let label = 'Bình thường';
 
+    // Dùng ngưỡng từ dashboard service
     if (totalQuantity <= 500) {
       status = 'low';
       label = 'Thiếu';
