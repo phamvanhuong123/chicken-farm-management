@@ -4,10 +4,10 @@ import axios from "axios";
 import { Eye, Edit, Trash2 } from "lucide-react";
 import FlockDelete from "./FlockDelete/FlockDelete";
 import Statistical from "./Statistical/Statistical";
-import HeaderFlock from "./HeaderFlock/HeaderFlock";
 import FilterFlock from "./FilterFlock/FilterFlock";
 import FlockDetailModal from "./FlockDetail/FlockDetailModal";
 import EditFlockModal from "./EditFlockModal/EditFlockModal";
+import HeaderFlock from "./ButtonFlockAdd/HeaderFlock";
 import { set } from "date-fns";
 
 // Component FlockRow (Không thay đổi)
@@ -108,7 +108,6 @@ function Flocks() {
       setFlocks((prev) => [newFlock, ...prev]);  // đưa đàn mới lên đầu bảng
     };
 
-
     return flocks.filter(flock => {
       // Logic lọc trạng thái
       const statusMatch =
@@ -133,7 +132,6 @@ function Flocks() {
   const allSpecies = useMemo(() => 
     [...new Set(flocks.map(flock => flock.speciesId).filter(Boolean))]
   , [flocks]);
-
 
   //Lấy dữ liệu để thêm đàn gà
   const addFlockData =  (data) => {
@@ -217,7 +215,7 @@ function Flocks() {
 
   return (
     <div className="px-8 mt-8">
-      <HeaderFlock addFlockData={addFlockData}/>
+      <HeaderFlock addFlockData={addFlockData} />
       
       <Statistical flocks={filteredFlocks} />
       
