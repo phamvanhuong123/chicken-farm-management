@@ -34,22 +34,25 @@ const SUPPLIERS = [
 const BREEDS = [
   { value: "ga-ta", label: "Gà ta" },
   { value: "ga-cong-nghiep", label: "Gà công nghiệp" },
-  { value: "ga-ri", label: "Gà Ri" },
-  { value: "ga-tam-hoang", label: "Gà Tam Hoàng" },
-  { value: "ga-ai-cap", label: "Gà Ai Cập" },
+  { value: "ga-ri", label: "Gà thả vườn" },
 ];
 
 const AREAS = [
   { value: "khu-a", label: "Khu A" },
   { value: "khu-b", label: "Khu B" },
   { value: "khu-c", label: "Khu C" },
-  { value: "khu-d", label: "Khu D" },
 ];
+
+// ================= FIX STATUS MAP =================
+const STATUS_MAP = {
+  active: "Raising",
+  selling: "Sold",
+};
 
 function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [successMessage, setSuccessMessage] = useState(""); // ✅ THÊM STATE
+  const [successMessage, setSuccessMessage] = useState(""); //  THÊM STATE
 
   // Form state
   const [formData, setFormData] = useState({
@@ -146,7 +149,7 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
         initialCount: Number(formData.initialCount),
         avgWeight: Number(formData.avgWeight),
         areaId: formData.areaId,
-        status: formData.status,
+        status: STATUS_MAP[formData.status],
         note: formData.note || undefined,
       };
 
@@ -157,12 +160,15 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
 
       toast.success("Cập nhật thông tin đàn thành công.");
 
-      // ⭐ HIỂN THỊ TRONG MODAL
+      // HIỂN THỊ TRONG MODAL
       setSuccessMessage("Cập nhật thông tin đàn thành công!");
 
-      // ⏳ TỰ ĐÓNG SAU 1.5 GIÂY
+      // TỰ ĐÓNG SAU 1.5 GIÂY
       setTimeout(() => {
-        onUpdateSuccess && onUpdateSuccess(response.data.data);
+        onUpdateSuccess({
+          ...flockData,
+          ...updateData
+        });
         onClose();
       }, 1500);
 
@@ -170,7 +176,7 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
       console.error("Lỗi cập nhật đàn:", error);
       toast.error(
         error.response?.data?.message ||
-          "Không thể cập nhật đàn, vui lòng thử lại."
+        "Không thể cập nhật đàn, vui lòng thử lại."
       );
     } finally {
       setLoading(false);
@@ -187,7 +193,12 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
   if (!isOpen) return null;
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={handleCancel}>
+    <AlertDialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) handleCancel();
+      }}
+    >
       <AlertDialogContent className="max-w-[600px] max-h-[90vh] overflow-y-auto">
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center justify-between">
@@ -319,6 +330,27 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
                   )}
                 </div>
 
+                {/* Trạng thái */}
+                <div className="col-span-1 space-y-2">
+                  <Label>
+                    Trạng thái <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(v) => handleChange("status", v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="active">Đang nuôi</SelectItem>
+                        <SelectItem value="selling">Đang bán</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {/* Ghi chú */}
                 <div className="col-span-2 space-y-2">
                   <Label>Ghi chú</Label>
@@ -335,7 +367,7 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        {/* ⭐ HIỂN THỊ THÔNG BÁO TRONG MODAL */}
+        {/*  HIỂN THỊ THÔNG BÁO TRONG MODAL */}
         {successMessage && (
           <div className="w-full p-3 mb-3 text-green-700 bg-green-100 border border-green-300 rounded-md text-center">
             {successMessage}
