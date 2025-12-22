@@ -37,12 +37,6 @@ const BREEDS = [
   { value: "ga-ri", label: "Gà thả vườn" },
 ];
 
-const AREAS = [
-  { value: "khu-a", label: "Khu A" },
-  { value: "khu-b", label: "Khu B" },
-  { value: "khu-c", label: "Khu C" },
-];
-
 // ================= FIX STATUS MAP =================
 const STATUS_REVERSE_MAP = {
   Raising: "active",
@@ -59,6 +53,7 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState(""); //  THÊM STATE
+  const [areas, setAreas] = useState([]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -71,6 +66,23 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
     status: "active",
     note: "",
   });
+  
+ // State khu nuôi
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const fetchAreas = async () => {
+      try {
+        const res = await axios.get("http://localhost:8071/v1/areas");
+        setAreas(res.data.data);
+      } catch (error) {
+        console.error("Lỗi lấy khu nuôi:", error);
+        toast.error("Không thể tải danh sách khu nuôi");
+      }
+    };
+
+    fetchAreas();
+  }, [isOpen]);
 
   // Populate form khi flockData thay đổi
   useEffect(() => {
@@ -85,7 +97,7 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
         speciesId: flockData.speciesId || "",
         initialCount: flockData.initialCount?.toString() || "",
         avgWeight: flockData.avgWeight?.toString() || "",
-        areaId: flockData.areaId || "",
+        areaId: flockData.areaId?._id || "",
         status: STATUS_REVERSE_MAP[flockData.status] || "active",
         note: flockData.note || "",
       });
@@ -314,27 +326,29 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
                 </div>
 
                 {/* Khu nuôi */}
-                <div className="col-span-1 space-y-2">
-                  <Label>Khu nuôi <span className="text-red-500">*</span></Label>
-                  <Select
-                    value={formData.areaId}
-                    onValueChange={(value) => handleChange("areaId", value)}
-                  >
-                    <SelectTrigger className={errors.areaId ? "border-red-500" : ""}>
-                      <SelectValue placeholder="Chọn khu nuôi" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {AREAS.map((a) => (
-                          <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  {errors.areaId && (
-                    <p className="text-red-500 text-sm">{errors.areaId}</p>
-                  )}
-                </div>
+                <div className="space-y-2">
+                <Label>Khu nuôi *</Label>
+                <Select
+                  value={formData.areaId}
+                  onValueChange={(v) => handleChange("areaId", v)}
+                >
+                  <SelectTrigger className={errors.areaId ? "border-red-500" : ""}>
+                    <SelectValue placeholder="Chọn khu nuôi" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {areas.map((a) => (
+                        <SelectItem key={a._id} value={a._id}>
+                          {a.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                {errors.areaId && (
+                  <p className="text-red-500 text-sm">{errors.areaId}</p>
+                )}
+              </div>
 
                 {/* Trạng thái */}
                 <div className="col-span-1 space-y-2">
