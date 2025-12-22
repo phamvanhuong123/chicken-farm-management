@@ -35,7 +35,6 @@ router.use("/dashboard/charts", dashboardChartRoutes);
 // Route tài chính
 router.use("/finance", financeRoute);
 
-// Route tài chính
-router.use("/finance", financeRoute);
+
 
 export const APIs_V1 = router;
