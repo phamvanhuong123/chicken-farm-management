@@ -6,6 +6,7 @@ import authRoutes from "./v1/auth.routes.js";
 import areaRoute from "./v1/area.route.js";
 import transactionRoute from "./v1/transaction.route.js";
 import { taskRoute } from "./v1/task.route.js";
+import financeRoute from "./v1/finance.route.js";
 import { logRoute } from "./v1/log.route.js";
 import dashboardRoute from "./v1/dashboard.route.js";
 
@@ -29,5 +30,10 @@ router.use("/transactions", transactionRoute);
 router.use("/tasks",taskRoute);
 router.use("/logs",logRoute);
 router.use("/dashboard", dashboardRoute);
+
+// Route tài chính
+router.use("/finance", financeRoute);
+
+
 
 export const APIs_V1 = router;
