@@ -8,29 +8,33 @@ import {
   FaExclamationTriangle,
   FaShoppingCart,
   FaTachometerAlt,
-  FaRedo
+  FaRedo,
+  FaChartBar,
 } from 'react-icons/fa';
 import { dashboardApi } from '../../apis/dashboardApi';
 import KPICard from '../Dashboard/components/KPICard';
 import FeedCard from '../Dashboard/components/FeedCard';
 import PeriodFilter from '../Dashboard/components/PeriodFilter';
 import DashboardAlert from '../Dashboard/components/DashboardAlert';
+import WeeklyConsumptionChart from '../Dashboard/components/WeeklyConsumptionChart';
+import CostStructureChart from '../Dashboard/components/CostStructureChart';
 
 const Dashboard = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('7d');
   const [kpiData, setKpiData] = useState(null);
   const [alerts, setAlerts] = useState([]);
+  const [chartsData, setChartsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [alertsLoading, setAlertsLoading] = useState(false);
+  const [chartsLoading, setChartsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Hàm xử lý logic màu sắc và đơn vị từ dữ liệu BE
   const processKPIData = (data, period) => {
     if (!data) return null;
 
     const processed = { ...data };
 
-    // 1. Xử lý thức ăn: chuyển đổi đơn vị từ "lọ" sang "kg" (giả định 1 lọ = 1kg)
     if (processed.todayFeed) {
       const thresholds = processed.todayFeed.threshold || { LOW: 500, NORMAL: 800, HIGH: 1200 };
       const value = processed.todayFeed.value;
@@ -40,12 +44,11 @@ const Dashboard = () => {
       let label = 'Bình thường';
       let color = 'green';
 
-      // Chuyển đổi về kg nếu unit là "lọ" (giả định 1 lọ = 1kg)
       let displayValue = value;
       let displayUnit = unit;
 
       if (unit === 'lọ') {
-        displayValue = value; // 1 lọ = 1kg
+        displayValue = value;
         displayUnit = 'kg';
       }
 
@@ -69,7 +72,6 @@ const Dashboard = () => {
       };
     }
 
-    // 2. Xử lý deathRate: giữ nguyên logic từ BE, chỉ cập nhật description
     if (processed.deathRate) {
       processed.deathRate = {
         ...processed.deathRate,
@@ -77,7 +79,6 @@ const Dashboard = () => {
       };
     }
 
-    // 3. Các KPI khác: tăng = xanh (tốt), giảm = đỏ (xấu), không đổi = gray
     const otherKPIs = ['totalChickens', 'totalFlocks', 'avgWeight', 'monthlyRevenue'];
     otherKPIs.forEach(kpi => {
       if (processed[kpi]) {
@@ -125,7 +126,6 @@ const Dashboard = () => {
       console.error('Error fetching KPI data:', err);
       setError('Không thể tải dữ liệu dashboard. Vui lòng thử lại sau.');
 
-      // Fallback mock data
       const mockData = {
         totalChickens: {
           value: 694,
@@ -196,25 +196,52 @@ const Dashboard = () => {
     }
   };
 
+  const fetchChartsData = async () => {
+    try {
+      setChartsLoading(true);
+      const response = await dashboardApi.getAllDashboardCharts();
+      if (response.data && response.data.data) {
+        setChartsData(response.data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching charts data:', err);
+    } finally {
+      setChartsLoading(false);
+    }
+  };
+
+  const handleRefreshAll = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        fetchKPIData(selectedPeriod),
+        fetchAlerts(),
+        fetchChartsData()
+      ]);
+    } catch (err) {
+      console.error('Error refreshing all data:', err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handlePeriodChange = (period) => {
     setSelectedPeriod(period);
     fetchKPIData(period);
   };
 
   useEffect(() => {
-    fetchKPIData(selectedPeriod);
-    fetchAlerts();
+    handleRefreshAll();
 
-    // Auto-refresh mỗi 5 phút
     const interval = setInterval(() => {
       fetchKPIData(selectedPeriod);
       fetchAlerts();
+      fetchChartsData();
     }, 5 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, []);
 
-  // Function để lấy label cho period
   const getPeriodLabel = (period) => {
     const labels = {
       '7d': '7 ngày',
@@ -246,24 +273,20 @@ const Dashboard = () => {
               loading={loading}
             />
 
-            {/* Nút làm mới */}
             <button
-              onClick={() => {
-                fetchKPIData(selectedPeriod);
-                fetchAlerts();
-              }}
-              disabled={loading}
+              onClick={handleRefreshAll}
+              disabled={loading || refreshing}
               className="px-3 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
             >
-              <FaRedo className="w-3 h-3" />
-              Làm mới
+              <FaRedo className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Đang làm mới...' : 'Làm mới'}
             </button>
           </div>
         </div>
 
         {/* Alerts Section */}
         {alerts.length > 0 && (
-          <div className="mb-4">
+          <div className="mb-6">
             <DashboardAlert
               alerts={alerts}
               loading={alertsLoading}
@@ -273,17 +296,17 @@ const Dashboard = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm">
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2 text-red-700">
-              <FaExclamationTriangle className="text-sm" />
-              <p>{error}</p>
+              <FaExclamationTriangle className="text-sm flex-shrink-0" />
+              <p className="text-sm">{error}</p>
             </div>
           </div>
         )}
 
         {/* KPI Grid */}
         {loading && !kpiData ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="bg-white rounded-lg shadow-sm p-4 border border-gray-100 animate-pulse">
                 <div className="flex items-center gap-2 mb-3">
@@ -296,8 +319,8 @@ const Dashboard = () => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Tổng số gà - Cột 1 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            {/* Tổng số gà */}
             <KPICard
               title="Tổng số gà"
               value={kpiData?.totalChickens?.value || 0}
@@ -312,7 +335,7 @@ const Dashboard = () => {
               note={kpiData?.totalChickens?.note}
             />
 
-            {/* Trọng lượng TB - Cột 2 */}
+            {/* Trọng lượng TB */}
             <KPICard
               title="Trọng lượng TB"
               value={kpiData?.avgWeight?.value || 0}
@@ -326,7 +349,7 @@ const Dashboard = () => {
               iconBgColor="bg-teal-50"
             />
 
-            {/* Số đàn - Cột 3 */}
+            {/* Số đàn */}
             <KPICard
               title="Số đàn"
               value={kpiData?.totalFlocks?.value || 0}
@@ -340,7 +363,7 @@ const Dashboard = () => {
               iconBgColor="bg-purple-50"
             />
 
-            {/* Thức ăn hôm nay - Cột 4 */}
+            {/* Thức ăn hôm nay */}
             <FeedCard
               title="Thức ăn hôm nay"
               value={kpiData?.todayFeed?.value || 0}
@@ -353,7 +376,7 @@ const Dashboard = () => {
               iconBgColor="bg-orange-50"
             />
 
-            {/* Tỷ lệ chết - Cột 5 */}
+            {/* Tỷ lệ chết */}
             <KPICard
               title="Tỷ lệ chết"
               value={kpiData?.deathRate?.value || 0}
@@ -368,7 +391,7 @@ const Dashboard = () => {
               note={kpiData?.deathRate?.note}
             />
 
-            {/* Doanh thu tháng - Cột 6 */}
+            {/* Doanh thu tháng */}
             <KPICard
               title="Doanh thu tháng"
               value={kpiData?.monthlyRevenue?.value || 0}
@@ -385,13 +408,55 @@ const Dashboard = () => {
           </div>
         )}
 
+        {/* Charts Section - U1.2 */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <FaChartBar className="text-blue-600" />
+                Biểu đồ tổng quan
+              </h2>
+              <p className="text-gray-600 text-sm mt-1">
+                Thống kê và phân tích dữ liệu trang trại
+              </p>
+            </div>
+            <button
+              onClick={fetchChartsData}
+              disabled={chartsLoading}
+              className="px-3 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+            >
+              <FaRedo className={`w-3 h-3 ${chartsLoading ? 'animate-spin' : ''}`} />
+              {chartsLoading ? 'Đang tải...' : 'Làm mới biểu đồ'}
+            </button>
+          </div>
+
+          {/* Charts in vertical layout */}
+          <div className="space-y-6">
+            {/* Biểu đồ tiêu thụ hàng tuần */}
+            <div>
+              <WeeklyConsumptionChart
+                data={chartsData?.weeklyConsumption}
+                loading={chartsLoading}
+              />
+            </div>
+
+            {/* Biểu đồ cơ cấu chi phí */}
+            <div>
+              <CostStructureChart
+                data={chartsData?.costStructure}
+                loading={chartsLoading}
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Footer Info */}
         {kpiData && (
-          <div className="mt-6 p-4 bg-white rounded-lg shadow-sm border border-gray-100">
-            <div className="flex flex-col md:flex-row md:items-center justify-between text-xs text-gray-500">
+          <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-100">
+            <div className="flex flex-col md:flex-row md:items-center justify-between text-sm text-gray-600">
               <div className="flex items-center gap-2 mb-2 md:mb-0">
                 <span className="font-medium">Khoảng thời gian đang xem:</span>
-                <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md font-medium text-sm">
+                <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md font-medium">
                   {getPeriodLabel(kpiData.period)}
                 </span>
               </div>
@@ -405,7 +470,7 @@ const Dashboard = () => {
             </div>
 
             {/* Legend */}
-            <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-gray-100">
+            <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-gray-100">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-green-500 rounded"></div>
                 <span className="text-xs text-gray-600">Tăng / Tốt</span>
