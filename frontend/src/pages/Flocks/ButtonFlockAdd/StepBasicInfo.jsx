@@ -40,9 +40,9 @@ export default function StepBasicInfo() {
                     className="w-full border rounded px-3 py-2"
                 >
                     <option value="">Chọn giống</option>
-                    <option value="broiler">Gà ta</option>
-                    <option value="broiler">Gà công nghiệp</option>
-                    <option value="broiler">Gà thả vườn</option>
+                    <option value="Gà ta">Gà ta</option>
+                    <option value="Gà công nghiệp">Gà công nghiệp</option>
+                    <option value="Gà thả vườn">Gà thả vườn</option>
                 </select>
                 <p className="text-red-500 text-sm">{errors.speciesId?.message}</p>
             </div>
