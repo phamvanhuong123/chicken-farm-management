@@ -7,12 +7,14 @@ const LOG_COLLECTION_NAME = "logs";
 // Schema Joi cho Collection (Validate tầng DB)
 const LOG_COLLECTION_SCHEMA = Joi.object({
   userId: Joi.string().required(), // Bắt buộc có người ghi
-  areaId: Joi.string().required(), 
-  type: Joi.string().valid("FOOD", "MEDICINE", "WATER", "DEATH", "WEIGHT", "HEALTH").required(),
+  areaId: Joi.string().required(),
+  type: Joi.string()
+    .valid("FOOD", "MEDICINE", "WATER", "DEATH", "WEIGHT", "HEALTH")
+    .required(),
   quantity: Joi.number().min(0).default(0), // Thay amount bằng quantity
   unit: Joi.string().allow("").default(""),
   note: Joi.string().allow("").max(500).optional(),
-  
+
   // Tự động tạo thời gian
   createdAt: Joi.date().default(() => new Date()),
   updatedAt: Joi.date().default(null),
@@ -28,7 +30,6 @@ const validateBeforeCreate = async (data) => {
 // Validate trước khi Update
 const validateBeforeUpdate = async (data) => {
   const updateSchema = Joi.object({
-    
     areaId: Joi.string().required(),
     type: Joi.string().optional(),
     quantity: Joi.number().min(0).optional(), // Update quantity
@@ -48,12 +49,11 @@ const create = async (data) => {
   try {
     const validData = await validateBeforeCreate(data);
 
-   
     if (ObjectId.isValid(validData.areaId)) {
-        validData.areaId = new ObjectId(validData.areaId);
+      validData.areaId = new ObjectId(validData.areaId);
     }
     if (ObjectId.isValid(validData.userId)) {
-        validData.userId = new ObjectId(validData.userId);
+      validData.userId = new ObjectId(validData.userId);
     }
 
     // 2. Insert vào DB
@@ -61,7 +61,7 @@ const create = async (data) => {
       .collection(LOG_COLLECTION_NAME)
       .insertOne(validData);
 
-    //Lấy lại dữ liệu vừa tạo kèm theo thông tin Join (User, Area)
+    // Lấy lại dữ liệu vừa tạo kèm theo thông tin Join (User, Area)
     const [newLog] = await GET_DB()
       .collection(LOG_COLLECTION_NAME)
       .aggregate([
@@ -74,18 +74,18 @@ const create = async (data) => {
             from: "users",
             localField: "userId",
             foreignField: "_id",
-            as: "userInfo"
-          }
+            as: "userInfo",
+          },
         },
 
         // Join Area
         {
           $lookup: {
-            from: "areas", 
+            from: "areas",
             localField: "areaId",
             foreignField: "_id",
-            as: "areaInfo"
-          }
+            as: "areaInfo",
+          },
         },
 
         // Unwind
@@ -104,15 +104,14 @@ const create = async (data) => {
             userId: 1,
             areaId: 1,
             // Lấy tên map ra
-            userName: { $ifNull: ["$userInfo.username", "Unknown User"] }, 
-            areaName: { $ifNull: ["$areaInfo.name", "Unknown Area"] }   
-          }
-        }
+            userName: { $ifNull: ["$userInfo.username", "Unknown User"] },
+            areaName: { $ifNull: ["$areaInfo.name", "Unknown Area"] },
+          },
+        },
       ])
       .toArray();
 
     return newLog;
-
   } catch (error) {
     if (error.isJoi) {
       const err = new Error("Dữ liệu log không hợp lệ: " + error.message);
@@ -122,6 +121,7 @@ const create = async (data) => {
     throw new Error("Lỗi model create log: " + error.message);
   }
 };
+
 // Cập nhật
 const update = async (id, updateData) => {
   try {
@@ -138,11 +138,11 @@ const update = async (id, updateData) => {
 
     // 3. Convert String -> ObjectId (Chỉ cần quan tâm areaId để join)
     if (validUpdate.areaId && ObjectId.isValid(validUpdate.areaId)) {
-        validUpdate.areaId = new ObjectId(validUpdate.areaId);
+      validUpdate.areaId = new ObjectId(validUpdate.areaId);
     }
     // Nếu vẫn muốn lưu userId đúng chuẩn ObjectId thì giữ dòng này, không thì bỏ
     if (validUpdate.userId && ObjectId.isValid(validUpdate.userId)) {
-        validUpdate.userId = new ObjectId(validUpdate.userId);
+      validUpdate.userId = new ObjectId(validUpdate.userId);
     }
 
     validUpdate.updatedAt = new Date();
@@ -150,10 +150,7 @@ const update = async (id, updateData) => {
     // 4. Update dữ liệu thô vào DB
     const result = await GET_DB()
       .collection(LOG_COLLECTION_NAME)
-      .updateOne(
-        { _id: objectId },
-        { $set: validUpdate }
-      );
+      .updateOne({ _id: objectId }, { $set: validUpdate });
 
     if (result.matchedCount === 0) {
       const err = new Error("Không tìm thấy nhật ký để cập nhật");
@@ -171,11 +168,11 @@ const update = async (id, updateData) => {
         // Join bảng Areas (Lấy tên khu vực)
         {
           $lookup: {
-            from: "areas",          // Tên collection Area
+            from: "areas", // Tên collection Area
             localField: "areaId",
             foreignField: "_id",
-            as: "areaInfo"
-          }
+            as: "areaInfo",
+          },
         },
 
         // Gỡ mảng areaInfo
@@ -190,19 +187,18 @@ const update = async (id, updateData) => {
             quantity: 1,
             unit: 1,
             note: 1,
-            userId: 1,       // Vẫn trả về userId thô nếu cần
+            userId: 1, // Vẫn trả về userId thô nếu cần
             createdAt: 1,
             updatedAt: 1,
-            
+
             // CHỈ LẤY AREA NAME, bỏ User Name
-            areaName: { $ifNull: ["$areaInfo.name", "Unknown Area"] }
-          }
-        }
+            areaName: { $ifNull: ["$areaInfo.name", "Unknown Area"] },
+          },
+        },
       ])
       .toArray();
 
     return updatedLog;
-
   } catch (error) {
     if (!error.statusCode) error.statusCode = 500;
     throw error;
@@ -212,7 +208,6 @@ const update = async (id, updateData) => {
 // Tìm theo ID
 const findOneById = async (id) => {
   try {
-    
     if (!ObjectId.isValid(id)) return null;
     return await GET_DB()
       .collection(LOG_COLLECTION_NAME)
@@ -227,9 +222,9 @@ const findByAreaId = async (areaId) => {
   try {
     let query = {};
     if (ObjectId.isValid(areaId)) {
-        query = { areaId: new ObjectId(String(areaId)) };
+      query = { areaId: new ObjectId(String(areaId)) };
     } else {
-        query = { areaId: String(areaId) };
+      query = { areaId: String(areaId) };
     }
 
     const logs = await GET_DB()
@@ -256,20 +251,20 @@ const getAllLogs = async () => {
         // 2. Join với bảng Users (Lấy tên người dùng)
         {
           $lookup: {
-            from: "users",          // Tên collection trong DB (phải chính xác)
-            localField: "userId",   // Trường trong logs (đã convert ObjectId ở hàm create)
-            foreignField: "_id",    // Trường khóa chính bên users
-            as: "userInfo"          // Tên field tạm để chứa kết quả
-          }
+            from: "users", // Tên collection trong DB (phải chính xác)
+            localField: "userId", // Trường trong logs (đã convert ObjectId ở hàm create)
+            foreignField: "_id", // Trường khóa chính bên users
+            as: "userInfo", // Tên field tạm để chứa kết quả
+          },
         },
         // 3. Join với bảng Areas (Lấy tên khu vực)
         {
           $lookup: {
-            from: "areas",          // Tên collection khu vực
+            from: "areas", // Tên collection khu vực
             localField: "areaId",
             foreignField: "_id",
-            as: "areaInfo"
-          }
+            as: "areaInfo",
+          },
         },
 
         // 4. "Gỡ" mảng ra thành object (Unwind)
@@ -288,10 +283,10 @@ const getAllLogs = async () => {
             createdAt: 1,
             userId: 1,
             areaId: 1,
-            userName: { $ifNull: ["$userInfo.username", "Unknown User"] }, 
-            areaName: { $ifNull: ["$areaInfo.name", "Unknown Area"] }
-          }
-        }
+            userName: { $ifNull: ["$userInfo.username", "Unknown User"] },
+            areaName: { $ifNull: ["$areaInfo.name", "Unknown Area"] },
+          },
+        },
       ])
       .toArray();
   } catch (error) {
@@ -323,6 +318,176 @@ const deleteById = async (id) => {
   }
 };
 
+/**
+ * Lấy tổng quantity theo type và khoảng thời gian (CHO DASHBOARD)
+ */
+const getTotalQuantityByTypeAndTimeRange = async (type, startDate, endDate) => {
+  try {
+    const result = await GET_DB()
+      .collection(LOG_COLLECTION_NAME)
+      .aggregate([
+        {
+          $match: {
+            type: type,
+            createdAt: {
+              $gte: startDate,
+              $lte: endDate,
+            },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: "$quantity" },
+            count: { $sum: 1 },
+          },
+        },
+      ])
+      .toArray();
+
+    return result.length > 0 ? result[0].total : 0;
+  } catch (error) {
+    throw new Error(
+      "Lỗi model getTotalQuantityByTypeAndTimeRange: " + error.message
+    );
+  }
+};
+
+/**
+ * Lấy log theo type và khoảng thời gian (CHO DASHBOARD)
+ */
+const getLogsByTypeAndTimeRange = async (type, startDate, endDate) => {
+  try {
+    const logs = await GET_DB()
+      .collection(LOG_COLLECTION_NAME)
+      .find({
+        type: type,
+        createdAt: {
+          $gte: startDate,
+          $lte: endDate,
+        },
+      })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return logs;
+  } catch (error) {
+    throw new Error("Lỗi model getLogsByTypeAndTimeRange: " + error.message);
+  }
+};
+
+/**
+ * Lấy dữ liệu cho biểu đồ trend (CHO DASHBOARD)
+ */
+const getTrendData = async (chartType, startDate, endDate) => {
+  try {
+    let matchStage = {};
+
+    switch (chartType) {
+      case "weight":
+        matchStage = { type: "WEIGHT" };
+        break;
+      case "death":
+        matchStage = { type: "DEATH" };
+        break;
+      case "feed":
+        matchStage = { type: "FOOD" };
+        break;
+      default:
+        matchStage = { type: "WEIGHT" };
+    }
+
+    const trendData = await GET_DB()
+      .collection(LOG_COLLECTION_NAME)
+      .aggregate([
+        {
+          $match: {
+            ...matchStage,
+            createdAt: {
+              $gte: startDate,
+              $lte: endDate,
+            },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: "%Y-%m-%d",
+                date: "$createdAt",
+              },
+            },
+            total: { $sum: "$quantity" },
+            count: { $sum: 1 },
+            avg: { $avg: "$quantity" },
+          },
+        },
+        {
+          $sort: { _id: 1 },
+        },
+        {
+          $project: {
+            date: "$_id",
+            value: "$total",
+            count: 1,
+            avg: 1,
+            _id: 0,
+          },
+        },
+      ])
+      .toArray();
+
+    return trendData;
+  } catch (error) {
+    throw new Error("Lỗi model getTrendData: " + error.message);
+  }
+};
+
+/**
+ * Lấy thống kê log (CHO DASHBOARD)
+ */
+const getLogStatistics = async (startDate, endDate) => {
+  try {
+    const stats = await GET_DB()
+      .collection(LOG_COLLECTION_NAME)
+      .aggregate([
+        {
+          $match: {
+            createdAt: {
+              $gte: startDate,
+              $lte: endDate,
+            },
+          },
+        },
+        {
+          $group: {
+            _id: "$type",
+            totalQuantity: { $sum: "$quantity" },
+            count: { $sum: 1 },
+            avgQuantity: { $avg: "$quantity" },
+          },
+        },
+        {
+          $project: {
+            type: "$_id",
+            totalQuantity: 1,
+            count: 1,
+            avgQuantity: 1,
+            _id: 0,
+          },
+        },
+        {
+          $sort: { totalQuantity: -1 },
+        },
+      ])
+      .toArray();
+
+    return stats;
+  } catch (error) {
+    throw new Error("Lỗi model getLogStatistics: " + error.message);
+  }
+};
+
 export const logModel = {
   LOG_COLLECTION_NAME,
   LOG_COLLECTION_SCHEMA,
@@ -331,7 +496,11 @@ export const logModel = {
   create,
   update,
   findOneById,
-  findByAreaId, // Đã đổi tên
+  findByAreaId,
   getAllLogs,
   deleteById,
+  getTotalQuantityByTypeAndTimeRange,
+  getLogsByTypeAndTimeRange,
+  getTrendData,
+  getLogStatistics,
 };

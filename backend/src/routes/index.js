@@ -8,12 +8,14 @@ import transactionRoute from "./v1/transaction.route.js";
 import { taskRoute } from "./v1/task.route.js";
 import financeRoute from "./v1/finance.route.js";
 import { logRoute } from "./v1/log.route.js";
+import dashboardRoute from "./v1/dashboard.route.js";
 
 const router = express.Router();
 
 router.get("/status", (req, res) => {
   res.json({ data: "ok" });
 });
+
 // nhóm route đàn gà (Chỉ định rõ prefix /flocks)
 router.use("/flocks", flockRoute);
 // nhóm route kho, vật tư
@@ -26,11 +28,12 @@ router.use("/auth", authRoutes);
 router.use("/transactions", transactionRoute);
 
 router.use("/tasks",taskRoute);
+router.use("/logs",logRoute);
+router.use("/dashboard", dashboardRoute);
 
 // Route tài chính
 router.use("/finance", financeRoute);
 
-// Route tài chính
-router.use("/finance", financeRoute);
+
 
 export const APIs_V1 = router;
