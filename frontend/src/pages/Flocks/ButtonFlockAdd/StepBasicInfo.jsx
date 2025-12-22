@@ -27,6 +27,8 @@ export default function StepBasicInfo() {
                 >
                     <option value="">Chọn nhà cung cấp</option>
                     <option value="Trang trại ABC">Trang trại ABC</option>
+                    <option value="Nhà cung cấp XYZ">Nhà cung cấp XYZ</option>
+                    <option value="Công ty 123">Công ty 123</option>
                 </select>
                 <p className="text-red-500 text-sm">{errors.supplierName?.message}</p>
             </div>
