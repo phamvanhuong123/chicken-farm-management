@@ -24,6 +24,86 @@ const Dashboard = () => {
   const [alertsLoading, setAlertsLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Hàm xử lý logic màu sắc và đơn vị từ dữ liệu BE
+  const processKPIData = (data, period) => {
+    if (!data) return null;
+
+    const processed = { ...data };
+
+    // 1. Xử lý thức ăn: chuyển đổi đơn vị từ "lọ" sang "kg" (giả định 1 lọ = 1kg)
+    if (processed.todayFeed) {
+      const thresholds = processed.todayFeed.threshold || { LOW: 500, NORMAL: 800, HIGH: 1200 };
+      const value = processed.todayFeed.value;
+      const unit = processed.todayFeed.unit || 'kg';
+
+      let status = 'normal';
+      let label = 'Bình thường';
+      let color = 'green';
+
+      // Chuyển đổi về kg nếu unit là "lọ" (giả định 1 lọ = 1kg)
+      let displayValue = value;
+      let displayUnit = unit;
+
+      if (unit === 'lọ') {
+        displayValue = value; // 1 lọ = 1kg
+        displayUnit = 'kg';
+      }
+
+      if (displayValue <= thresholds.LOW) {
+        status = 'low';
+        label = 'Thiếu';
+        color = 'red';
+      } else if (displayValue >= thresholds.HIGH) {
+        status = 'high';
+        label = 'Dư thừa';
+        color = 'orange';
+      }
+
+      processed.todayFeed = {
+        ...processed.todayFeed,
+        value: displayValue,
+        unit: displayUnit,
+        status: status,
+        label: label,
+        color: color
+      };
+    }
+
+    // 2. Xử lý deathRate: giữ nguyên logic từ BE, chỉ cập nhật description
+    if (processed.deathRate) {
+      processed.deathRate = {
+        ...processed.deathRate,
+        description: `Tỷ lệ chết (${period === '7d' ? '7' : period === '30d' ? '30' : '90'} ngày gần nhất)`
+      };
+    }
+
+    // 3. Các KPI khác: tăng = xanh (tốt), giảm = đỏ (xấu), không đổi = gray
+    const otherKPIs = ['totalChickens', 'totalFlocks', 'avgWeight', 'monthlyRevenue'];
+    otherKPIs.forEach(kpi => {
+      if (processed[kpi]) {
+        const change = processed[kpi].change || 0;
+        let color = 'gray';
+        let status = 'neutral';
+
+        if (change > 0) {
+          color = 'green';
+          status = 'up';
+        } else if (change < 0) {
+          color = 'red';
+          status = 'down';
+        }
+
+        processed[kpi] = {
+          ...processed[kpi],
+          color,
+          status
+        };
+      }
+    });
+
+    return processed;
+  };
+
   const fetchKPIData = async (period) => {
     try {
       setLoading(true);
@@ -32,7 +112,12 @@ const Dashboard = () => {
       const response = await dashboardApi.getDashboardKPIs(period);
 
       if (response && response.data && response.data.data) {
-        setKpiData(response.data.data);
+        const processedData = processKPIData(response.data.data, period);
+        setKpiData({
+          ...processedData,
+          period: period,
+          calculatedAt: response.data.data.calculatedAt || new Date().toISOString()
+        });
       } else {
         throw new Error('Invalid response structure');
       }
@@ -40,17 +125,55 @@ const Dashboard = () => {
       console.error('Error fetching KPI data:', err);
       setError('Không thể tải dữ liệu dashboard. Vui lòng thử lại sau.');
 
-      // Fallback mock data (giống hình ảnh)
-      setKpiData({
+      // Fallback mock data
+      const mockData = {
         totalChickens: {
-          value: 12450,
-          change: 4.2,
-          status: 'up',
+          value: 694,
+          change: 42,
           unit: 'con',
-          description: 'Tổng số gà đang nuôi',
-          color: 'green'
+          description: 'Tổng số gà đang nuôi (cập nhật trong 7d)',
+          note: 'Dựa trên 6 đàn có cập nhật trong khoảng thời gian này'
         },
-        // ... các dữ liệu mock khác
+        totalFlocks: {
+          value: 6,
+          change: 0,
+          unit: 'đàn',
+          description: 'Tổng số đàn đang nuôi (cập nhật trong 7d)'
+        },
+        deathRate: {
+          value: 0,
+          change: -0.5,
+          unit: '%',
+          description: 'Tỷ lệ chết (7d gần nhất)',
+          note: 'Không có dữ liệu kỳ trước để so sánh'
+        },
+        avgWeight: {
+          value: 2.49,
+          change: 42,
+          unit: 'kg/con',
+          description: 'Trọng lượng trung bình (cập nhật trong 7d)'
+        },
+        todayFeed: {
+          value: 3075,
+          change: 0,
+          unit: 'lọ',
+          status: 'high',
+          label: 'Dư thừa',
+          description: 'Thức ăn hôm nay',
+          threshold: { LOW: 500, NORMAL: 800, HIGH: 1200 }
+        },
+        monthlyRevenue: {
+          value: 245000000,
+          change: 123,
+          unit: 'VND',
+          description: 'Doanh thu tháng này',
+          formatted: '245.000.000 ₫'
+        }
+      };
+
+      const processedMock = processKPIData(mockData, period);
+      setKpiData({
+        ...processedMock,
         period: period,
         calculatedAt: new Date().toISOString()
       });
@@ -94,31 +217,29 @@ const Dashboard = () => {
   // Function để lấy label cho period
   const getPeriodLabel = (period) => {
     const labels = {
-      '24h': '24 giờ',
       '7d': '7 ngày',
       '30d': '30 ngày',
-      '90d': '90 ngày',
-      'all': 'Tất cả'
+      '90d': '90 ngày'
     };
     return labels[period] || period;
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="px-6 py-8">
+      <div className="px-4 md:px-6 py-6">
         {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8">
-          <div className="mb-6 lg:mb-0">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <FaTachometerAlt className="text-blue-600 text-2xl" />
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6">
+          <div className="mb-4 lg:mb-0">
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <FaTachometerAlt className="text-blue-600 text-xl" />
               Tổng quan trang trại
             </h1>
-            <p className="text-gray-600 mt-2 text-sm md:text-base">
+            <p className="text-gray-600 mt-1 text-sm">
               Theo dõi tình hình chung của trang trại gia cầm
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <PeriodFilter
               selectedPeriod={selectedPeriod}
               onPeriodChange={handlePeriodChange}
@@ -132,9 +253,9 @@ const Dashboard = () => {
                 fetchAlerts();
               }}
               disabled={loading}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="px-3 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
             >
-              <FaRedo className="w-4 h-4" />
+              <FaRedo className="w-3 h-3" />
               Làm mới
             </button>
           </div>
@@ -142,7 +263,7 @@ const Dashboard = () => {
 
         {/* Alerts Section */}
         {alerts.length > 0 && (
-          <div className="mb-6">
+          <div className="mb-4">
             <DashboardAlert
               alerts={alerts}
               loading={alertsLoading}
@@ -152,9 +273,9 @@ const Dashboard = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm">
             <div className="flex items-center gap-2 text-red-700">
-              <FaExclamationTriangle />
+              <FaExclamationTriangle className="text-sm" />
               <p>{error}</p>
             </div>
           </div>
@@ -162,32 +283,33 @@ const Dashboard = () => {
 
         {/* KPI Grid */}
         {loading && !kpiData ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-gray-200 rounded-lg"></div>
-                  <div className="h-4 bg-gray-200 rounded w-32"></div>
+              <div key={i} className="bg-white rounded-lg shadow-sm p-4 border border-gray-100 animate-pulse">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
+                  <div className="h-3 bg-gray-200 rounded w-24"></div>
                 </div>
-                <div className="h-10 bg-gray-200 rounded w-40 mb-3"></div>
-                <div className="h-6 bg-gray-200 rounded w-24"></div>
+                <div className="h-8 bg-gray-200 rounded w-32 mb-2"></div>
+                <div className="h-5 bg-gray-200 rounded w-20"></div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Tổng số gà - Cột 1 */}
             <KPICard
               title="Tổng số gà"
               value={kpiData?.totalChickens?.value || 0}
               change={kpiData?.totalChickens?.change || 0}
               unit={kpiData?.totalChickens?.unit || 'con'}
-              icon={<FaUsers className="text-2xl text-blue-600" />}
+              icon={<FaUsers className="text-lg text-blue-600" />}
               color={kpiData?.totalChickens?.color}
               status={kpiData?.totalChickens?.status}
-              description="Tổng số gà đang nuôi"
+              description={kpiData?.totalChickens?.description || 'Tổng số gà đang nuôi'}
               loading={loading}
               iconBgColor="bg-blue-50"
+              note={kpiData?.totalChickens?.note}
             />
 
             {/* Trọng lượng TB - Cột 2 */}
@@ -196,10 +318,10 @@ const Dashboard = () => {
               value={kpiData?.avgWeight?.value || 0}
               change={kpiData?.avgWeight?.change || 0}
               unit={kpiData?.avgWeight?.unit || 'kg/con'}
-              icon={<FaChartLine className="text-2xl text-teal-600" />}
+              icon={<FaChartLine className="text-lg text-teal-600" />}
               color={kpiData?.avgWeight?.color}
               status={kpiData?.avgWeight?.status}
-              description="Trọng lượng trung bình"
+              description={kpiData?.avgWeight?.description || 'Trọng lượng trung bình'}
               loading={loading}
               iconBgColor="bg-teal-50"
             />
@@ -210,10 +332,10 @@ const Dashboard = () => {
               value={kpiData?.totalFlocks?.value || 0}
               change={kpiData?.totalFlocks?.change || 0}
               unit={kpiData?.totalFlocks?.unit || 'đàn'}
-              icon={<FaChartPie className="text-2xl text-purple-600" />}
+              icon={<FaChartPie className="text-lg text-purple-600" />}
               color={kpiData?.totalFlocks?.color}
               status={kpiData?.totalFlocks?.status}
-              description="Tổng số đàn đang nuôi"
+              description={kpiData?.totalFlocks?.description || 'Tổng số đàn đang nuôi'}
               loading={loading}
               iconBgColor="bg-purple-50"
             />
@@ -223,24 +345,24 @@ const Dashboard = () => {
               title="Thức ăn hôm nay"
               value={kpiData?.todayFeed?.value || 0}
               unit={kpiData?.todayFeed?.unit || 'kg'}
-              status={kpiData?.todayFeed?.status || 'normal'}
-              label={kpiData?.todayFeed?.label || 'Bình thường'}
-              color={kpiData?.todayFeed?.color || 'green'}
+              status={kpiData?.todayFeed?.status || 'high'}
+              label={kpiData?.todayFeed?.label || 'Dư thừa'}
+              color={kpiData?.todayFeed?.color || 'orange'}
               loading={loading}
-              icon={<FaShoppingCart className="text-2xl text-green-600" />}
-              iconBgColor="bg-green-50"
+              icon={<FaShoppingCart className="text-lg text-orange-600" />}
+              iconBgColor="bg-orange-50"
             />
 
-            {/* Tỷ lệ chết (7d) - Cột 5 */}
+            {/* Tỷ lệ chết - Cột 5 */}
             <KPICard
-              title="Tỷ lệ chết (7d)"
+              title="Tỷ lệ chết"
               value={kpiData?.deathRate?.value || 0}
               change={kpiData?.deathRate?.change || 0}
               unit={kpiData?.deathRate?.unit || '%'}
-              icon={<FaExclamationTriangle className="text-2xl text-red-600" />}
+              icon={<FaExclamationTriangle className="text-lg text-red-600" />}
               color={kpiData?.deathRate?.color}
               status={kpiData?.deathRate?.status}
-              description="Tỷ lệ chết 7 ngày gần nhất"
+              description={kpiData?.deathRate?.description || 'Tỷ lệ chết'}
               loading={loading}
               iconBgColor="bg-red-50"
               note={kpiData?.deathRate?.note}
@@ -252,10 +374,10 @@ const Dashboard = () => {
               value={kpiData?.monthlyRevenue?.value || 0}
               change={kpiData?.monthlyRevenue?.change || 0}
               unit={kpiData?.monthlyRevenue?.unit || 'VND'}
-              icon={<FaDollarSign className="text-2xl text-green-600" />}
+              icon={<FaDollarSign className="text-lg text-green-600" />}
               color={kpiData?.monthlyRevenue?.color}
               status={kpiData?.monthlyRevenue?.status}
-              description="Doanh thu tháng hiện tại"
+              description={kpiData?.monthlyRevenue?.description || 'Doanh thu tháng hiện tại'}
               loading={loading}
               iconBgColor="bg-green-50"
               isCurrency={true}
@@ -265,11 +387,11 @@ const Dashboard = () => {
 
         {/* Footer Info */}
         {kpiData && (
-          <div className="mt-8 p-4 bg-white rounded-xl shadow-sm border border-gray-100">
-            <div className="flex flex-col md:flex-row md:items-center justify-between text-sm text-gray-500">
+          <div className="mt-6 p-4 bg-white rounded-lg shadow-sm border border-gray-100">
+            <div className="flex flex-col md:flex-row md:items-center justify-between text-xs text-gray-500">
               <div className="flex items-center gap-2 mb-2 md:mb-0">
                 <span className="font-medium">Khoảng thời gian đang xem:</span>
-                <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md font-medium">
+                <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md font-medium text-sm">
                   {getPeriodLabel(kpiData.period)}
                 </span>
               </div>
@@ -283,7 +405,7 @@ const Dashboard = () => {
             </div>
 
             {/* Legend */}
-            <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-gray-100">
+            <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-gray-100">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-green-500 rounded"></div>
                 <span className="text-xs text-gray-600">Tăng / Tốt</span>

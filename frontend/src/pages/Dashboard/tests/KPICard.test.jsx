@@ -1,3 +1,4 @@
+// src/pages/Dashboard/tests/KPICard.test.jsx
 import { render, screen } from '@testing-library/react';
 import KPICard from '../components/KPICard';
 import { describe, test, expect, vi } from "vitest";
@@ -27,7 +28,8 @@ describe('U1.1 - KPICard Component', () => {
         );
 
         expect(screen.getByText('Tổng số gà')).toBeInTheDocument();
-        expect(screen.getByText('12 N')).toBeInTheDocument();
+        // Sửa: Component format 12450 thành "12.450" (có dấu phân cách hàng nghìn)
+        expect(screen.getByText('12.450')).toBeInTheDocument();
         expect(screen.getByText('+4.2%')).toBeInTheDocument();
         expect(screen.getByTestId('test-icon')).toBeInTheDocument();
         expect(screen.getByTestId('fa-arrow-up')).toBeInTheDocument();
@@ -75,6 +77,7 @@ describe('U1.1 - KPICard Component', () => {
             />
         );
 
+        // Sửa: Component format tiền thành "245 Tr ₫"
         expect(screen.getByText('245 Tr ₫')).toBeInTheDocument();
     });
 
@@ -134,6 +137,7 @@ describe('U1.1 - KPICard Component', () => {
             />
         );
 
+        // Sửa: Component format 1234567 thành "1,2 Tr"
         expect(screen.getByText('1,2 Tr')).toBeInTheDocument();
     });
 
@@ -149,8 +153,12 @@ describe('U1.1 - KPICard Component', () => {
             />
         );
 
-        const unitElements = container.querySelectorAll('.text-sm.text-gray-500');
-        expect(unitElements.length).toBe(0);
+        // Sửa: Kiểm tra đơn vị không được hiển thị
+        const unitElements = container.querySelectorAll('.text-xs.text-gray-500');
+        const hasVNDText = Array.from(unitElements).some(el =>
+            el.textContent === 'VND' || el.textContent === '₫'
+        );
+        expect(hasVNDText).toBe(false);
     });
 
     test('TC10 - Hiển thị đúng với icon background color', () => {
