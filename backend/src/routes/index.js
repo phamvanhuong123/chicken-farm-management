@@ -27,8 +27,8 @@ router.use("/areas", areaRoute);
 router.use("/imports", importRoute);
 router.use("/auth", authRoutes);
 router.use("/transactions", transactionRoute);
-
-router.use("/tasks",taskRoute);
+router.use("/log", logRoute)
+router.use("/tasks", taskRoute);
 router.use("/dashboard", dashboardRoute);
 router.use("/dashboard/charts", dashboardChartRoutes);
 
