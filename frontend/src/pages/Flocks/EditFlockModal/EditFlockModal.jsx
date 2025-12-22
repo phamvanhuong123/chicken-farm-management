@@ -44,10 +44,16 @@ const AREAS = [
 ];
 
 // ================= FIX STATUS MAP =================
+const STATUS_REVERSE_MAP = {
+  Raising: "active",
+  Sold: "selling",
+};
+
 const STATUS_MAP = {
   active: "Raising",
   selling: "Sold",
 };
+
 
 function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -80,7 +86,7 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
         initialCount: flockData.initialCount?.toString() || "",
         avgWeight: flockData.avgWeight?.toString() || "",
         areaId: flockData.areaId || "",
-        status: flockData.status || "active",
+        status: STATUS_REVERSE_MAP[flockData.status] || "active",
         note: flockData.note || "",
       });
 
