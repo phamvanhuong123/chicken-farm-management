@@ -9,6 +9,7 @@ import { taskRoute } from "./v1/task.route.js";
 import financeRoute from "./v1/finance.route.js";
 import { logRoute } from "./v1/log.route.js";
 import dashboardRoute from "./v1/dashboard.route.js";
+import dashboardChartRoutes from "./v1/dashboard.chart.routes.js";
 
 const router = express.Router();
 
@@ -27,9 +28,9 @@ router.use("/imports", importRoute);
 router.use("/auth", authRoutes);
 router.use("/transactions", transactionRoute);
 
-router.use("/tasks",taskRoute);
-router.use("/logs",logRoute);
+router.use("/tasks", taskRoute);
 router.use("/dashboard", dashboardRoute);
+router.use("/dashboard/charts", dashboardChartRoutes);
 
 // Route tài chính
 router.use("/finance", financeRoute);

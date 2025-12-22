@@ -2,12 +2,8 @@ import { flockService } from "./flock.service.js";
 import { materialService } from "./material.service.js";
 import { logService } from "./log.service.js";
 
-/**
- * Dịch vụ Dashboard - Xử lý logic KPI và biểu đồ
- */
 class DashboardService {
   constructor() {
-    // Cấu hình mặc định
     this.config = {
       FEED_THRESHOLD: {
         LOW: 500,
@@ -57,10 +53,6 @@ class DashboardService {
       typeof vi !== "undefined";
   }
 
-  /**
-   * Tính toán KPI cho Dashboard
-   * @param {string} period - Khoảng thời gian (7d, 30d, 90d, all)
-   */
   async getDashboardKPIs(period = "7d") {
     try {
       const [
@@ -94,7 +86,6 @@ class DashboardService {
 
       return kpis;
     } catch (error) {
-      console.error("DashboardService.getDashboardKPIs error:", error);
       if (this.isTestEnvironment) {
         return this._getMockKPIs(period);
       }
@@ -107,11 +98,8 @@ class DashboardService {
       if (this.isTestEnvironment) {
         return this.config.MOCK_DATA.MOCK_FLOCKS;
       }
-
-      const flocks = await flockService.getAllFlocks();
-      return flocks;
+      return await flockService.getAllFlocks();
     } catch (error) {
-      console.error("Error getting flocks data:", error);
       if (this.isTestEnvironment) {
         return this.config.MOCK_DATA.MOCK_FLOCKS;
       }
@@ -123,7 +111,6 @@ class DashboardService {
     try {
       const flocks = await this._getFlocksData();
       const filteredFlocks = this._filterFlocksByPeriod(flocks, period);
-
       const activeFlocks = filteredFlocks.filter(
         (flock) => flock.status === "Raising" || flock.status === "Đang nuôi"
       );
@@ -132,13 +119,10 @@ class DashboardService {
         (sum, flock) => sum + (flock.currentCount || flock.initialCount || 0),
         0
       );
-
       const previousTotal = this._getMockPreviousValue(totalCurrent, 42);
-
-      const change =
-        previousTotal > 0
-          ? ((totalCurrent - previousTotal) / previousTotal) * 100
-          : 0;
+      const change = previousTotal > 0
+        ? ((totalCurrent - previousTotal) / previousTotal) * 100
+        : 0;
 
       return {
         value: totalCurrent,
@@ -152,7 +136,6 @@ class DashboardService {
         note: `Dựa trên ${activeFlocks.length} đàn có cập nhật trong khoảng thời gian này`,
       };
     } catch (error) {
-      console.error("Error calculating total chickens:", error);
       return {
         value: 12450,
         change: 42,
@@ -180,7 +163,6 @@ class DashboardService {
       case "90d":
         cutoffDate.setDate(now.getDate() - 90);
         break;
-      case "all":
       default:
         return flocks;
     }
@@ -197,18 +179,15 @@ class DashboardService {
     try {
       const flocks = await this._getFlocksData();
       const filteredFlocks = this._filterFlocksByPeriod(flocks, period);
-
       const activeFlocks = filteredFlocks.filter(
         (flock) => flock.status === "Raising" || flock.status === "Đang nuôi"
       );
 
       const totalCurrent = activeFlocks.length;
       const previousTotal = this._getMockPreviousValue(totalCurrent, 0);
-
-      const change =
-        previousTotal > 0
-          ? ((totalCurrent - previousTotal) / previousTotal) * 100
-          : 0;
+      const change = previousTotal > 0
+        ? ((totalCurrent - previousTotal) / previousTotal) * 100
+        : 0;
 
       return {
         value: totalCurrent,
@@ -221,7 +200,6 @@ class DashboardService {
         color: this._getChangeColor(change),
       };
     } catch (error) {
-      console.error("Error calculating total flocks:", error);
       return {
         value: 8,
         change: 0,
@@ -254,10 +232,6 @@ class DashboardService {
           startDate.setDate(startDate.getDate() - 90);
           previousStartDate.setDate(previousStartDate.getDate() - 180);
           break;
-        case "all":
-          startDate = new Date(0);
-          previousStartDate = null;
-          break;
         default:
           startDate.setDate(startDate.getDate() - 7);
           previousStartDate.setDate(previousStartDate.getDate() - 14);
@@ -279,22 +253,36 @@ class DashboardService {
       }
 
       const flocks = await this._getFlocksData();
-      const activeFlocks = flocks.filter(
-        (f) => f.status === "Raising" || f.status === "Đang nuôi"
-      );
-      const totalChickens = activeFlocks.reduce(
-        (sum, f) => sum + (f.currentCount || f.initialCount || 0), 0
+      const filteredFlocks = this._filterFlocksByPeriod(flocks, period);
+      const totalChickensInPeriod = filteredFlocks.reduce(
+        (sum, f) => sum + (f.initialCount || 0), 0
       );
 
-      const currentRate = totalChickens > 0 ? (totalDeathCurrent / totalChickens) * 100 : 0;
+      const currentRate = totalChickensInPeriod > 0
+        ? (totalDeathCurrent / totalChickensInPeriod) * 100
+        : 0;
 
       let prevRate = 0;
       let change = 0;
+      let hasPreviousData = false;
 
       if (previousStartDate && totalDeathPrev > 0) {
-        prevRate = totalChickens > 0 ? (totalDeathPrev / totalChickens) * 100 : 0;
-        change = currentRate - prevRate;
-      } else {
+        const previousFlocks = flocks.filter(f => {
+          const flockDate = f.updatedAt ? new Date(f.updatedAt) : new Date(f.createdAt);
+          return flockDate >= previousStartDate && flockDate < startDate;
+        });
+        const totalChickensPrev = previousFlocks.reduce(
+          (sum, f) => sum + (f.initialCount || 0), 0
+        );
+
+        if (totalChickensPrev > 0) {
+          prevRate = (totalDeathPrev / totalChickensPrev) * 100;
+          change = currentRate - prevRate;
+          hasPreviousData = true;
+        }
+      }
+
+      if (!hasPreviousData) {
         change = this.config.MOCK_DATA.DEATH_RATE_CHANGE;
       }
 
@@ -318,17 +306,17 @@ class DashboardService {
         unit: "%",
         description: `Tỷ lệ chết (${period} gần nhất)`,
         color: color,
-        note: previousStartDate
+        note: hasPreviousData
           ? `So sánh với ${period} trước đó`
           : "Không có dữ liệu kỳ trước để so sánh",
-        source: "log",
-        trend: change < 0 ? "improving" : "worsening",
-        icon: change < 0 ? "arrow_downward" : "arrow_upward",
+        source: hasPreviousData ? "log" : "mock",
+        trend: change < 0 ? "improving" : change > 0 ? "worsening" : "stable",
+        icon: change < 0 ? "arrow_downward" : change > 0 ? "arrow_upward" : "minimize",
         totalDeath: totalDeathCurrent,
-        totalChickens: totalChickens,
+        totalChickens: totalChickensInPeriod,
+        hasPreviousData: hasPreviousData
       };
     } catch (error) {
-      console.error("Error getting death rate from log service:", error);
       return this._getMockDeathRateData(period);
     }
   }
@@ -357,13 +345,9 @@ class DashboardService {
       unit: "%",
       description: `Tỷ lệ chết (${period} gần nhất)`,
       color: color,
-      note:
-        change < 0
-          ? "Giảm " + Math.abs(change) + "% so với kỳ trước"
-          : change > 0
-            ? "Tăng " + change + "% so với kỳ trước"
-            : "Không thay đổi so với kỳ trước",
       source: "mock",
+      totalDeath: 20,
+      totalChickens: 1730,
     };
   }
 
@@ -371,7 +355,6 @@ class DashboardService {
     try {
       const flocks = await this._getFlocksData();
       const filteredFlocks = this._filterFlocksByPeriod(flocks, period);
-
       const flocksWithWeight = filteredFlocks.filter(
         (f) =>
           (f.status === "Raising" || f.status === "Đang nuôi") &&
@@ -399,7 +382,6 @@ class DashboardService {
       });
 
       const currentAvg = totalChickens > 0 ? totalWeight / totalChickens : 0;
-
       const change = this.config.MOCK_DATA.AVG_WEIGHT_CHANGE;
       const previousAvg = this._getMockPreviousValue(currentAvg, change);
 
@@ -416,7 +398,6 @@ class DashboardService {
         totalChickensInSample: totalChickens,
       };
     } catch (error) {
-      console.error("Error calculating avg weight:", error);
       return {
         value: 1.8,
         change: 42,
@@ -432,32 +413,62 @@ class DashboardService {
     }
   }
 
+  async _getFeedInfoFromMaterialService() {
+    try {
+      if (materialService && typeof materialService.getFeedInfoForDashboard === 'function') {
+        return await materialService.getFeedInfoForDashboard();
+      }
+
+      const filters = {
+        $or: [
+          { type: { $regex: 'feed', $options: 'i' } },
+          { type: { $regex: 'thức ăn', $options: 'i' } }
+        ]
+      };
+
+      const materials = await materialService.getAllMaterials({
+        ...filters,
+        page: 1,
+        limit: 100
+      });
+
+      const feedMaterials = materials.items || [];
+      const totalQuantity = feedMaterials.reduce((sum, m) => sum + (m.quantity || 0), 0);
+
+      return {
+        source: 'material_service',
+        value: totalQuantity,
+        unit: feedMaterials[0]?.unit || 'kg',
+        status: this._getFeedStatus(totalQuantity).status,
+        label: this._getFeedStatus(totalQuantity).label,
+        materialCount: feedMaterials.length,
+        note: `Tổng hợp từ ${feedMaterials.length} loại thức ăn`
+      };
+    } catch (error) {
+      return null;
+    }
+  }
+
   async _getFeedData(period) {
     try {
-      if (materialService && materialService.getFeedInfoForDashboard) {
-        try {
-          const feedInfo = await materialService.getFeedInfoForDashboard();
+      const feedInfo = await this._getFeedInfoFromMaterialService();
 
-          if (feedInfo.source !== "fallback") {
-            return {
-              value: feedInfo.value,
-              change: feedInfo.change || 0,
-              unit: feedInfo.unit || 'kg',
-              status: feedInfo.status || 'normal',
-              label: feedInfo.label || 'Bình thường',
-              description: "Thức ăn hôm nay",
-              color: this._getFeedColor(feedInfo.status || 'normal'),
-              threshold: feedInfo.threshold || this.config.FEED_THRESHOLD,
-              source: "material_service",
-              date: new Date().toISOString().split("T")[0],
-              period: "today",
-              materialCount: feedInfo.materialCount,
-              note: feedInfo.note || `Tổng hợp từ ${feedInfo.materialCount || 0} loại thức ăn`,
-            };
-          }
-        } catch (error) {
-          console.log("Material service getFeedInfoForDashboard error:", error.message);
-        }
+      if (feedInfo && feedInfo.source !== "fallback") {
+        return {
+          value: feedInfo.value,
+          change: feedInfo.change || 0,
+          unit: feedInfo.unit || 'kg',
+          status: feedInfo.status || 'normal',
+          label: feedInfo.label || 'Bình thường',
+          description: "Thức ăn hôm nay",
+          color: this._getFeedColor(feedInfo.status || 'normal'),
+          threshold: this.config.FEED_THRESHOLD,
+          source: "material_service",
+          date: new Date().toISOString().split("T")[0],
+          period: "today",
+          materialCount: feedInfo.materialCount,
+          note: feedInfo.note || `Tổng hợp từ ${feedInfo.materialCount || 0} loại thức ăn`,
+        };
       }
 
       const todayFeed = this.config.MOCK_DATA.DAILY_FEED;
@@ -476,10 +487,9 @@ class DashboardService {
         source: "mock",
         date: new Date().toISOString().split("T")[0],
         period: "today",
-        implementLater: "Đã thay bằng material.type='feed' - kiểm tra material service",
+        implementLater: "Đã thay bằng material.type='feed'",
       };
     } catch (error) {
-      console.error("Error getting feed data:", error);
       return {
         value: 850,
         change: 0,
@@ -511,7 +521,6 @@ class DashboardService {
         implementLater: "Lấy từ transaction.type='income' trong tháng",
       };
     } catch (error) {
-      console.error("Error getting revenue data:", error);
       return {
         value: 245000000,
         change: 123,
@@ -541,10 +550,6 @@ class DashboardService {
             implementLater: "Lấy dữ liệu thật từ log và flock theo timeline",
           };
         } catch (error) {
-          console.error(
-            `Error getting trend data from log service for ${chartType}:`,
-            error
-          );
           data = this._generateMockTrendData(period, chartType);
           return {
             data,
@@ -552,7 +557,6 @@ class DashboardService {
             chartType,
             unit: this._getChartUnit(chartType),
             source: "mock",
-            note: "Fallback to mock data due to log service error",
           };
         }
       } else {
@@ -563,11 +567,9 @@ class DashboardService {
           chartType,
           unit: this._getChartUnit(chartType),
           source: "mock",
-          note: "Mock data for revenue chart",
         };
       }
     } catch (error) {
-      console.error("Error getting trend data:", error);
       return {
         data: [],
         period,
@@ -587,7 +589,6 @@ class DashboardService {
         const logAlerts = await logService.getAlertsFromLogs();
         alerts.push(...logAlerts);
       } catch (error) {
-        console.error("Error getting alerts from log service:", error);
       }
 
       const feedData = await this._getFeedData("today");
@@ -614,6 +615,22 @@ class DashboardService {
         });
       }
 
+      try {
+        const weeklyData = await this.getWeeklyConsumptionChart();
+        if (weeklyData.metadata.source === "mock" || weeklyData.total.overall === 0) {
+          alerts.push({
+            type: "missing_log_data",
+            title: "Thiếu dữ liệu nhật ký",
+            message: "Không có dữ liệu tiêu thụ trong 7 ngày qua. Cần cập nhật nhật ký.",
+            severity: "medium",
+            timestamp: new Date().toISOString(),
+            source: "dashboard_chart",
+            action: "Tạo nhật ký mới"
+          });
+        }
+      } catch (chartError) {
+      }
+
       return {
         alerts,
         total: alerts.length,
@@ -621,7 +638,6 @@ class DashboardService {
         lastChecked: new Date().toISOString(),
       };
     } catch (error) {
-      console.error("Error getting dashboard alerts:", error);
       return {
         alerts: [],
         total: 0,
@@ -661,7 +677,6 @@ class DashboardService {
         unit: "%",
         description: "Tỷ lệ chết (7 ngày gần nhất)",
         color: "green",
-        note: "Tính trên 7 ngày gần nhất",
         source: "mock",
       },
       avgWeight: {
@@ -889,12 +904,461 @@ class DashboardService {
       default:
         date.setMonth(now.getMonth() - index);
         return {
-          label: date.toLocaleDateString("vi-VN", {
-            month: "short",
-            year: "2-digit",
-          }),
-          timestamp: date.toISOString(),
+          label: date.toLocaleDateString('vi-VN', { month: 'short', year: '2-digit' }),
+          timestamp: date.toISOString()
         };
+    }
+  }
+
+  _convertToVNTime(date) {
+    const vnOffset = 7 * 60 * 60 * 1000;
+    return new Date(date.getTime() + vnOffset);
+  }
+
+  _getDateStringVN(date) {
+    const vnDate = this._convertToVNTime(date);
+    vnDate.setHours(0, 0, 0, 0);
+    return vnDate.toISOString().split('T')[0];
+  }
+
+  async getWeeklyConsumptionChart() {
+    try {
+      const now = new Date();
+      const vnOffset = 7 * 60 * 60 * 1000;
+      const todayVN = new Date(now.getTime() + vnOffset);
+      todayVN.setHours(0, 0, 0, 0);
+      const startDate = new Date(todayVN);
+      startDate.setDate(startDate.getDate() - 6);
+
+      const days = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+      const weeklyData = [];
+
+      for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+
+        const dayIndex = currentDate.getDay();
+        const dayName = days[dayIndex];
+
+        const displayDate = currentDate.toLocaleDateString('vi-VN', {
+          day: '2-digit',
+          month: '2-digit'
+        });
+
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const day = String(currentDate.getDate()).padStart(2, '0');
+        const dateKey = `${year}-${month}-${day}`;
+
+        weeklyData.push({
+          day: dayName,
+          dayIndex: dayIndex === 0 ? 7 : dayIndex,
+          food: 0,
+          medicine: 0,
+          total: 0,
+          date: currentDate.toISOString(),
+          dateKey: dateKey,
+          displayDate: displayDate
+        });
+      }
+
+      const dayOrder = { 'T1': 1, 'T2': 2, 'T3': 3, 'T4': 4, 'T5': 5, 'T6': 6, 'T7': 7 };
+      weeklyData.sort((a, b) => dayOrder[a.day] - dayOrder[b.day]);
+
+      let logsLast7Days = [];
+
+      try {
+        const allLogs = await logService.getAllLogs();
+        logsLast7Days = allLogs.filter(log => {
+          if (!log.createdAt) return false;
+          const logDate = new Date(log.createdAt);
+          const logDateVN = new Date(logDate.getTime() + vnOffset);
+          const year = logDateVN.getFullYear();
+          const month = String(logDateVN.getMonth() + 1).padStart(2, '0');
+          const day = String(logDateVN.getDate()).padStart(2, '0');
+          const logDateKey = `${year}-${month}-${day}`;
+          return weeklyData.some(day => day.dateKey === logDateKey);
+        });
+
+        logsLast7Days.forEach((log) => {
+          const logDate = new Date(log.createdAt);
+          const logDateVN = new Date(logDate.getTime() + vnOffset);
+          const year = logDateVN.getFullYear();
+          const month = String(logDateVN.getMonth() + 1).padStart(2, '0');
+          const day = String(logDateVN.getDate()).padStart(2, '0');
+          const logDateKey = `${year}-${month}-${day}`;
+          const dayData = weeklyData.find(day => day.dateKey === logDateKey);
+
+          if (dayData) {
+            if (log.type === 'FOOD') {
+              dayData.food += log.quantity || 0;
+            } else if (log.type === 'MEDICINE' || log.type === 'VACCINE') {
+              dayData.medicine += log.quantity || 0;
+            }
+            dayData.total = dayData.food + dayData.medicine;
+          }
+        });
+
+      } catch (logError) {
+      }
+
+      const formattedData = weeklyData.map(day => {
+        const [year, month, date] = day.dateKey.split('-');
+        const utcDate = new Date(Date.UTC(
+          parseInt(year),
+          parseInt(month) - 1,
+          parseInt(date),
+          0, 0, 0, 0
+        ));
+
+        return {
+          day: day.day,
+          dayIndex: day.dayIndex,
+          food: day.food,
+          medicine: day.medicine,
+          total: day.total,
+          date: utcDate.toISOString(),
+          displayDate: day.displayDate
+        };
+      });
+
+      const totalFood = formattedData.reduce((sum, day) => sum + day.food, 0);
+      const totalMedicine = formattedData.reduce((sum, day) => sum + day.medicine, 0);
+
+      return {
+        chartType: "stacked_column",
+        title: "Tiêu thụ hàng tuần",
+        description: "Thống kê tiêu thụ thức ăn và thuốc 7 ngày gần nhất",
+        data: formattedData,
+        series: [
+          {
+            name: "Thức ăn",
+            key: "food",
+            color: "#4CAF50",
+            unit: "kg",
+            description: "Khối lượng thức ăn tiêu thụ"
+          },
+          {
+            name: "Thuốc & Vaccine",
+            key: "medicine",
+            color: "#FF9800",
+            unit: "kg",
+            description: "Khối lượng thuốc và vaccine sử dụng"
+          }
+        ],
+        period: "7d",
+        calculatedAt: new Date().toISOString(),
+        total: {
+          food: totalFood,
+          medicine: totalMedicine,
+          overall: totalFood + totalMedicine
+        },
+        metadata: {
+          source: logsLast7Days.length > 0 ? "log" : "mock",
+          dataQuality: "real",
+          dataPoints: {
+            logs: logsLast7Days.length,
+            foodLogs: logsLast7Days.filter(l => l.type === 'FOOD').length,
+            medicineLogs: logsLast7Days.filter(l => l.type === 'MEDICINE' || l.type === 'VACCINE').length
+          },
+          timestamp: new Date().toISOString(),
+          note: logsLast7Days.length > 0
+            ? `Dữ liệu từ ${logsLast7Days.length} logs trong 7 ngày`
+            : "Không có dữ liệu logs trong 7 ngày"
+        }
+      };
+
+    } catch (error) {
+      return this._generateMockWeeklyConsumptionData();
+    }
+  }
+
+  _generateMockWeeklyConsumptionData() {
+    const today = new Date();
+    const days = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+    const weeklyData = [];
+
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - (6 - i));
+
+      const dayIndex = date.getDay();
+      const dayName = days[dayIndex];
+
+      const displayDate = date.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit'
+      });
+
+      const baseFood = 120 + Math.random() * 80;
+      const baseMedicine = 20 + Math.random() * 30;
+      const food = Math.round(baseFood);
+      const medicine = Math.round(baseMedicine);
+
+      weeklyData.push({
+        day: dayName,
+        dayIndex: dayIndex === 0 ? 7 : dayIndex,
+        food,
+        medicine,
+        total: food + medicine,
+        date: date.toISOString(),
+        displayDate: displayDate
+      });
+    }
+
+    const totalFood = weeklyData.reduce((sum, day) => sum + day.food, 0);
+    const totalMedicine = weeklyData.reduce((sum, day) => sum + day.medicine, 0);
+
+    return {
+      chartType: "stacked_column",
+      title: "Tiêu thụ hàng tuần",
+      description: "Thống kê tiêu thụ thức ăn và thuốc 7 ngày gần nhất",
+      data: weeklyData,
+      series: [
+        {
+          name: "Thức ăn",
+          key: "food",
+          color: "#4CAF50",
+          unit: "kg",
+          description: "Khối lượng thức ăn tiêu thụ"
+        },
+        {
+          name: "Thuốc & Vaccine",
+          key: "medicine",
+          color: "#FF9800",
+          unit: "kg",
+          description: "Khối lượng thuốc và vaccine sử dụng"
+        }
+      ],
+      period: "7d",
+      calculatedAt: new Date().toISOString(),
+      total: {
+        food: totalFood,
+        medicine: totalMedicine,
+        overall: totalFood + totalMedicine
+      },
+      metadata: {
+        source: "mock",
+        note: "Fallback mock data - không có dữ liệu logs"
+      }
+    };
+  }
+
+  async getCostStructureChart() {
+    try {
+      let feedMaterials = [];
+      let medicineMaterials = [];
+
+      try {
+        const feedResult = await materialService.getAllMaterials({
+          page: 1,
+          limit: 100,
+          type: "Thức ăn"
+        });
+        feedMaterials = feedResult.items || [];
+
+        const medicineResult = await materialService.getAllMaterials({
+          page: 1,
+          limit: 100,
+          type: "Thuốc"
+        });
+        medicineMaterials = medicineResult.items || [];
+
+      } catch (materialError) {
+        return this._generateMockCostStructureData();
+      }
+
+      const FEED_PRICE_PER_KG = 10000;
+      const MEDICINE_PRICE_PER_UNIT = 50000;
+
+      const feedValue = feedMaterials.reduce((sum, m) => {
+        const quantity = m.quantity || 0;
+        return sum + (quantity * FEED_PRICE_PER_KG);
+      }, 0);
+
+      const medicineValue = medicineMaterials.reduce((sum, m) => {
+        const quantity = m.quantity || 0;
+        return sum + (quantity * MEDICINE_PRICE_PER_UNIT);
+      }, 0);
+
+      const laborCost = 30000000;
+      const utilitiesCost = 19000000;
+
+      const costStructure = [
+        {
+          category: "Thức ăn",
+          value: feedValue > 0 ? feedValue : 159000000,
+          percentage: 0,
+          color: "#4CAF50",
+          icon: "restaurant",
+          description: "Chi phí thức ăn chăn nuôi",
+          formattedValue: this._formatCurrency(feedValue > 0 ? feedValue : 159000000)
+        },
+        {
+          category: "Thuốc & Vaccine",
+          value: medicineValue > 0 ? medicineValue : 37000000,
+          percentage: 0,
+          color: "#FF9800",
+          icon: "medication",
+          description: "Chi phí thuốc thú y và vaccine",
+          formattedValue: this._formatCurrency(medicineValue > 0 ? medicineValue : 37000000)
+        },
+        {
+          category: "Nhân công",
+          value: laborCost,
+          percentage: 0,
+          color: "#2196F3",
+          icon: "groups",
+          description: "Chi phí lương nhân viên",
+          formattedValue: this._formatCurrency(laborCost)
+        },
+        {
+          category: "Điện nước & Khác",
+          value: utilitiesCost,
+          percentage: 0,
+          color: "#9C27B0",
+          icon: "bolt",
+          description: "Chi phí điện, nước, bảo trì",
+          formattedValue: this._formatCurrency(utilitiesCost)
+        }
+      ];
+
+      const totalCost = costStructure.reduce((sum, item) => sum + item.value, 0);
+      let remainingPercentage = 100;
+      costStructure.forEach((item, index) => {
+        if (index < costStructure.length - 1) {
+          item.percentage = Math.round((item.value / totalCost) * 100);
+          remainingPercentage -= item.percentage;
+        } else {
+          item.percentage = remainingPercentage;
+        }
+      });
+
+      const hasRealData = feedValue > 0 || medicineValue > 0;
+
+      return {
+        chartType: "cost_structure",
+        title: "Cơ cấu chi phí",
+        description: "Phân bổ chi phí hoạt động trang trại",
+        data: costStructure,
+        total: {
+          value: totalCost,
+          formatted: this._formatCurrency(totalCost),
+          period: "month",
+          currency: "VND"
+        },
+        displayType: "pie",
+        calculatedAt: new Date().toISOString(),
+        metadata: {
+          period: "Tháng hiện tại",
+          lastUpdated: new Date().toISOString(),
+          source: hasRealData ? "material" : "mock",
+          dataQuality: hasRealData ? "real" : "mock",
+          dataPoints: {
+            feed: feedMaterials.length,
+            medicine: medicineMaterials.length
+          },
+          note: hasRealData
+            ? `Tính từ ${feedMaterials.length} loại thức ăn và ${medicineMaterials.length} loại thuốc`
+            : "Chưa có dữ liệu material. Sử dụng giá trị mẫu."
+        }
+      };
+
+    } catch (error) {
+      return this._generateMockCostStructureData();
+    }
+  }
+
+  _generateMockCostStructureData() {
+    const costStructure = [
+      {
+        category: "Thức ăn",
+        value: 159000000,
+        percentage: 65,
+        color: "#4CAF50",
+        icon: "restaurant",
+        description: "Chi phí thức ăn chăn nuôi",
+        formattedValue: "159.000.000 ₫"
+      },
+      {
+        category: "Thuốc & Vaccine",
+        value: 37000000,
+        percentage: 15,
+        color: "#FF9800",
+        icon: "medication",
+        description: "Chi phí thuốc thú y và vaccine",
+        formattedValue: "37.000.000 ₫"
+      },
+      {
+        category: "Nhân công",
+        value: 30000000,
+        percentage: 12,
+        color: "#2196F3",
+        icon: "groups",
+        description: "Chi phí lương nhân viên",
+        formattedValue: "30.000.000 ₫"
+      },
+      {
+        category: "Điện nước & Khác",
+        value: 19000000,
+        percentage: 8,
+        color: "#9C27B0",
+        icon: "bolt",
+        description: "Chi phí điện, nước, bảo trì",
+        formattedValue: "19.000.000 ₫"
+      }
+    ];
+
+    const totalCost = costStructure.reduce((sum, item) => sum + item.value, 0);
+
+    return {
+      chartType: "cost_structure",
+      title: "Cơ cấu chi phí",
+      description: "Phân bổ chi phí hoạt động trang trại",
+      data: costStructure,
+      total: {
+        value: totalCost,
+        formatted: this._formatCurrency(totalCost),
+        period: "month",
+        currency: "VND"
+      },
+      displayType: "pie",
+      calculatedAt: new Date().toISOString(),
+      metadata: {
+        period: "Tháng hiện tại",
+        lastUpdated: new Date().toISOString(),
+        source: "mock",
+        note: "Mock data - chờ dữ liệu transaction"
+      }
+    };
+  }
+
+  async getDashboardCharts() {
+    try {
+      const [weeklyConsumption, costStructure] = await Promise.all([
+        this.getWeeklyConsumptionChart(),
+        this.getCostStructureChart()
+      ]);
+
+      return {
+        weeklyConsumption,
+        costStructure,
+        period: "current",
+        calculatedAt: new Date().toISOString(),
+        summary: {
+          hasRealData: weeklyConsumption.metadata.source !== "mock" || costStructure.metadata.source !== "mock",
+          realDataSources: [
+            ...(weeklyConsumption.metadata.source !== "mock" ? ["log"] : []),
+            ...(costStructure.metadata.source !== "mock" ? ["material"] : [])
+          ],
+          dataQuality: {
+            weeklyConsumption: weeklyConsumption.metadata.dataQuality || "unknown",
+            costStructure: costStructure.metadata.dataQuality || "unknown"
+          }
+        }
+      };
+    } catch (error) {
+      throw new Error("Không thể lấy dữ liệu biểu đồ: " + error.message);
     }
   }
 }

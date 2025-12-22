@@ -142,11 +142,20 @@ const getTrendDataForDashboard = async (chartType, period) => {
         startDate.setDate(startDate.getDate() - 7);
     }
 
-    const trendData = await logModel.getTrendData(
+    let trendData = await logModel.getTrendData(
       chartType,
       startDate,
       endDate
     );
+
+    // Xử lý đặc biệt cho weight: dùng giá trị trung bình thay vì tổng
+    if (chartType === 'weight' && trendData.length > 0) {
+      trendData = trendData.map(item => ({
+        ...item,
+        value: item.avg || item.value // Ưu tiên avg nếu có
+      }));
+    }
+
     return trendData;
   } catch (error) {
     if (!error.statusCode) error.statusCode = 500;
@@ -154,7 +163,6 @@ const getTrendDataForDashboard = async (chartType, period) => {
     throw error;
   }
 };
-
 /**
  * Lấy cảnh báo từ log (cho dashboard)
  */
@@ -260,6 +268,31 @@ const deleteLog = async (id) => {
   }
 };
 
+/**
+ * Lấy log theo type và khoảng thời gian (CHO DASHBOARD CHART)
+ */
+const getLogsByTypeAndTimeRange = async (type, startDate, endDate) => {
+  try {
+    // Sử dụng model method nếu có
+    if (logModel.getLogsByTypeAndTimeRange) {
+      return await logModel.getLogsByTypeAndTimeRange(type, startDate, endDate);
+    }
+
+    // Fallback: gọi getAllLogs và filter
+    const allLogs = await getAllLogs();
+    return allLogs.filter(log => {
+      if (log.type !== type) return false;
+
+      const logDate = new Date(log.createdAt);
+      return logDate >= startDate && logDate <= endDate;
+    });
+  } catch (error) {
+    console.error("Error in getLogsByTypeAndTimeRange service:", error);
+    throw new Error("Không thể lấy logs theo type và khoảng thời gian: " + error.message);
+  }
+};
+
+
 export const logService = {
   createLog,
   updateLog,
@@ -271,4 +304,5 @@ export const logService = {
   getAlertsFromLogs,
   getLogStatistics,
   deleteLog,
+  getLogsByTypeAndTimeRange,
 };
