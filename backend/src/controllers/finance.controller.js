@@ -93,7 +93,8 @@ export const getRecentTransactions = async (req, res, next) => {
  */
 export const createTransaction = async (req, res, next) => {
   try {
-    const newTransaction = await financeService.createTransaction(req.body);
+    const { invoiceNumber, ...payload } = req.body;
+    const newTransaction = await financeService.createTransaction(payload);
 
     res.status(201).json({
       statusCode: 201,

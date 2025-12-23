@@ -214,16 +214,26 @@ const getRecentTransactions = async (limit = 10) => {
 /**
  * Tạo giao dịch mới
  */
+// finance.service.js
 const createTransaction = async (data) => {
   try {
-    const newTransaction = await financialTransactionModel.create(data);
-    return newTransaction;
-  } catch (error) {
-    if (!error.statusCode) {
-      error.statusCode = 500;
-      error.message = "Không thể tạo giao dịch: " + error.message;
+    const lastTransaction = await financialTransactionModel.findLatest();
+
+    let nextInvoiceCode = "HD_001";
+
+    if (lastTransaction?.invoiceCode) {
+      const num = parseInt(lastTransaction.invoiceCode.replace("HD_", ""), 10);
+      nextInvoiceCode = `HD_${String(num + 1).padStart(3, "0")}`;
     }
 
+    const newTransaction = await financialTransactionModel.create({
+      ...data,
+      invoiceCode: nextInvoiceCode,
+      createdAt: new Date(),
+    });
+
+    return newTransaction;
+  } catch (error) {
     throw error;
   }
 };
