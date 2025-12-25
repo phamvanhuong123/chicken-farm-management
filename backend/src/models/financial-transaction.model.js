@@ -12,17 +12,19 @@ export const TRANSACTION_CATEGORIES = {
   LABOR: "Nhân công",
   UTILITIES: "Điện nước",
   OTHER_EXPENSE: "Chi phí khác",
-  
+
   // Thu nhập
   SALES: "Bán hàng",
-  OTHER_INCOME: "Thu nhập khác"
+  OTHER_INCOME: "Thu nhập khác",
 };
 
 // Schema validation
 const FINANCIAL_TRANSACTION_SCHEMA = Joi.object({
   date: Joi.date().required(),
   type: Joi.string().valid("income", "expense").required(), // Thu/Chi
-  category: Joi.string().valid(...Object.values(TRANSACTION_CATEGORIES)).required(),
+  category: Joi.string()
+    .valid(...Object.values(TRANSACTION_CATEGORIES))
+    .required(),
   amount: Joi.number().min(0).required(),
   flockId: Joi.string().allow("", null).optional(), // Đàn liên quan (nếu có)
   flockCode: Joi.string().allow("", null).optional(), // Mã đàn
@@ -31,14 +33,14 @@ const FINANCIAL_TRANSACTION_SCHEMA = Joi.object({
   invoiceUrl: Joi.string().uri().allow("", null).optional(), // Link hóa đơn
   createdBy: Joi.string().optional(), // User ID
   createdAt: Joi.date().default(() => new Date()),
-  updatedAt: Joi.date().default(null)
+  updatedAt: Joi.date().default(null),
 });
 
 // Validate trước khi create
 const validateBeforeCreate = async (data) => {
   return await FINANCIAL_TRANSACTION_SCHEMA.validateAsync(data, {
     abortEarly: false,
-    stripUnknown: true
+    stripUnknown: true,
   });
 };
 
@@ -46,14 +48,14 @@ const validateBeforeCreate = async (data) => {
 const create = async (data) => {
   try {
     const validData = await validateBeforeCreate(data);
-    
+
     const result = await GET_DB()
       .collection(FINANCIAL_TRANSACTION_COLLECTION)
       .insertOne(validData);
 
     return {
       _id: result.insertedId,
-      ...validData
+      ...validData,
     };
   } catch (error) {
     if (error.isJoi) {
@@ -67,12 +69,7 @@ const create = async (data) => {
 
 // Lấy danh sách giao dịch (có filter, sort, pagination)
 const findAll = async (filter = {}, options = {}) => {
-  const {
-    sort = "date",
-    order = "desc",
-    skip = 0,
-    limit = 20
-  } = options;
+  const { sort = "date", order = "desc", skip = 0, limit = 20 } = options;
 
   try {
     const transactions = await GET_DB()
@@ -148,6 +145,15 @@ const aggregate = async (pipeline = []) => {
     throw new Error("Không thể thực hiện aggregation: " + error.message);
   }
 };
+//
+const findLatest = async () => {
+  return await GET_DB()
+    .collection(FINANCIAL_TRANSACTION_COLLECTION)
+    .find({})
+    .sort({ createdAt: -1 })
+    .limit(1)
+    .next();
+};
 
 export const financialTransactionModel = {
   FINANCIAL_TRANSACTION_COLLECTION,
@@ -158,5 +164,6 @@ export const financialTransactionModel = {
   count,
   findById,
   deleteById,
-  aggregate
+  aggregate,
+  findLatest,
 };

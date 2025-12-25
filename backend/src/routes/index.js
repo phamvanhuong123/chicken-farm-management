@@ -27,14 +27,12 @@ router.use("/areas", areaRoute);
 router.use("/imports", importRoute);
 router.use("/auth", authRoutes);
 router.use("/transactions", transactionRoute);
-router.use("/log", logRoute)
+router.use("/log", logRoute);
 router.use("/tasks", taskRoute);
 router.use("/dashboard", dashboardRoute);
 router.use("/dashboard/charts", dashboardChartRoutes);
 
 // Route tài chính
 router.use("/finance", financeRoute);
-
-
 
 export const APIs_V1 = router;

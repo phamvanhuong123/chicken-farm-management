@@ -7,7 +7,7 @@ import {
   createTransaction,
   getTransactionById,
   deleteTransaction,
-  searchTransactions
+  searchTransactions,
 } from "../../controllers/finance.controller.js";
 import { validateCreateTransaction } from "../../validators/finance.validation.js";
 

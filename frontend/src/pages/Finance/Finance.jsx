@@ -10,7 +10,7 @@ import {
   Trash2,
   Plus,
   Search,
-  RotateCcw
+  RotateCcw,
 } from "lucide-react";
 import Chart from "react-apexcharts";
 import FinanceCreateForm from "./components/FinanceCreateForm";
@@ -30,14 +30,16 @@ export default function Finance() {
 
   // Filter tháng
   const currentDate = new Date();
-  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
+  const [selectedMonth, setSelectedMonth] = useState(
+    currentDate.getMonth() + 1
+  );
   const [selectedYear] = useState(currentDate.getFullYear());
 
   // Filters cho bảng giao dịch
   const [filters, setFilters] = useState({
     type: "all",
     category: "all",
-    search: ""
+    search: "",
   });
 
   // Load dữ liệu tổng quan
@@ -56,7 +58,7 @@ export default function Finance() {
       const [overviewRes, breakdownRes, trendRes] = await Promise.all([
         financeApi.getOverview(selectedMonth, selectedYear),
         financeApi.getExpenseBreakdown(selectedMonth, selectedYear),
-        financeApi.getTrend(6, selectedYear)
+        financeApi.getTrend(6, selectedYear),
       ]);
 
       setOverview(overviewRes.data.data);
@@ -80,16 +82,16 @@ export default function Finance() {
 
       // FILTER
       if (filters.type !== "all") {
-        data = data.filter(t => t.type === filters.type);
+        data = data.filter((t) => t.type === filters.type);
       }
 
       if (filters.category !== "all") {
-        data = data.filter(t => t.category === filters.category);
+        data = data.filter((t) => t.category === filters.category);
       }
 
       if (filters.search) {
         const keyword = filters.search.toLowerCase();
-        data = data.filter(t =>
+        data = data.filter((t) =>
           t.description?.toLowerCase().includes(keyword)
         );
       }
@@ -100,9 +102,7 @@ export default function Finance() {
       setTotalPages(pages || 1);
 
       const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-      setTransactions(
-        data.slice(startIndex, startIndex + ITEMS_PER_PAGE)
-      );
+      setTransactions(data.slice(startIndex, startIndex + ITEMS_PER_PAGE));
     } catch (error) {
       console.error("Lỗi tải giao dịch:", error);
       toast.error("Không thể tải danh sách giao dịch");
@@ -113,7 +113,7 @@ export default function Finance() {
   const [searchDebounce, setSearchDebounce] = useState("");
   useEffect(() => {
     const timer = setTimeout(() => {
-      setFilters(prev => ({ ...prev, search: searchDebounce }));
+      setFilters((prev) => ({ ...prev, search: searchDebounce }));
       setCurrentPage(1);
     }, 500);
 
@@ -129,7 +129,7 @@ export default function Finance() {
 
   // Change filter
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
     setCurrentPage(1);
   };
 
@@ -138,7 +138,7 @@ export default function Finance() {
     if (!value) return "0 VND";
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
-      currency: "VND"
+      currency: "VND",
     }).format(value);
   };
 
@@ -168,46 +168,46 @@ export default function Finance() {
       type: "line",
       height: 350,
       toolbar: { show: false },
-      zoom: { enabled: false }
+      zoom: { enabled: false },
     },
     colors: ["#10b981", "#ef4444"],
     dataLabels: { enabled: false },
     stroke: {
       curve: "smooth",
-      width: 3
+      width: 3,
     },
     xaxis: {
-      categories: trend.map(t => t.monthLabel),
-      title: { text: "Tháng" }
+      categories: trend.map((t) => t.monthLabel),
+      title: { text: "Tháng" },
     },
     yaxis: {
       title: { text: "Số tiền (VND)" },
       labels: {
         formatter: (value) => {
           return (value / 1000000).toFixed(0) + "M";
-        }
-      }
+        },
+      },
     },
     legend: {
       position: "bottom",
-      horizontalAlign: "center"
+      horizontalAlign: "center",
     },
     tooltip: {
       y: {
-        formatter: (value) => formatCurrency(value)
-      }
-    }
+        formatter: (value) => formatCurrency(value),
+      },
+    },
   };
 
   const trendChartSeries = [
     {
       name: "Thu nhập",
-      data: trend.map(t => t.income)
+      data: trend.map((t) => t.income),
     },
     {
       name: "Chi phí",
-      data: trend.map(t => t.expense)
-    }
+      data: trend.map((t) => t.expense),
+    },
   ];
 
   if (loading) {
@@ -233,8 +233,12 @@ export default function Finance() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Chi phí & Tài chính</h1>
-          <p className="text-gray-600">Tổng quan tài chính và giao dịch gần đây</p>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Chi phí & Tài chính
+          </h1>
+          <p className="text-gray-600">
+            Tổng quan tài chính và giao dịch gần đây
+          </p>
         </div>
 
         {/* Nút thêm giao dịch */}
@@ -315,7 +319,9 @@ export default function Finance() {
         {/* Cơ cấu chi phí */}
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Cơ cấu chi phí (Tháng này)</h2>
+            <h2 className="text-lg font-semibold">
+              Cơ cấu chi phí (Tháng này)
+            </h2>
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
@@ -336,17 +342,21 @@ export default function Finance() {
               {expenseBreakdown.map((item, index) => {
                 const colors = {
                   "Thức ăn": "bg-blue-500",
-                  "Thuốc": "bg-purple-500",
+                  Thuốc: "bg-purple-500",
                   "Nhân công": "bg-orange-500",
-                  "Điện nước": "bg-yellow-500"
+                  "Điện nước": "bg-yellow-500",
                 };
                 const color = colors[item.category] || "bg-gray-500";
 
                 return (
                   <div key={index}>
                     <div className="flex justify-between mb-1">
-                      <span className="text-sm font-medium">{item.category}</span>
-                      <span className="text-sm font-medium">{item.percentage}%</span>
+                      <span className="text-sm font-medium">
+                        {item.category}
+                      </span>
+                      <span className="text-sm font-medium">
+                        {item.percentage}%
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
@@ -467,14 +477,30 @@ export default function Finance() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ngày</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Loại</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Danh mục</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Số tiền</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Đàn</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mô tả</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hóa đơn</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Hành động</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Ngày
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Loại
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Danh mục
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    Số tiền
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Đàn
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Mô tả
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Hóa đơn
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                    Hành động
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -498,7 +524,13 @@ export default function Finance() {
                       {transaction.category}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">
-                      <span className={transaction.type === "income" ? "text-green-600" : "text-red-600"}>
+                      <span
+                        className={
+                          transaction.type === "income"
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }
+                      >
                         {transaction.type === "income" ? "+" : "-"}
                         {formatCurrency(transaction.amount)}
                       </span>
@@ -521,7 +553,9 @@ export default function Finance() {
                           <Eye className="w-4 h-4 text-gray-600" />
                         </button>
                         <button
-                          onClick={() => handleDeleteTransaction(transaction._id)}
+                          onClick={() =>
+                            handleDeleteTransaction(transaction._id)
+                          }
                           className="p-2 hover:bg-red-50 rounded"
                           title="Xóa"
                         >
@@ -544,14 +578,16 @@ export default function Finance() {
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
                 className="px-4 py-2 border rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
                 Trước
               </button>
               <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 border rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >

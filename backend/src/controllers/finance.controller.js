@@ -15,7 +15,7 @@ export const getFinancialOverview = async (req, res, next) => {
     res.status(200).json({
       statusCode: 200,
       message: "Lấy tổng quan tài chính thành công",
-      data: overview
+      data: overview,
     });
   } catch (error) {
     next(error);
@@ -37,7 +37,7 @@ export const getExpenseBreakdown = async (req, res, next) => {
     res.status(200).json({
       statusCode: 200,
       message: "Lấy cơ cấu chi phí thành công",
-      data: breakdown
+      data: breakdown,
     });
   } catch (error) {
     next(error);
@@ -59,7 +59,7 @@ export const getFinancialTrend = async (req, res, next) => {
     res.status(200).json({
       statusCode: 200,
       message: "Lấy xu hướng tài chính thành công",
-      data: trend
+      data: trend,
     });
   } catch (error) {
     next(error);
@@ -80,7 +80,7 @@ export const getRecentTransactions = async (req, res, next) => {
     res.status(200).json({
       statusCode: 200,
       message: "Lấy giao dịch gần đây thành công",
-      data: transactions
+      data: transactions,
     });
   } catch (error) {
     next(error);
@@ -93,12 +93,13 @@ export const getRecentTransactions = async (req, res, next) => {
  */
 export const createTransaction = async (req, res, next) => {
   try {
-    const newTransaction = await financeService.createTransaction(req.body);
+    const { invoiceNumber, ...payload } = req.body;
+    const newTransaction = await financeService.createTransaction(payload);
 
     res.status(201).json({
       statusCode: 201,
       message: "Tạo giao dịch thành công",
-      data: newTransaction
+      data: newTransaction,
     });
   } catch (error) {
     next(error);
@@ -117,7 +118,7 @@ export const getTransactionById = async (req, res, next) => {
     res.status(200).json({
       statusCode: 200,
       message: "Lấy chi tiết giao dịch thành công",
-      data: transaction
+      data: transaction,
     });
   } catch (error) {
     next(error);
@@ -136,7 +137,7 @@ export const deleteTransaction = async (req, res, next) => {
     res.status(200).json({
       statusCode: 200,
       message: "Xóa giao dịch thành công",
-      data: result
+      data: result,
     });
   } catch (error) {
     next(error);
@@ -156,16 +157,15 @@ export const searchTransactions = async (req, res, next) => {
       category: category || "all",
       search: search || "",
       page: page ? parseInt(page) : 1,
-      limit: limit ? parseInt(limit) : 20
+      limit: limit ? parseInt(limit) : 20,
     });
 
     res.status(200).json({
       statusCode: 200,
       message: "Tìm kiếm giao dịch thành công",
-      data: result
+      data: result,
     });
   } catch (error) {
     next(error);
   }
 };
-

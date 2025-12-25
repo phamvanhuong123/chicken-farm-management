@@ -19,24 +19,24 @@ const getFinancialOverview = async (month, year) => {
     const pipeline = [
       {
         $match: {
-          date: { $gte: startDate, $lte: endDate }
-        }
+          date: { $gte: startDate, $lte: endDate },
+        },
       },
       {
         $group: {
           _id: null,
           totalIncome: {
             $sum: {
-              $cond: [{ $eq: ["$type", "income"] }, "$amount", 0]
-            }
+              $cond: [{ $eq: ["$type", "income"] }, "$amount", 0],
+            },
           },
           totalExpense: {
             $sum: {
-              $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0]
-            }
-          }
-        }
-      }
+              $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0],
+            },
+          },
+        },
+      },
     ];
 
     const result = await financialTransactionModel.aggregate(pipeline);
@@ -46,21 +46,20 @@ const getFinancialOverview = async (month, year) => {
         totalIncome: 0,
         totalExpense: 0,
         profit: 0,
-        profitMargin: 0
+        profitMargin: 0,
       };
     }
 
     const { totalIncome, totalExpense } = result[0];
     const profit = totalIncome - totalExpense;
-    const profitMargin = totalIncome > 0 
-      ? ((profit / totalIncome) * 100).toFixed(2) 
-      : 0;
+    const profitMargin =
+      totalIncome > 0 ? ((profit / totalIncome) * 100).toFixed(2) : 0;
 
     return {
       totalIncome,
       totalExpense,
       profit,
-      profitMargin: parseFloat(profitMargin)
+      profitMargin: parseFloat(profitMargin),
     };
   } catch (error) {
     throw new Error("Không thể tính toán KPI tài chính: " + error.message);
@@ -69,8 +68,8 @@ const getFinancialOverview = async (month, year) => {
 
 /**
  * Lấy cơ cấu chi phí (theo danh mục)
- * @param {number} month 
- * @param {number} year 
+ * @param {number} month
+ * @param {number} year
  * @returns {Array} - [{ category, amount, percentage }]
  */
 const getExpenseBreakdown = async (month, year) => {
@@ -86,18 +85,18 @@ const getExpenseBreakdown = async (month, year) => {
       {
         $match: {
           type: "expense",
-          date: { $gte: startDate, $lte: endDate }
-        }
+          date: { $gte: startDate, $lte: endDate },
+        },
       },
       {
         $group: {
           _id: "$category",
-          amount: { $sum: "$amount" }
-        }
+          amount: { $sum: "$amount" },
+        },
       },
       {
-        $sort: { amount: -1 }
-      }
+        $sort: { amount: -1 },
+      },
     ];
 
     const result = await financialTransactionModel.aggregate(pipeline);
@@ -110,12 +109,13 @@ const getExpenseBreakdown = async (month, year) => {
     const totalExpense = result.reduce((sum, item) => sum + item.amount, 0);
 
     // Tính % cho từng danh mục
-    const breakdown = result.map(item => ({
+    const breakdown = result.map((item) => ({
       category: item._id,
       amount: item.amount,
-      percentage: totalExpense > 0 
-        ? parseFloat(((item.amount / totalExpense) * 100).toFixed(2))
-        : 0
+      percentage:
+        totalExpense > 0
+          ? parseFloat(((item.amount / totalExpense) * 100).toFixed(2))
+          : 0,
     }));
 
     return breakdown;
@@ -127,7 +127,7 @@ const getExpenseBreakdown = async (month, year) => {
 /**
  * Lấy xu hướng tài chính (Thu vs Chi theo tháng)
  * @param {number} months - Số tháng lùi lại (mặc định 6)
- * @param {number} year 
+ * @param {number} year
  * @returns {Array} - [{ month, monthLabel, income, expense }]
  */
 const getFinancialTrend = async (months = 6, year) => {
@@ -145,27 +145,27 @@ const getFinancialTrend = async (months = 6, year) => {
     const pipeline = [
       {
         $match: {
-          date: { $gte: startDate, $lte: endDate }
-        }
+          date: { $gte: startDate, $lte: endDate },
+        },
       },
       {
         $group: {
           _id: { $month: "$date" },
           income: {
             $sum: {
-              $cond: [{ $eq: ["$type", "income"] }, "$amount", 0]
-            }
+              $cond: [{ $eq: ["$type", "income"] }, "$amount", 0],
+            },
           },
           expense: {
             $sum: {
-              $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0]
-            }
-          }
-        }
+              $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0],
+            },
+          },
+        },
       },
       {
-        $sort: { _id: 1 }
-      }
+        $sort: { _id: 1 },
+      },
     ];
 
     const result = await financialTransactionModel.aggregate(pipeline);
@@ -173,12 +173,12 @@ const getFinancialTrend = async (months = 6, year) => {
     // Tạo mảng đầy đủ các tháng (kể cả tháng không có dữ liệu)
     const trend = [];
     for (let m = startMonth; m <= currentMonth; m++) {
-      const monthData = result.find(r => r._id === m);
+      const monthData = result.find((r) => r._id === m);
       trend.push({
         month: m,
         monthLabel: `T${m}`,
         income: monthData?.income || 0,
-        expense: monthData?.expense || 0
+        expense: monthData?.expense || 0,
       });
     }
 
@@ -201,7 +201,7 @@ const getRecentTransactions = async (limit = 10) => {
         sort: "date",
         order: "desc",
         limit: parseInt(limit),
-        skip: 0
+        skip: 0,
       }
     );
 
@@ -214,15 +214,26 @@ const getRecentTransactions = async (limit = 10) => {
 /**
  * Tạo giao dịch mới
  */
+// finance.service.js
 const createTransaction = async (data) => {
   try {
-    const newTransaction = await financialTransactionModel.create(data);
+    const lastTransaction = await financialTransactionModel.findLatest();
+
+    let nextInvoiceCode = "HD_001";
+
+    if (lastTransaction?.invoiceCode) {
+      const num = parseInt(lastTransaction.invoiceCode.replace("HD_", ""), 10);
+      nextInvoiceCode = `HD_${String(num + 1).padStart(3, "0")}`;
+    }
+
+    const newTransaction = await financialTransactionModel.create({
+      ...data,
+      invoiceCode: nextInvoiceCode,
+      createdAt: new Date(),
+    });
+
     return newTransaction;
   } catch (error) {
-    if (!error.statusCode) {
-      error.statusCode = 500;
-      error.message = "Không thể tạo giao dịch: " + error.message;
-    }
     throw error;
   }
 };
@@ -273,7 +284,7 @@ const searchTransactions = async (filters = {}) => {
       category = "all",
       search = "",
       page = 1,
-      limit = 20
+      limit = 20,
     } = filters;
 
     // Xây dựng query filters
@@ -292,10 +303,7 @@ const searchTransactions = async (filters = {}) => {
     // Search theo mô tả hoặc hóa đơn
     if (search && search.trim() !== "") {
       const searchRegex = { $regex: search.trim(), $options: "i" };
-      query.$or = [
-        { description: searchRegex },
-        { invoiceCode: searchRegex }
-      ];
+      query.$or = [{ description: searchRegex }, { invoiceCode: searchRegex }];
     }
 
     // Tính skip cho pagination
@@ -306,7 +314,7 @@ const searchTransactions = async (filters = {}) => {
       sort: "date",
       order: "desc",
       limit: parseInt(limit),
-      skip: skip
+      skip: skip,
     });
 
     // Đếm tổng số records
@@ -320,7 +328,7 @@ const searchTransactions = async (filters = {}) => {
       total,
       page: parseInt(page),
       limit: parseInt(limit),
-      totalPages
+      totalPages,
     };
   } catch (error) {
     throw new Error("Không thể tìm kiếm giao dịch: " + error.message);
@@ -335,5 +343,5 @@ export const financeService = {
   createTransaction,
   deleteTransaction,
   getTransactionById,
-  searchTransactions
+  searchTransactions,
 };

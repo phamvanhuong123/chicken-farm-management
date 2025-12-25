@@ -29,13 +29,13 @@ export const financeApi = {
   // Lấy giao dịch gần đây
   getRecentTransactions: (limit = 10) => {
     return axios.get(`${FINANCE_API}/recent-transactions`, {
-      params: { limit }
+      params: { limit },
     });
   },
 
   // Tạo giao dịch mới
   createTransaction: (data) => {
-      return axios.post(`${FINANCE_API}/transactions`, data);
+    return axios.post(`${FINANCE_API}/transactions`, data);
   },
 
   // Xóa giao dịch
@@ -49,22 +49,22 @@ export const financeApi = {
   },
 
   // Lấy danh sách giao dịch (PHÂN TRANG)
-getTransactions: ({ page = 1, limit = 10 }) => {
-  return axios.get(`${FINANCE_API}/transactions`, {
-    params: { page, limit }
-  });
-},
+  getTransactions: ({ page = 1, limit = 10 }) => {
+    return axios.get(`${FINANCE_API}/transactions`, {
+      params: { page, limit },
+    });
+  },
 
- // Tìm kiếm & lọc giao dịch
+  // Tìm kiếm & lọc giao dịch
   searchTransactions: (filters = {}) => {
     const params = {};
     if (filters.type && filters.type !== "all") params.type = filters.type;
-    if (filters.category && filters.category !== "all") params.category = filters.category;
+    if (filters.category && filters.category !== "all")
+      params.category = filters.category;
     if (filters.search) params.search = filters.search;
     if (filters.page) params.page = filters.page;
     if (filters.limit) params.limit = filters.limit;
-    
-    return axios.get(`${FINANCE_API}/transactions/search`, { params });
-  }
-};
 
+    return axios.get(`${FINANCE_API}/transactions/search`, { params });
+  },
+};
