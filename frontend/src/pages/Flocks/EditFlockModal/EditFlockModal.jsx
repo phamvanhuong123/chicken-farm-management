@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
-import axios from "axios";
+import axios from "~/apis/index";
 import toast from "react-hot-toast";
 import {
   AlertDialog,
@@ -19,7 +19,6 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
@@ -34,22 +33,25 @@ const SUPPLIERS = [
 const BREEDS = [
   { value: "ga-ta", label: "Gà ta" },
   { value: "ga-cong-nghiep", label: "Gà công nghiệp" },
-  { value: "ga-ri", label: "Gà Ri" },
-  { value: "ga-tam-hoang", label: "Gà Tam Hoàng" },
-  { value: "ga-ai-cap", label: "Gà Ai Cập" },
+  { value: "ga-ri", label: "Gà thả vườn" },
 ];
 
-const AREAS = [
-  { value: "khu-a", label: "Khu A" },
-  { value: "khu-b", label: "Khu B" },
-  { value: "khu-c", label: "Khu C" },
-  { value: "khu-d", label: "Khu D" },
-];
+// ================= FIX STATUS MAP =================
+const STATUS_REVERSE_MAP = {
+  Raising: "active",
+  Sold: "selling",
+};
+
+const STATUS_MAP = {
+  active: "Raising",
+  selling: "Sold",
+};
 
 function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [successMessage, setSuccessMessage] = useState(""); // ✅ THÊM STATE
+  const [successMessage, setSuccessMessage] = useState("");
+  const [areas, setAreas] = useState([]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -62,6 +64,23 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
     status: "active",
     note: "",
   });
+
+  // State khu nuôi
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const fetchAreas = async () => {
+      try {
+        const res = await axios.get("/areas");
+        setAreas(res.data.data);
+      } catch (error) {
+        console.error("Lỗi lấy khu nuôi:", error);
+        toast.error("Không thể tải danh sách khu nuôi");
+      }
+    };
+
+    fetchAreas();
+  }, [isOpen]);
 
   // Populate form khi flockData thay đổi
   useEffect(() => {
@@ -76,13 +95,13 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
         speciesId: flockData.speciesId || "",
         initialCount: flockData.initialCount?.toString() || "",
         avgWeight: flockData.avgWeight?.toString() || "",
-        areaId: flockData.areaId || "",
-        status: flockData.status || "active",
+        areaId: flockData.areaId?._id || "",
+        status: STATUS_REVERSE_MAP[flockData.status] || "active",
         note: flockData.note || "",
       });
 
       setErrors({});
-      setSuccessMessage(""); // reset
+      setSuccessMessage("");
     }
   }, [flockData, isOpen]);
 
@@ -146,23 +165,23 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
         initialCount: Number(formData.initialCount),
         avgWeight: Number(formData.avgWeight),
         areaId: formData.areaId,
-        status: formData.status,
+        status: STATUS_MAP[formData.status],
         note: formData.note || undefined,
       };
 
       const response = await axios.put(
-        `http://localhost:8071/v1/flocks/${flockData._id}`,
+        `/flocks/${flockData._id}`,
         updateData
       );
 
       toast.success("Cập nhật thông tin đàn thành công.");
-
-      // ⭐ HIỂN THỊ TRONG MODAL
       setSuccessMessage("Cập nhật thông tin đàn thành công!");
 
-      // ⏳ TỰ ĐÓNG SAU 1.5 GIÂY
       setTimeout(() => {
-        onUpdateSuccess && onUpdateSuccess(response.data.data);
+        onUpdateSuccess({
+          ...flockData,
+          ...updateData
+        });
         onClose();
       }, 1500);
 
@@ -170,7 +189,7 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
       console.error("Lỗi cập nhật đàn:", error);
       toast.error(
         error.response?.data?.message ||
-          "Không thể cập nhật đàn, vui lòng thử lại."
+        "Không thể cập nhật đàn, vui lòng thử lại."
       );
     } finally {
       setLoading(false);
@@ -187,23 +206,30 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
   if (!isOpen) return null;
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={handleCancel}>
-      <AlertDialogContent className="max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center justify-between">
-            <span>Chỉnh sửa thông tin đàn</span>
+    <AlertDialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) handleCancel();
+      }}
+    >
+      <AlertDialogContent className="max-w-[600px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
+        <AlertDialogHeader className="p-6 pb-4 border-b bg-white">
+          <div className="flex items-center justify-between">
+            <AlertDialogTitle>Chỉnh sửa thông tin đàn</AlertDialogTitle>
             <button
               onClick={handleCancel}
               className="p-1 hover:bg-gray-100 rounded-full transition"
             >
               <X size={20} className="text-gray-500" />
             </button>
-          </AlertDialogTitle>
+          </div>
+        </AlertDialogHeader>
 
+        {/* Phần nội dung chính - SCROLLABLE */}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           <AlertDialogDescription asChild>
-            <div className="mt-4">
+            <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-
                 {/* Ngày nhập */}
                 <div className="col-span-1 space-y-2">
                   <Label>Ngày nhập <span className="text-red-500">*</span></Label>
@@ -229,10 +255,12 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
                     <SelectTrigger className={errors.supplierId ? "border-red-500" : ""}>
                       <SelectValue placeholder="Chọn nhà cung cấp" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-[200px]">
                       <SelectGroup>
                         {SUPPLIERS.map((s) => (
-                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                          <SelectItem key={s.value} value={s.value}>
+                            {s.label}
+                          </SelectItem>
                         ))}
                       </SelectGroup>
                     </SelectContent>
@@ -252,10 +280,12 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
                     <SelectTrigger className={errors.speciesId ? "border-red-500" : ""}>
                       <SelectValue placeholder="Chọn giống gà" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-[200px]">
                       <SelectGroup>
                         {BREEDS.map((b) => (
-                          <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                          <SelectItem key={b.value} value={b.value}>
+                            {b.label}
+                          </SelectItem>
                         ))}
                       </SelectGroup>
                     </SelectContent>
@@ -296,20 +326,22 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
                   )}
                 </div>
 
-                {/* Khu nuôi */}
+                {/* Khu nuôi - QUAN TRỌNG: Dropdown có scroll */}
                 <div className="col-span-1 space-y-2">
                   <Label>Khu nuôi <span className="text-red-500">*</span></Label>
                   <Select
                     value={formData.areaId}
-                    onValueChange={(value) => handleChange("areaId", value)}
+                    onValueChange={(v) => handleChange("areaId", v)}
                   >
                     <SelectTrigger className={errors.areaId ? "border-red-500" : ""}>
                       <SelectValue placeholder="Chọn khu nuôi" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-[200px] overflow-y-auto">
                       <SelectGroup>
-                        {AREAS.map((a) => (
-                          <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
+                        {areas.map((a) => (
+                          <SelectItem key={a._id} value={a._id}>
+                            {a.name}
+                          </SelectItem>
                         ))}
                       </SelectGroup>
                     </SelectContent>
@@ -317,6 +349,25 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
                   {errors.areaId && (
                     <p className="text-red-500 text-sm">{errors.areaId}</p>
                   )}
+                </div>
+
+                {/* Trạng thái */}
+                <div className="col-span-1 space-y-2">
+                  <Label>Trạng thái <span className="text-red-500">*</span></Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(v) => handleChange("status", v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[200px]">
+                      <SelectGroup>
+                        <SelectItem value="active">Đang nuôi</SelectItem>
+                        <SelectItem value="selling">Đang bán</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Ghi chú */}
@@ -329,20 +380,20 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
                     placeholder="Nhập ghi chú (tùy chọn)"
                   />
                 </div>
-
               </div>
+
+              {/* Thông báo thành công */}
+              {successMessage && (
+                <div className="mt-4 w-full p-3 text-green-700 bg-green-100 border border-green-300 rounded-md text-center">
+                  {successMessage}
+                </div>
+              )}
             </div>
           </AlertDialogDescription>
-        </AlertDialogHeader>
+        </div>
 
-        {/* ⭐ HIỂN THỊ THÔNG BÁO TRONG MODAL */}
-        {successMessage && (
-          <div className="w-full p-3 mb-3 text-green-700 bg-green-100 border border-green-300 rounded-md text-center">
-            {successMessage}
-          </div>
-        )}
-
-        <AlertDialogFooter className="mt-6">
+        {/* Footer */}
+        <AlertDialogFooter className="p-6 pt-4 border-t bg-white">
           <Button
             variant="outline"
             onClick={handleCancel}
@@ -359,7 +410,6 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
             {loading ? "Đang lưu..." : "Lưu thay đổi"}
           </Button>
         </AlertDialogFooter>
-
       </AlertDialogContent>
     </AlertDialog>
   );

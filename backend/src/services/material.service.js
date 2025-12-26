@@ -1,11 +1,7 @@
-/**
- * TEAM-102: Material Service (lọc + tìm kiếm tiếng Việt + import Excel)
- */
 import ExcelJS from "exceljs";
 import fs from "fs";
 import { materialModel } from "~/models/material.model.js";
 
-// 🔠 Chuẩn hóa tiếng Việt
 const normalizeVietnamese = (str = "") => {
   return str
     .normalize("NFD")
@@ -16,9 +12,6 @@ const normalizeVietnamese = (str = "") => {
     .trim();
 };
 
-/**
- * 📋 Lấy danh sách vật tư (có tìm kiếm tiếng Việt)
- */
 const getAllMaterials = async (query) => {
   const {
     page = 1,
@@ -57,9 +50,6 @@ const getAllMaterials = async (query) => {
   return { items, totalItems, totalPages, currentPage: Number(page) };
 };
 
-/**
- * 📥 Nhập vật tư từ file Excel (.xlsx)
- */
 const importFromExcel = async (filePath) => {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.readFile(filePath);
@@ -121,18 +111,13 @@ const importFromExcel = async (filePath) => {
   fs.unlinkSync(filePath);
   return { successCount, totalRows: sheet.rowCount - 1, errors };
 };
-/**
- * TEAM-104: 🔍 Lấy chi tiết 1 vật tư theo ID
- */
+
 const getMaterialById = async (id) => {
   const material = await materialModel.findById(id);
   if (!material) return null;
   return material;
 };
 
-/**
- * ➕ Thêm vật tư mới
- */
 const createMaterial = async (data) => {
   const valid = await materialModel.validateBeforeCreateMaterial(data);
   const result = await materialModel.create(valid);
@@ -172,11 +157,81 @@ const deleteMaterial = async (id) => {
   return { deleted: true };
 };
 
+const getFeedInfoForDashboard = async () => {
+  try {
+    // Lấy vật tư loại thức ăn
+    const filters = {
+      $or: [
+        { type: { $regex: "feed", $options: "i" } },
+        { type: { $regex: "thức ăn", $options: "i" } },
+      ],
+    };
+
+    const result = await getAllMaterials({ ...filters, page: 1, limit: 100 });
+    const materials = result.items || [];
+
+    if (!materials || materials.length === 0) {
+      return {
+        source: "fallback",
+        value: 0,
+        unit: "kg",
+        note: "Không có dữ liệu thức ăn trong kho",
+      };
+    }
+
+    const totalQuantity = materials.reduce((sum, material) => {
+      return sum + (material.quantity || 0);
+    }, 0);
+
+    const unit = materials[0]?.unit || "kg";
+
+    let status = "normal";
+    let label = "Bình thường";
+
+    // Dùng ngưỡng từ dashboard service
+    if (totalQuantity <= 500) {
+      status = "low";
+      label = "Thiếu";
+    } else if (totalQuantity >= 1200) {
+      status = "high";
+      label = "Dư thừa";
+    }
+
+    return {
+      source: "material_service",
+      value: totalQuantity,
+      unit: unit,
+      status: status,
+      label: label,
+      threshold: {
+        LOW: 500,
+        NORMAL: 800,
+        HIGH: 1200,
+      },
+      change: 0,
+      materialCount: materials.length,
+      items: materials.map((m) => ({
+        name: m.name,
+        quantity: m.quantity,
+        unit: m.unit,
+        expiryDate: m.expiryDate,
+        storageLocation: m.storageLocation,
+      })),
+    };
+  } catch (error) {
+    console.error("Material Service - getFeedInfoForDashboard error:", error);
+    return { source: "fallback" };
+  }
+};
+
 export const materialService = {
   getAllMaterials,
   importFromExcel,
   getMaterialById,
   createMaterial,
   updateMaterial,
+
   deleteMaterial,
+
+  getFeedInfoForDashboard,
 };

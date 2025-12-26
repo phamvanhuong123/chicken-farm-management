@@ -120,3 +120,11 @@ export const deleteEmployee = async (req, res, next) => {
   }
   catch(erorr) {next(erorr)}
 }
+
+export const verifyTokenController =(req,res) => {
+
+  res.status(StatusCodes.OK).json({
+    statusCode : 200,
+    message : "Xác thực token thành công"
+  })
+}

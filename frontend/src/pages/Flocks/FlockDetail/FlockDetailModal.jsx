@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import axios from "~/apis";
 import { formatDate } from "~/utils/formatter";
 
 export default function FlockDetailModal({ flockId, onClose }) {
@@ -12,7 +13,7 @@ export default function FlockDetailModal({ flockId, onClose }) {
       try {
         setLoading(true);
 
-        const res = await fetch(`http://localhost:8071/v1/flocks/${flockId}`);
+        const res = await axios(`/flocks/${flockId}`);
         const json = await res.json();
 
         if (!json?.data) throw new Error();
@@ -75,9 +76,9 @@ export default function FlockDetailModal({ flockId, onClose }) {
             </div>
 
             {/* Nhật ký */}
-            <h3 className="text-xl font-semibold mb-2">Nhật ký liên quan</h3>
+            {/* <h3 className="text-xl font-semibold mb-2">Nhật ký liên quan</h3> */}
 
-            {logs.length === 0 ? (
+            {/* {logs.length === 0 ? (
               <p className="text-gray-500 italic">Chưa có nhật ký liên quan.</p>
             ) : (
               <table className="w-full border border-gray-200 mt-2">
@@ -104,7 +105,7 @@ export default function FlockDetailModal({ flockId, onClose }) {
                   ))}
                 </tbody>
               </table>
-            )}
+            )} */}
 
             {/* Nút đóng */}
             <div className="mt-6 text-right">
