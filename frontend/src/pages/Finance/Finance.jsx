@@ -27,6 +27,8 @@ export default function Finance() {
 
   // Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
 
   // Filter tháng
   const currentDate = new Date();
@@ -160,6 +162,12 @@ export default function Finance() {
     } catch (error) {
       toast.error("Không thể xóa giao dịch");
     }
+  };
+
+  // Xem chi tiết giao dịch
+  const handleViewTransaction = (transaction) => {
+    setSelectedTransaction(transaction);
+    setShowViewModal(true);
   };
 
   // Config biểu đồ xu hướng (Line Chart)
@@ -547,6 +555,7 @@ export default function Finance() {
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
+                          onClick={() => handleViewTransaction(transaction)}
                           className="p-2 hover:bg-gray-100 rounded"
                           title="Xem chi tiết"
                         >
@@ -609,6 +618,119 @@ export default function Finance() {
             setShowCreateModal(false);
           }}
         />
+      )}
+      {/* Modal xem chi tiết giao dịch */}
+      {showViewModal && selectedTransaction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl w-[600px] max-h-[90vh] overflow-y-auto p-6 shadow-lg">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-800">
+                Chi tiết giao dịch
+              </h2>
+              <button
+                onClick={() => {
+                  setShowViewModal(false);
+                  setSelectedTransaction(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Transaction Details */}
+            <div className="space-y-4">
+              {/* Thông tin cơ bản */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Ngày giao dịch</p>
+                  <p className="font-medium">
+                    {formatDate(selectedTransaction.date)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Loại giao dịch</p>
+                  <p className="font-medium">
+                    {selectedTransaction.type === "income" ? (
+                      <span className="text-green-600">Thu</span>
+                    ) : (
+                      <span className="text-red-600">Chi</span>
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Danh mục</p>
+                  <p className="font-medium">{selectedTransaction.category}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Số tiền</p>
+                  <p className="font-medium text-lg">
+                    <span
+                      className={
+                        selectedTransaction.type === "income"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }
+                    >
+                      {selectedTransaction.type === "income" ? "+" : "-"}
+                      {formatCurrency(selectedTransaction.amount)}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Thông tin đàn liên quan */}
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Đàn liên quan</p>
+                <p className="font-medium">
+                  {selectedTransaction.flockCode || "Không có"}
+                </p>
+              </div>
+
+              {/* Số hóa đơn */}
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Số hóa đơn</p>
+                <p className="font-medium">
+                  {selectedTransaction.invoiceCode || "Không có"}
+                </p>
+              </div>
+
+              {/* Mô tả chi tiết */}
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Mô tả chi tiết</p>
+                <div className="p-4 bg-gray-50 rounded-lg border">
+                  <p className="whitespace-pre-wrap">
+                    {selectedTransaction.description || "Không có mô tả"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Thông tin thêm */}
+              <div className="text-xs text-gray-500 pt-4 border-t">
+                <p>
+                  ID: {selectedTransaction._id} • Tạo lúc:{" "}
+                  {new Date(selectedTransaction.createdAt).toLocaleString(
+                    "vi-VN"
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3 mt-8">
+              <button
+                onClick={() => {
+                  setShowViewModal(false);
+                  setSelectedTransaction(null);
+                }}
+                className="px-5 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
