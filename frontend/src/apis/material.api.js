@@ -2,13 +2,18 @@
 import axios from "~/apis/index";
 export const materialAPI = {
   // Lấy danh sách vật tư
-  getAll: (params = {}) => axios.get('/materials', { params }),
+  getAll: (params = {}) => axios.get("/materials", { params }),
 
-  // 🟡 Lấy chi tiết 1 vật tư theo ID (TEAM-104)
-  getById: (id) => axios.get(`/materials/${id}`), // 👈 thêm dòng này
+  // Lấy chi tiết 1 vật tư theo ID (TEAM-104)
+  getById: (id) => axios.get(`/materials/${id}`),
 
-  // ➕ Thêm vật tư mới
+  // Thêm vật tư mới
   create: (data) => axios.post("/materials", data),
+
+  //sửa vat tư
+  update: (id, data) => {
+    return axios.put(`/materials/${id}`, data);
+  },
 
   // Nhập Excel
   importExcel: (file) => {

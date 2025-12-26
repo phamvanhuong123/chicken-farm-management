@@ -127,15 +127,32 @@ const createMaterial = async (data) => {
     ...valid,
   };
 };
+//cap nhat vat tu
+const updateMaterial = async (id, data) => {
+  const validData = await materialModel.validateBeforeCreateMaterial(data);
+
+  const result = await materialModel.updateById(id, validData);
+
+  if (result.matchedCount === 0) {
+    const error = new Error("Không tìm thấy vật tư để cập nhật.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return {
+    _id: id,
+    ...validData,
+  };
+};
 
 const getFeedInfoForDashboard = async () => {
   try {
     // Lấy vật tư loại thức ăn
     const filters = {
       $or: [
-        { type: { $regex: 'feed', $options: 'i' } },
-        { type: { $regex: 'thức ăn', $options: 'i' } }
-      ]
+        { type: { $regex: "feed", $options: "i" } },
+        { type: { $regex: "thức ăn", $options: "i" } },
+      ],
     };
 
     const result = await getAllMaterials({ ...filters, page: 1, limit: 100 });
@@ -143,10 +160,10 @@ const getFeedInfoForDashboard = async () => {
 
     if (!materials || materials.length === 0) {
       return {
-        source: 'fallback',
+        source: "fallback",
         value: 0,
-        unit: 'kg',
-        note: 'Không có dữ liệu thức ăn trong kho'
+        unit: "kg",
+        note: "Không có dữ liệu thức ăn trong kho",
       };
     }
 
@@ -154,22 +171,22 @@ const getFeedInfoForDashboard = async () => {
       return sum + (material.quantity || 0);
     }, 0);
 
-    const unit = materials[0]?.unit || 'kg';
+    const unit = materials[0]?.unit || "kg";
 
-    let status = 'normal';
-    let label = 'Bình thường';
+    let status = "normal";
+    let label = "Bình thường";
 
     // Dùng ngưỡng từ dashboard service
     if (totalQuantity <= 500) {
-      status = 'low';
-      label = 'Thiếu';
+      status = "low";
+      label = "Thiếu";
     } else if (totalQuantity >= 1200) {
-      status = 'high';
-      label = 'Dư thừa';
+      status = "high";
+      label = "Dư thừa";
     }
 
     return {
-      source: 'material_service',
+      source: "material_service",
       value: totalQuantity,
       unit: unit,
       status: status,
@@ -177,21 +194,21 @@ const getFeedInfoForDashboard = async () => {
       threshold: {
         LOW: 500,
         NORMAL: 800,
-        HIGH: 1200
+        HIGH: 1200,
       },
       change: 0,
       materialCount: materials.length,
-      items: materials.map(m => ({
+      items: materials.map((m) => ({
         name: m.name,
         quantity: m.quantity,
         unit: m.unit,
         expiryDate: m.expiryDate,
-        storageLocation: m.storageLocation
-      }))
+        storageLocation: m.storageLocation,
+      })),
     };
   } catch (error) {
-    console.error('Material Service - getFeedInfoForDashboard error:', error);
-    return { source: 'fallback' };
+    console.error("Material Service - getFeedInfoForDashboard error:", error);
+    return { source: "fallback" };
   }
 };
 
@@ -200,5 +217,6 @@ export const materialService = {
   importFromExcel,
   getMaterialById,
   createMaterial,
+  updateMaterial,
   getFeedInfoForDashboard,
 };
