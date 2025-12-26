@@ -16,7 +16,7 @@ export const materialAPI = {
   },
   //Xóa vật tư
   remove: (id) => {
-    return axios.delete(`${API_BASE_URL}/${id}`);
+    return axios.delete(`/materials/${id}`);
   },
 
   // Nhập Excel
