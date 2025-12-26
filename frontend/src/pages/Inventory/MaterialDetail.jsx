@@ -53,86 +53,92 @@ export default function MaterialDetail({ materialId, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-lg max-w-3xl w-full p-6 space-y-4 overflow-y-auto max-h-[90vh]">
-        <h2 className="text-xl font-bold mb-3">Chi tiết vật tư</h2>
-
-        {/* 🧱 Thông tin vật tư */}
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <p>
-            <b>Tên vật tư:</b> {material.name}
-          </p>
-          <p>
-            <b>Loại vật tư:</b> {material.type}
-          </p>
-          <p>
-            <b>Đơn vị:</b> {material.unit}
-          </p>
-          <p>
-            <b>Số lượng tồn:</b> {material.quantity}
-          </p>
-          <p>
-            <b>Ngưỡng cảnh báo:</b> {material.threshold}
-          </p>
-          <p>
-            <b>Ngày nhập gần nhất:</b>{" "}
-            {material.lastImportDate
-              ? new Date(material.lastImportDate).toLocaleDateString("vi-VN")
-              : "-"}
-          </p>
-          <p>
-            <b>Hạn sử dụng:</b>{" "}
-            {material.expiryDate
-              ? new Date(material.expiryDate).toLocaleDateString("vi-VN")
-              : "-"}
-          </p>
-          <p>
-            <b>Giá (VNĐ):</b> {material.price?.toLocaleString() || 0}
-          </p>
-          <p>
-            <b>Vị trí lưu trữ:</b> {material.storageLocation || "-"}
-          </p>
-          <p>
-            <b>Nhà cung cấp:</b> {material.supplier || "-"}
-          </p>
-        </div>
-
-        {/* 🧾 Lịch sử nhập */}
-        <h3 className="text-lg font-semibold mt-4">Lịch sử nhập vật tư</h3>
-        {history.length === 0 ? (
-          <p className="italic text-gray-500">Chưa có lịch sử nhập.</p>
-        ) : (
-          <table className="w-full text-sm border mt-2">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-2 text-left">Ngày nhập</th>
-                <th className="p-2 text-right">Số lượng</th>
-                <th className="p-2 text-left">Nhà cung cấp</th>
-                <th className="p-2 text-right">Giá nhập (VNĐ)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.map((h, i) => (
-                <tr key={i} className="border-t">
-                  <td className="p-2">
-                    {new Date(h.date).toLocaleDateString("vi-VN")}
-                  </td>
-                  <td className="p-2 text-right">{h.quantity}</td>
-                  <td className="p-2">{h.supplier}</td>
-                  <td className="p-2 text-right">
-                    {h.price?.toLocaleString() || 0}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-        {/* 🔘 Nút đóng */}
-        <div className="flex justify-end mt-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden">
+        {/* HEADER */}
+        <div className="flex items-center justify-between px-8 py-5 border-b bg-gray-50">
+          <h2 className="text-xl font-bold text-gray-800">Chi tiết vật tư</h2>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+            className="text-gray-400 hover:text-gray-600 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* BODY */}
+        <div className="p-8 space-y-8 text-sm">
+          {/* INFO CARDS */}
+          <div className="grid grid-cols-2 gap-6">
+            <InfoCard label="Tên vật tư" value={material.name} />
+            <InfoCard label="Loại vật tư" value={material.type} />
+            <InfoCard label="Đơn vị" value={material.unit} />
+            <InfoCard label="Số lượng tồn" value={material.quantity} />
+            <InfoCard label="Ngưỡng cảnh báo" value={material.threshold} />
+            <InfoCard
+              label="Hạn sử dụng"
+              value={
+                material.expiryDate
+                  ? new Date(material.expiryDate).toLocaleDateString("vi-VN")
+                  : "-"
+              }
+            />
+            <InfoCard
+              label="Vị trí lưu trữ"
+              value={material.storageLocation || "-"}
+            />
+            <InfoCard label="Nhà cung cấp" value={material.supplier || "-"} />
+          </div>
+
+          {/* HISTORY */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">
+              Lịch sử nhập kho
+            </h3>
+
+            {history.length === 0 ? (
+              <div className="text-gray-500 italic">Chưa có lịch sử nhập.</div>
+            ) : (
+              <div className="overflow-hidden rounded-xl border">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-100 text-gray-700">
+                    <tr>
+                      <th className="px-4 py-3 text-left">Ngày nhập</th>
+                      <th className="px-4 py-3 text-right">Số lượng</th>
+                      <th className="px-4 py-3 text-left">Nhà cung cấp</th>
+                      <th className="px-4 py-3 text-right">Giá nhập</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.map((h, i) => (
+                      <tr
+                        key={i}
+                        className="border-t hover:bg-gray-50 transition"
+                      >
+                        <td className="px-4 py-3">
+                          {new Date(h.date).toLocaleDateString("vi-VN")}
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium">
+                          {h.quantity}
+                        </td>
+                        <td className="px-4 py-3">{h.supplier || "-"}</td>
+                        <td className="px-4 py-3 text-right">
+                          {h.price?.toLocaleString() || 0}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* FOOTER */}
+        <div className="flex justify-end px-8 py-5 border-t bg-gray-50">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 font-medium"
           >
             Đóng
           </button>
@@ -140,4 +146,15 @@ export default function MaterialDetail({ materialId, onClose }) {
       </div>
     </div>
   );
+
+  function InfoCard({ label, value }) {
+    return (
+      <div className="rounded-xl border bg-white p-5">
+        <p className="text-xs uppercase tracking-wide text-gray-400 mb-1">
+          {label}
+        </p>
+        <p className="text-base font-semibold text-gray-800">{value}</p>
+      </div>
+    );
+  }
 }
