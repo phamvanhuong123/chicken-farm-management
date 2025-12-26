@@ -4,18 +4,16 @@ export const materialAPI = {
   // Lấy danh sách vật tư
   getAll: (params = {}) => axios.get("/materials", { params }),
 
-  // 🟡 Lấy chi tiết 1 vật tư theo ID (TEAM-104)
-  getById: (id) => axios.get(`/materials/${id}`), // 👈 thêm dòng này
+  // Lấy chi tiết 1 vật tư theo ID (TEAM-104)
+  getById: (id) => axios.get(`/materials/${id}`),
 
   // Thêm vật tư mới
+  create: (data) => axios.post("/materials", data),
 
-  create: (data) => axios.post(API_BASE_URL, data),
   //sửa vat tư
   update: (id, data) => {
-    return axios.put(`${API_BASE_URL}/${id}`, data);
+    return axios.put(`/materials/${id}`, data);
   },
-
-  //create: (data) => axios.post("/materials", data),
 
   // Nhập Excel
   importExcel: (file) => {

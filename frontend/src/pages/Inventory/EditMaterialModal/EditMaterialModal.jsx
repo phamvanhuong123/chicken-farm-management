@@ -14,15 +14,11 @@ export default function EditMaterialModal({ materialId, onClose, onSuccess }) {
     storageLocation: "",
   });
 
-  // ✅ TÁCH RÕ 2 LOADING
   const [loadingDetail, setLoadingDetail] = useState(false); // load dữ liệu cũ
   const [submitting, setSubmitting] = useState(false); // bấm Lưu
 
   const [errors, setErrors] = useState({});
 
-  // ===============================
-  // 🔹 LOAD DỮ LIỆU VẬT TƯ CŨ
-  // ===============================
   useEffect(() => {
     if (!materialId) return;
 
@@ -53,16 +49,10 @@ export default function EditMaterialModal({ materialId, onClose, onSuccess }) {
     fetchDetail();
   }, [materialId, onClose]);
 
-  // ===============================
-  // 🔹 HANDLE CHANGE
-  // ===============================
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // ===============================
-  // 🔹 VALIDATE
-  // ===============================
   const validate = () => {
     const newErrors = {};
 
@@ -79,9 +69,6 @@ export default function EditMaterialModal({ materialId, onClose, onSuccess }) {
     return Object.keys(newErrors).length === 0;
   };
 
-  // ===============================
-  // 🔹 SUBMIT UPDATE
-  // ===============================
   const handleSubmit = async () => {
     if (!validate()) return;
 
@@ -125,7 +112,7 @@ export default function EditMaterialModal({ materialId, onClose, onSuccess }) {
       <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6">
         {/* HEADER */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-800">✏️ Sửa vật tư</h2>
+          <h2 className="text-xl font-semibold text-gray-800"> Sửa vật tư</h2>
           <button
             type="button"
             onClick={onClose}
@@ -136,105 +123,136 @@ export default function EditMaterialModal({ materialId, onClose, onSuccess }) {
         </div>
 
         {/* FORM */}
-        <div className="grid grid-cols-2 gap-x-6 gap-y-5 text-sm">
-          {/* Tên */}
-          <div className="col-span-2">
-            <label className="label">Tên vật tư *</label>
+        <div className="grid grid-cols-2 gap-6 text-sm">
+          {/* Tên vật tư */}
+          <div className="col-span-2 flex flex-col gap-1">
+            <label className="text-gray-600 font-medium">
+              Tên vật tư <span className="text-red-500">*</span>
+            </label>
             <input
               name="name"
               value={form.name}
               onChange={handleChange}
-              className="input"
+              className="h-10 px-3 rounded-lg border border-gray-300
+        focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Ví dụ: Vaccine Newcastle"
             />
-            {errors.name && <p className="error">{errors.name}</p>}
+            {errors.name && (
+              <p className="text-xs text-red-500">{errors.name}</p>
+            )}
           </div>
 
           {/* Loại */}
-          <div>
-            <label className="label">Loại *</label>
+          <div className="flex flex-col gap-1">
+            <label className="text-gray-600 font-medium">
+              Loại <span className="text-red-500">*</span>
+            </label>
             <input
               name="type"
               value={form.type}
               onChange={handleChange}
-              className="input"
-              placeholder="Ví dụ: Vaccine"
+              className="h-10 px-3 rounded-lg border border-gray-300
+        focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Thức ăn / Vaccine"
             />
-            {errors.type && <p className="error">{errors.type}</p>}
+            {errors.type && (
+              <p className="text-xs text-red-500">{errors.type}</p>
+            )}
           </div>
 
           {/* Đơn vị */}
-          <div>
-            <label className="label">Đơn vị *</label>
+          <div className="flex flex-col gap-1">
+            <label className="text-gray-600 font-medium">
+              Đơn vị <span className="text-red-500">*</span>
+            </label>
             <input
               name="unit"
               value={form.unit}
               onChange={handleChange}
-              className="input"
-              placeholder="Ví dụ: lọ, kg"
+              className="h-10 px-3 rounded-lg border border-gray-300
+        focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="kg / lọ / bao"
             />
-            {errors.unit && <p className="error">{errors.unit}</p>}
+            {errors.unit && (
+              <p className="text-xs text-red-500">{errors.unit}</p>
+            )}
           </div>
 
           {/* Số lượng */}
-          <div>
-            <label className="label">Số lượng *</label>
+          <div className="flex flex-col gap-1">
+            <label className="text-gray-600 font-medium">
+              Số lượng <span className="text-red-500">*</span>
+            </label>
             <input
               type="number"
               name="quantity"
               value={form.quantity}
               onChange={handleChange}
-              className="input"
+              className="h-10 px-3 rounded-lg border border-gray-300
+        focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {errors.quantity && <p className="error">{errors.quantity}</p>}
+            {errors.quantity && (
+              <p className="text-xs text-red-500">{errors.quantity}</p>
+            )}
           </div>
 
-          {/* Ngưỡng */}
-          <div>
-            <label className="label">Ngưỡng cảnh báo</label>
+          {/* Ngưỡng cảnh báo */}
+          <div className="flex flex-col gap-1">
+            <label className="text-gray-600 font-medium">Ngưỡng cảnh báo</label>
             <input
               type="number"
               name="threshold"
               value={form.threshold}
               onChange={handleChange}
-              className="input"
+              className="h-10 px-3 rounded-lg border border-gray-300
+        focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          {/* HSD */}
-          <div>
-            <label className="label">Hạn sử dụng *</label>
+          {/* Hạn sử dụng */}
+          <div className="flex flex-col gap-1">
+            <label className="text-gray-600 font-medium">
+              Hạn sử dụng <span className="text-red-500">*</span>
+            </label>
             <input
               type="date"
               name="expiryDate"
               value={form.expiryDate}
               onChange={handleChange}
-              className="input"
+              className="h-10 px-3 rounded-lg border border-gray-300
+        focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {errors.expiryDate && <p className="error">{errors.expiryDate}</p>}
+            {errors.expiryDate && (
+              <p className="text-xs text-red-500">{errors.expiryDate}</p>
+            )}
           </div>
 
           {/* Vị trí */}
-          <div>
-            <label className="label">Vị trí lưu trữ *</label>
+          <div className="flex flex-col gap-1">
+            <label className="text-gray-600 font-medium">
+              Vị trí lưu trữ <span className="text-red-500">*</span>
+            </label>
             <input
               name="storageLocation"
               value={form.storageLocation}
               onChange={handleChange}
-              className="input"
-              placeholder="Ví dụ: Kho lạnh 01"
+              className="h-10 px-3 rounded-lg border border-gray-300
+        focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Kho lạnh A1"
             />
             {errors.storageLocation && (
-              <p className="error">{errors.storageLocation}</p>
+              <p className="text-xs text-red-500">{errors.storageLocation}</p>
             )}
           </div>
         </div>
 
         {/* ACTIONS */}
-        <div className="flex justify-end gap-3 mt-8">
+        <div className="flex justify-end gap-3 mt-10 border-t pt-5">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg border hover:bg-gray-100"
+            className="px-4 py-2 rounded-lg border border-gray-300
+      hover:bg-gray-100"
           >
             Hủy
           </button>
@@ -244,7 +262,7 @@ export default function EditMaterialModal({ materialId, onClose, onSuccess }) {
             disabled={submitting}
             onClick={handleSubmit}
             className="px-5 py-2 rounded-lg bg-blue-600 text-white
-          hover:bg-blue-700 disabled:opacity-60"
+      hover:bg-blue-700 disabled:opacity-60"
           >
             {submitting ? "Đang lưu..." : "Lưu thay đổi"}
           </button>
