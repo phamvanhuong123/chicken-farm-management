@@ -45,7 +45,7 @@ export const updateLogSchema = Joi.object({
   }),
   areaId: Joi.string().required(),
   type: Joi.string().valid("FOOD", "MEDICINE", "WATER", "DEATH", "WEIGHT", "HEALTH").optional(),
-  quantity: Joi.number().min(0).optional(),
+  quantity: Joi.number().min(1).optional(),
   unit: Joi.string().allow("").optional(),
   note: Joi.string().max(500).allow("").optional(),
   updatedAt: Joi.date().default(() => new Date()),

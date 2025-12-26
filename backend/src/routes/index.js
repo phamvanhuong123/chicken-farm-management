@@ -10,6 +10,7 @@ import financeRoute from "./v1/finance.route.js";
 import { logRoute } from "./v1/log.route.js";
 import dashboardRoute from "./v1/dashboard.route.js";
 import dashboardChartRoutes from "./v1/dashboard.chart.routes.js";
+import { verifyToken } from "~/middlewares/authMiddleware.js";
 
 const router = express.Router();
 
@@ -18,21 +19,21 @@ router.get("/status", (req, res) => {
 });
 
 // nhóm route đàn gà (Chỉ định rõ prefix /flocks)
-router.use("/flocks", flockRoute);
+router.use("/flocks",verifyToken, flockRoute);
 // nhóm route kho, vật tư
-router.use("/materials", materialRoute);
+router.use("/materials",verifyToken, materialRoute);
 // nhóm route chuồng
-router.use("/areas", areaRoute);
+router.use("/areas",verifyToken, areaRoute);
 // nhập chuồng
-router.use("/imports", importRoute);
+router.use("/imports",verifyToken, importRoute);
 router.use("/auth", authRoutes);
 router.use("/transactions", transactionRoute);
-router.use("/log", logRoute);
-router.use("/tasks", taskRoute);
-router.use("/dashboard", dashboardRoute);
-router.use("/dashboard/charts", dashboardChartRoutes);
+router.use("/logs",verifyToken, logRoute);
+router.use("/tasks",verifyToken, taskRoute);
+router.use("/dashboard",verifyToken, dashboardRoute);
+router.use("/dashboard/charts",verifyToken, dashboardChartRoutes);
 
 // Route tài chính
-router.use("/finance", financeRoute);
+router.use("/finance",verifyToken, financeRoute);
 
 export const APIs_V1 = router;

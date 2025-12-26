@@ -1,20 +1,19 @@
-import axios from "axios";
+import axios from "~/apis/index";
 
-const FLOCK_API = "http://localhost:8071/v1/flocks";
 
 export const flockApi = {
   // Lấy danh sách đàn gà
-  getList: (params = {}) => axios.get(FLOCK_API, { params }),
+  getList: (params = {}) => axios.get("/flocks", { params }),
   
   // Lấy chi tiết đàn
-  getDetail: (id) => axios.get(`${FLOCK_API}/${id}`),
+  getDetail: (id) => axios.get(`/flocks/${id}`),
   
   // Tạo đàn mới
-  create: (data) => axios.post(FLOCK_API, data),
+  create: (data) => axios.post("/flocks", data),
   
   // Cập nhật đàn
-  update: (id, data) => axios.put(`${FLOCK_API}/${id}`, data),
+  update: (id, data) => axios.put(`/flocks/${id}`, data),
   
   // Xóa đàn
-  delete: (id) => axios.delete(`${FLOCK_API}/${id}`),
+  delete: (id) => axios.delete(`/flocks/${id}`),
 };

@@ -1,6 +1,6 @@
 // Flocks.js
 import React, { useState, useEffect, useMemo } from "react";
-import axios from "axios";
+import axios from "~/apis/index";
 import { Eye, Edit, Trash2 } from "lucide-react";
 import FlockDelete from "./FlockDelete/FlockDelete";
 import Statistical from "./Statistical/Statistical";
@@ -8,7 +8,7 @@ import FilterFlock from "./FilterFlock/FilterFlock";
 import FlockDetailModal from "./FlockDetail/FlockDetailModal";
 import EditFlockModal from "./EditFlockModal/EditFlockModal";
 import HeaderFlock from "./ButtonFlockAdd/HeaderFlock";
-import { set } from "date-fns";
+
 
 // Component FlockRow (Không thay đổi)
 const FlockRow = ({
@@ -88,7 +88,7 @@ function Flocks() {
   useEffect(() => {
     const fetchFlocks = async () => {
       try {
-        const res = await axios.get("http://localhost:8071/v1/flocks");
+        const res = await axios.get("/flocks");
         setFlocks(res.data.data || []);
       } catch (error) {
         console.error("Lỗi tải danh sách đàn:", error);

@@ -1,23 +1,22 @@
 // src/services/areaService.js
-import axios from "axios";
+import axios from "~/apis/index";
 
-const API_BASE_URL = "http://localhost:8071/v1/areas";
 
 // Lấy danh sách khu nuôi
 export const getAreaList = async (params) => {
-  const res = await axios.get(API_BASE_URL, { params });
+  const res = await axios.get("/areas", { params });
   return res.data; // backend trả { status, data, pagination }
 };
 
 // Lấy overview (KPI + biểu đồ)
 export const getAreaOverview = async () => {
-  const res = await axios.get(`${API_BASE_URL}/overview`);
+  const res = await axios.get(`/areas/overview`);
   return res.data; // backend trả { status, data }
 };
 
 // Xuất Excel
 export const exportAreasExcel = async (params = {}) => {
-  const res = await axios.get(`${API_BASE_URL}/export`, {
+  const res = await axios.get(`/areas/export`, {
     params,
     responseType: "blob",
   });
@@ -26,11 +25,11 @@ export const exportAreasExcel = async (params = {}) => {
 
 //  TẠO KHU NUÔI MỚI
 export const createArea = async (data) => {
-  const res = await axios.post(API_BASE_URL, data);
+  const res = await axios.post("/areas", data);
   return res.data; // backend trả { status, message, data }
 };
 // Xóa khu nuôi
 export const deleteArea = async (id) => {
-  const res = await axios.delete(`${API_BASE_URL}/${id}`);
+  const res = await axios.delete(`/areas/${id}`);
   return res.data; // backend trả status + message
 };

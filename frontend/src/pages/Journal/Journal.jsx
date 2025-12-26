@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
+import axios from '~/apis/index';
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
@@ -10,6 +10,7 @@ import { getUserState } from '~/slices/authSlice';
 // Import components
 import { JournalTable } from './JournalTable/JournalTable';
 import { JournalModal } from './JournalModal/JournalModal';
+import { toast } from 'react-toastify';
 
 // CẤU HÌNH API URL
 const LOG_API_URL = "http://localhost:8071/v1/logs";
@@ -36,7 +37,7 @@ const Journal = () => {
   useEffect(() => {
     const fetchAreas = async () => {
       try {
-        const response = await axios.get(AREA_API_URL);
+        const response = await axios.get(`/areas`);
         if (response.data && response.data.data) {
           setAreas(response.data.data);
         }
@@ -57,7 +58,7 @@ const Journal = () => {
             params.areaId = filterAreaId;
         }
 
-        const response = await axios.get(LOG_API_URL, { params });
+        const response = await axios.get('logs', { params });
         const backendData = response.data;
         
         if (backendData && backendData.data) {
@@ -117,7 +118,7 @@ const Journal = () => {
       if (editingEntry) {
         // Cập nhật
         const recordId = editingEntry._id || editingEntry.id;
-        const response = await axios.put(`${LOG_API_URL}/${recordId}`, payload);
+        const response = await axios.put(`/logs/${recordId}`, payload);
         const updatedFields = response.data.data;
         
         setEntries(prev => prev.map(item => 
@@ -128,7 +129,7 @@ const Journal = () => {
 
       } else {
         // Thêm mới
-        const response = await axios.post(LOG_API_URL, payload);
+        const response = await axios.post('/logs', payload);
         const newItem = response.data.data;
 
         if (filterAreaId === 'ALL' || filterAreaId === newItem.areaId) {
@@ -142,7 +143,7 @@ const Journal = () => {
     } catch (error) {
       console.error("Lỗi lưu:", error);
       const serverMessage = error.response?.data?.message || "Có lỗi xảy ra";
-      alert(`Lỗi: ${serverMessage}`);
+      toast.error(`Lỗi: ${serverMessage}`);
     } finally {
       setIsSaving(false);
     }
@@ -150,15 +151,16 @@ const Journal = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${LOG_API_URL}/${id}`);
+      await axios.delete(`/logs/${id}`);
       setEntries(prev => prev.filter(item => {
           const itemId = item._id || item.id;
           return itemId !== id;
       }));
+      toast.success("Xoá thành công")
     } catch (error) {
       console.error("Lỗi xóa:", error);
       const serverMessage = error.response?.data?.message || "Không thể xóa bản ghi này.";
-      alert(serverMessage);
+      toast.error(serverMessage);
     }
   };
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
-import axios from "axios";
+import axios from "~/apis/index";
 import toast from "react-hot-toast";
 import {
   AlertDialog,
@@ -71,7 +71,7 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
 
     const fetchAreas = async () => {
       try {
-        const res = await axios.get("http://localhost:8071/v1/areas");
+        const res = await axios.get("/areas");
         setAreas(res.data.data);
       } catch (error) {
         console.error("Lỗi lấy khu nuôi:", error);
@@ -170,7 +170,7 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
       };
 
       const response = await axios.put(
-        `http://localhost:8071/v1/flocks/${flockData._id}`,
+        `/flocks/${flockData._id}`,
         updateData
       );
 

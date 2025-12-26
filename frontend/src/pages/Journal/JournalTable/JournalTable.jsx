@@ -15,6 +15,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
+import { useSelector } from 'react-redux';
+import { getUserState } from '~/slices/authSlice';
 
 // Cấu hình hiển thị Loại nhật ký
 const DIARY_TYPES_CONFIG = {
@@ -27,6 +29,8 @@ const DIARY_TYPES_CONFIG = {
 };
 
 export const JournalTable = ({ data, onEdit, onDelete }) => {
+  const user = useSelector(state => getUserState(state))
+  console.log(user)
   // State lưu ID của item đang chờ xóa
   const [itemToDelete, setItemToDelete] = useState(null);
 
@@ -43,7 +47,7 @@ export const JournalTable = ({ data, onEdit, onDelete }) => {
       setItemToDelete(null);  // Đóng dialog
     }
   };
-
+  
   return (
     <>
       <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
@@ -103,14 +107,16 @@ export const JournalTable = ({ data, onEdit, onDelete }) => {
                         </Button>
                         
                         {/* Nút xóa kích hoạt Dialog */}
-                        <Button 
+                        {user.id === item.userId && <Button 
                             variant="ghost" 
                             size="icon" 
                             onClick={() => setItemToDelete(recordId)} 
                             className="h-8 w-8 text-red-600 hover:bg-red-50 cursor-pointer"
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                         
+                         <Trash2 className="h-4 w-4" />
+                        </Button>} 
+                        
                       </div>
                     </TableCell>
                   </TableRow>

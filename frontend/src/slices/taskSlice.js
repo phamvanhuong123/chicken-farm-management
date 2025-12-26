@@ -1,13 +1,12 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import axios from "axios";
-import { data } from "react-router";
+import axios from '~/apis/index'
 
 const API_ROOT = "http://localhost:8071";
 
 export const fetchGetAllTaskApi = createAsyncThunk(
   "tasks/fetchGetAllTaskApi",
   async (id) => {
-    const response = await axios.get(`${API_ROOT}/v1/tasks/${id}`);
+    const response = await axios.get(`/tasks/${id}`);
     return response.data;
   }
 );
@@ -15,14 +14,14 @@ export const fetchGetAllTaskApi = createAsyncThunk(
 export const fetchAddTaskApi = createAsyncThunk(
   "tasks/fetchAddTaskApi",
   async (data) => {
-    const response = await axios.post(`${API_ROOT}/v1/tasks`, data);
+    const response = await axios.post("/tasks", data);
     return response.data;
   }
 );
 export const fetchUpdateTaskApi = createAsyncThunk(
   "tasks/fetchUpdateTaskApi",
   async ({ id, updateData }) => {
-    const response = await axios.put(`${API_ROOT}/v1/tasks/${id}`, updateData);
+    const response = await axios.put(`/tasks/${id}`, updateData);
     return response.data;
   }
 );
@@ -30,13 +29,9 @@ export const fetchUpdateTaskApi = createAsyncThunk(
 
 export const fetchDeleteTaskApi = createAsyncThunk(
   "tasks/fetchDeleteTaskApi",
-  async ({taskId, areaId}) => {
-    console.log("delete : " + taskId)
-    await axios.delete(`${API_ROOT}/v1/tasks/${taskId}`);
-    return {
-      taskId,
-      areaId
-    }
+  async ({ taskId, areaId }) => {
+    await axios.delete(`/tasks/${taskId}`);
+    return { taskId, areaId };
   }
 );
 const initialState = {
@@ -53,14 +48,13 @@ const taskSlice = createSlice({
       state.loading = true;
     }),
       buider.addCase(fetchAddTaskApi.fulfilled, (state, action) => {
-       
         const index = state.tasks.findIndex(
           (item) => item._id === action.payload?.data?.areaId
         );
         
         //Làm sạch dữ liệu (Xoá đi các field không cần thiết)
         const addData = action.payload?.data
-        Object.keys(data).forEach(fieldName => {
+        Object.keys(addData).forEach(fieldName => {
           if(["employeerId", "areaId"].includes(fieldName)){
             delete addData[fieldName]
           }
