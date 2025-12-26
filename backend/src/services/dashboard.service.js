@@ -1,6 +1,7 @@
 import { flockService } from "./flock.service.js";
 import { materialService } from "./material.service.js";
 import { logService } from "./log.service.js";
+import { financeService } from "./finance.service.js";
 
 class DashboardService {
   constructor() {
@@ -13,8 +14,6 @@ class DashboardService {
       MOCK_DATA: {
         DAILY_FEED: 850,
         DAILY_FEED_CHANGE: 0,
-        MONTHLY_REVENUE: 245000000,
-        REVENUE_CHANGE: 123,
         DEATH_RATE_7D: 2.1,
         DEATH_RATE_CHANGE: -0.5,
         AVG_WEIGHT_CHANGE: 42,
@@ -505,8 +504,55 @@ class DashboardService {
 
   async _getRevenueData(period) {
     try {
-      const currentRevenue = this.config.MOCK_DATA.MONTHLY_REVENUE;
-      const change = this.config.MOCK_DATA.REVENUE_CHANGE;
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth() + 1;
+      const currentYear = currentDate.getFullYear();
+
+      // Lấy dữ liệu từ finance service
+      const financialOverview = await financeService.getFinancialOverview(currentMonth, currentYear);
+
+      // Lấy dữ liệu tháng trước để tính thay đổi
+      let previousMonth = currentMonth - 1;
+      let previousYear = currentYear;
+      if (previousMonth === 0) {
+        previousMonth = 12;
+        previousYear = currentYear - 1;
+      }
+
+      let previousRevenue = 0;
+      try {
+        const previousOverview = await financeService.getFinancialOverview(previousMonth, previousYear);
+        previousRevenue = previousOverview.totalIncome || 0;
+      } catch (error) {
+        // Nếu không có dữ liệu tháng trước, sử dụng mock
+        previousRevenue = financialOverview.totalIncome * 0.8;
+      }
+
+      const currentRevenue = financialOverview.totalIncome || 0;
+      const change = previousRevenue > 0
+        ? ((currentRevenue - previousRevenue) / previousRevenue) * 100
+        : 0;
+
+      return {
+        value: currentRevenue,
+        change: parseFloat(change.toFixed(1)),
+        status: this._getChangeStatus(change),
+        description: "Doanh thu tháng này",
+        period: "month",
+        currency: "VND",
+        formatted: this._formatCurrency(currentRevenue),
+        color: this._getChangeColor(change),
+        source: "finance_service",
+        previousValue: previousRevenue,
+        profit: financialOverview.profit || 0,
+        profitMargin: financialOverview.profitMargin || 0,
+        totalExpense: financialOverview.totalExpense || 0,
+        note: `Doanh thu tháng ${currentMonth}/${currentYear} từ hệ thống tài chính`,
+      };
+    } catch (error) {
+      // Fallback về mock data nếu finance service lỗi
+      const currentRevenue = 245000000;
+      const change = 123;
 
       return {
         value: currentRevenue,
@@ -518,18 +564,7 @@ class DashboardService {
         formatted: this._formatCurrency(currentRevenue),
         color: this._getChangeColor(change),
         source: "mock",
-        implementLater: "Lấy từ transaction.type='income' trong tháng",
-      };
-    } catch (error) {
-      return {
-        value: 245000000,
-        change: 123,
-        status: "up",
-        description: "Doanh thu tháng này",
-        period: "month",
-        currency: "VND",
-        formatted: "245.000.000 ₫",
-        color: "green",
+        note: "Fallback: Finance service không khả dụng",
       };
     }
   }
@@ -538,7 +573,46 @@ class DashboardService {
     try {
       let data = [];
 
-      if (["weight", "death", "feed"].includes(chartType)) {
+      if (chartType === "revenue") {
+        // Sử dụng finance service cho biểu đồ doanh thu
+        try {
+          const months = this._getMonthCountFromPeriod(period);
+          const financialTrend = await financeService.getFinancialTrend(months);
+
+          data = financialTrend.map(item => ({
+            date: item.monthLabel,
+            timestamp: this._getFirstDayOfMonth(item.month),
+            value: item.income,
+            expense: item.expense,
+            profit: item.income - item.expense,
+          }));
+
+          return {
+            data,
+            period,
+            chartType,
+            unit: "VND",
+            source: "finance",
+            metadata: {
+              dataType: "monthly",
+              months: financialTrend.length,
+              lastMonth: financialTrend[financialTrend.length - 1]?.monthLabel || "N/A",
+            },
+          };
+        } catch (error) {
+          // Fallback về mock data nếu finance service lỗi
+          data = this._generateRevenueTrendData(period);
+          return {
+            data,
+            period,
+            chartType,
+            unit: "VND",
+            source: "mock",
+            note: "Finance service không khả dụng, sử dụng dữ liệu mẫu",
+          };
+        }
+      }
+      else if (["weight", "death", "feed"].includes(chartType)) {
         try {
           data = await logService.getTrendDataForDashboard(chartType, period);
           return {
@@ -547,7 +621,6 @@ class DashboardService {
             chartType,
             unit: this._getChartUnit(chartType),
             source: "log",
-            implementLater: "Lấy dữ liệu thật từ log và flock theo timeline",
           };
         } catch (error) {
           data = this._generateMockTrendData(period, chartType);
@@ -589,6 +662,7 @@ class DashboardService {
         const logAlerts = await logService.getAlertsFromLogs();
         alerts.push(...logAlerts);
       } catch (error) {
+        // Bỏ qua lỗi
       }
 
       const feedData = await this._getFeedData("today");
@@ -615,6 +689,42 @@ class DashboardService {
         });
       }
 
+      // Kiểm tra cảnh báo tài chính
+      try {
+        const currentDate = new Date();
+        const financialOverview = await financeService.getFinancialOverview(
+          currentDate.getMonth() + 1,
+          currentDate.getFullYear()
+        );
+
+        // Cảnh báo nếu lợi nhuận âm
+        if (financialOverview.profit < 0) {
+          alerts.push({
+            type: "negative_profit",
+            title: "Lợi nhuận âm",
+            message: `Lợi nhuận tháng này âm ${this._formatCurrency(Math.abs(financialOverview.profit))}. Cần xem xét chi phí.`,
+            severity: "high",
+            timestamp: new Date().toISOString(),
+            source: "finance",
+          });
+        }
+
+        // Cảnh báo nếu chi phí quá cao so với doanh thu
+        if (financialOverview.totalIncome > 0 &&
+          (financialOverview.totalExpense / financialOverview.totalIncome) > 0.8) {
+          alerts.push({
+            type: "high_expense_ratio",
+            title: "Tỷ lệ chi phí cao",
+            message: `Chi phí chiếm ${((financialOverview.totalExpense / financialOverview.totalIncome) * 100).toFixed(1)}% doanh thu.`,
+            severity: "medium",
+            timestamp: new Date().toISOString(),
+            source: "finance",
+          });
+        }
+      } catch (financeError) {
+        // Bỏ qua lỗi finance service
+      }
+
       try {
         const weeklyData = await this.getWeeklyConsumptionChart();
         if (weeklyData.metadata.source === "mock" || weeklyData.total.overall === 0) {
@@ -629,6 +739,7 @@ class DashboardService {
           });
         }
       } catch (chartError) {
+        // Bỏ qua lỗi
       }
 
       return {
@@ -1000,6 +1111,7 @@ class DashboardService {
         });
 
       } catch (logError) {
+        // Bỏ qua lỗi
       }
 
       const formattedData = weeklyData.map(day => {
@@ -1146,95 +1258,44 @@ class DashboardService {
 
   async getCostStructureChart() {
     try {
-      let feedMaterials = [];
-      let medicineMaterials = [];
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth() + 1;
+      const currentYear = currentDate.getFullYear();
 
-      try {
-        const feedResult = await materialService.getAllMaterials({
-          page: 1,
-          limit: 100,
-          type: "Thức ăn"
-        });
-        feedMaterials = feedResult.items || [];
+      // Lấy dữ liệu cơ cấu chi phí từ finance service
+      const expenseBreakdown = await financeService.getExpenseBreakdown(currentMonth, currentYear);
 
-        const medicineResult = await materialService.getAllMaterials({
-          page: 1,
-          limit: 100,
-          type: "Thuốc"
-        });
-        medicineMaterials = medicineResult.items || [];
+      let costStructure = [];
+      let hasRealData = false;
 
-      } catch (materialError) {
-        return this._generateMockCostStructureData();
+      if (expenseBreakdown && expenseBreakdown.length > 0) {
+        hasRealData = true;
+
+        // Map dữ liệu từ finance service sang định dạng dashboard
+        const categoryConfig = {
+          "Thức ăn": { color: "#4CAF50", icon: "restaurant" },
+          "Thuốc": { color: "#FF9800", icon: "medication" },
+          "Nhân công": { color: "#2196F3", icon: "groups" },
+          "Điện nước": { color: "#9C27B0", icon: "bolt" },
+          "Chi phí khác": { color: "#607D8B", icon: "payments" },
+          "Thu nhập khác": { color: "#4CAF50", icon: "attach_money" },
+        };
+
+        costStructure = expenseBreakdown.map(item => ({
+          category: item.category,
+          value: item.amount,
+          percentage: item.percentage,
+          color: categoryConfig[item.category]?.color || this._getRandomColor(),
+          icon: categoryConfig[item.category]?.icon || "category",
+          description: `Chi phí ${item.category.toLowerCase()}`,
+          formattedValue: this._formatCurrency(item.amount),
+        }));
+      } else {
+        // Fallback về mock data nếu không có dữ liệu
+        costStructure = this._generateMockCostStructureData().data;
       }
 
-      const FEED_PRICE_PER_KG = 10000;
-      const MEDICINE_PRICE_PER_UNIT = 50000;
-
-      const feedValue = feedMaterials.reduce((sum, m) => {
-        const quantity = m.quantity || 0;
-        return sum + (quantity * FEED_PRICE_PER_KG);
-      }, 0);
-
-      const medicineValue = medicineMaterials.reduce((sum, m) => {
-        const quantity = m.quantity || 0;
-        return sum + (quantity * MEDICINE_PRICE_PER_UNIT);
-      }, 0);
-
-      const laborCost = 30000000;
-      const utilitiesCost = 19000000;
-
-      const costStructure = [
-        {
-          category: "Thức ăn",
-          value: feedValue > 0 ? feedValue : 159000000,
-          percentage: 0,
-          color: "#4CAF50",
-          icon: "restaurant",
-          description: "Chi phí thức ăn chăn nuôi",
-          formattedValue: this._formatCurrency(feedValue > 0 ? feedValue : 159000000)
-        },
-        {
-          category: "Thuốc & Vaccine",
-          value: medicineValue > 0 ? medicineValue : 37000000,
-          percentage: 0,
-          color: "#FF9800",
-          icon: "medication",
-          description: "Chi phí thuốc thú y và vaccine",
-          formattedValue: this._formatCurrency(medicineValue > 0 ? medicineValue : 37000000)
-        },
-        {
-          category: "Nhân công",
-          value: laborCost,
-          percentage: 0,
-          color: "#2196F3",
-          icon: "groups",
-          description: "Chi phí lương nhân viên",
-          formattedValue: this._formatCurrency(laborCost)
-        },
-        {
-          category: "Điện nước & Khác",
-          value: utilitiesCost,
-          percentage: 0,
-          color: "#9C27B0",
-          icon: "bolt",
-          description: "Chi phí điện, nước, bảo trì",
-          formattedValue: this._formatCurrency(utilitiesCost)
-        }
-      ];
-
       const totalCost = costStructure.reduce((sum, item) => sum + item.value, 0);
-      let remainingPercentage = 100;
-      costStructure.forEach((item, index) => {
-        if (index < costStructure.length - 1) {
-          item.percentage = Math.round((item.value / totalCost) * 100);
-          remainingPercentage -= item.percentage;
-        } else {
-          item.percentage = remainingPercentage;
-        }
-      });
-
-      const hasRealData = feedValue > 0 || medicineValue > 0;
 
       return {
         chartType: "cost_structure",
@@ -1250,17 +1311,13 @@ class DashboardService {
         displayType: "pie",
         calculatedAt: new Date().toISOString(),
         metadata: {
-          period: "Tháng hiện tại",
+          period: `Tháng ${currentMonth}/${currentYear}`,
           lastUpdated: new Date().toISOString(),
-          source: hasRealData ? "material" : "mock",
+          source: hasRealData ? "finance" : "mock",
           dataQuality: hasRealData ? "real" : "mock",
-          dataPoints: {
-            feed: feedMaterials.length,
-            medicine: medicineMaterials.length
-          },
           note: hasRealData
-            ? `Tính từ ${feedMaterials.length} loại thức ăn và ${medicineMaterials.length} loại thuốc`
-            : "Chưa có dữ liệu material. Sử dụng giá trị mẫu."
+            ? `Dữ liệu từ hệ thống tài chính tháng ${currentMonth}/${currentYear}`
+            : "Chưa có dữ liệu tài chính. Sử dụng giá trị mẫu."
         }
       };
 
@@ -1328,7 +1385,7 @@ class DashboardService {
         period: "Tháng hiện tại",
         lastUpdated: new Date().toISOString(),
         source: "mock",
-        note: "Mock data - chờ dữ liệu transaction"
+        note: "Mock data - chờ dữ liệu từ finance service"
       }
     };
   }
@@ -1349,7 +1406,7 @@ class DashboardService {
           hasRealData: weeklyConsumption.metadata.source !== "mock" || costStructure.metadata.source !== "mock",
           realDataSources: [
             ...(weeklyConsumption.metadata.source !== "mock" ? ["log"] : []),
-            ...(costStructure.metadata.source !== "mock" ? ["material"] : [])
+            ...(costStructure.metadata.source !== "mock" ? ["finance"] : [])
           ],
           dataQuality: {
             weeklyConsumption: weeklyConsumption.metadata.dataQuality || "unknown",
@@ -1360,6 +1417,31 @@ class DashboardService {
     } catch (error) {
       throw new Error("Không thể lấy dữ liệu biểu đồ: " + error.message);
     }
+  }
+
+  // Helper methods cho finance integration
+  _getMonthCountFromPeriod(period) {
+    const monthMap = {
+      "7d": 1,
+      "30d": 1,
+      "90d": 3,
+      "all": 12,
+    };
+    return monthMap[period] || 6;
+  }
+
+  _getFirstDayOfMonth(month) {
+    const currentDate = new Date();
+    const year = currentDate.getFullYear();
+    return new Date(year, month - 1, 1).toISOString();
+  }
+
+  _getRandomColor() {
+    const colors = [
+      "#4CAF50", "#2196F3", "#FF9800", "#9C27B0",
+      "#3F51B5", "#009688", "#FF5722", "#795548"
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
   }
 }
 
