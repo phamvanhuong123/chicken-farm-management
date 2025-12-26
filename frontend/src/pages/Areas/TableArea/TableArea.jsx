@@ -28,7 +28,7 @@ function TableArea({
   const changePage = (page) => {
     setFilters((prev) => ({ ...prev, page }));
   };
-
+  console.log(data)
   return (
     <div className="bg-white shadow rounded-lg p-4">
       {/* Table */}

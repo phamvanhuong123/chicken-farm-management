@@ -9,7 +9,10 @@ import {
   getAllUser,
   deleteEmployee,
   updateEmployee,
+  verifyTokenController
+  
 } from "~/controllers/authController.js";
+import { verifyToken } from "~/middlewares/authMiddleware";
 import rateLimiter from "~/middlewares/rateLimiter.js";
 import { userValidate } from "~/validators/user.validation";
 
@@ -21,6 +24,7 @@ router.post(
   "/register",
   userValidate.createNew,
   rateLimiter({ windowMs: 60 * 1000, max: 5 }),
+  
   register
 );
 router.post("/verify-otp", verifyOTP);
@@ -35,8 +39,10 @@ router.post("/login", login);
 router.get("/:parentId", findUserByParentId);
 
 // Thêm nhân viên
-router.post("/addEmployee/:parentId", userValidate.addEmployee, addEmployee);
+router.post("/addEmployee/:parentId",verifyToken, userValidate.addEmployee, addEmployee);
 
+//Xác thực token
+router.get("/verify", verifyTokenController);
 // Xoá nhân viên và sửa nhân viên
 router
   .route("/:idEmployee")

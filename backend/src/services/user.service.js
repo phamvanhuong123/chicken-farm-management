@@ -134,7 +134,6 @@ const login = async ({ idName, password }) => {
     err.statusCode = 401;
     throw err;
   }
-
   const token = jwt.sign(
     { id: String(user._id), email: user.email, userName: user.username, roleId : user.roleId },
     env.JWT_SECRET,

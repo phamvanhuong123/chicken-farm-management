@@ -1,9 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
-import axios from 'axios';
+import axios from '~/apis/index'
 import { jwtDecode } from "jwt-decode";
-
-
-const API_ROOT = "http://localhost:8071"
 
 const getUserFromAuthToken = (token)=>{
 
@@ -15,11 +12,12 @@ const getUserFromAuthToken = (token)=>{
 }
 
 export const fetchGetAllUserApi = createAsyncThunk(
-  "users/fetchGetAllUserApi", async ()=>{
-      const response = await axios.get(`${API_ROOT}/v1/auth`)
-        return response.data
+  "users/fetchGetAllUserApi",
+  async () => {
+    const response = await axios.get("/auth");
+    return response.data;
   }
-)
+);
 
 
 

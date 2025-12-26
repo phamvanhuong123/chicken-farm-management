@@ -1,25 +1,25 @@
-import axios from "axios";
+import axios from "~/apis/index";
 
 const API = "http://localhost:8071/v1/imports";
 
 export const importApi = {
   getList(params = {}) {
-    return axios.get(API, { params });
+    return axios.get("/imports", { params });
   },
 
   create(data) {
-    return axios.post(API, data);
+    return axios.post("/imports", data);
   },
 
   getDetail(id) {
-    return axios.get(`${API}/${id}`);
+    return axios.get(`/imports/${id}`);
   },
 
   update(id, data) {
-    return axios.put(`${API}/${id}`, data);
+    return axios.put(`/imports/${id}`, data);
   },
 
   delete(id) {
-    return axios.delete(`${API}/${id}`);
+    return axios.delete(`/imports/${id}`);
   },
 };

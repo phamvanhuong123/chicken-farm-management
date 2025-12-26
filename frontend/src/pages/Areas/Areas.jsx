@@ -7,9 +7,11 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchEmployeeApi } from "../../slices/employeeSlice";
 
 import { getAreaList, getAreaOverview } from "../../services/areaService";
+import { getUserState } from "~/slices/authSlice.js";
 
 function Areas() {
   const dispatch = useDispatch(); // dùng để lấy danh sách nhân viên
+  const user = useSelector(state => getUserState(state))
   const employees = useSelector((state) => state.employeeReducer.employees);
 
   const [loading, setLoading] = useState(false);
@@ -34,7 +36,7 @@ function Areas() {
 
   // ⭐ 1) Load danh sách nhân viên ngay khi mở trang
   useEffect(() => {
-    dispatch(fetchEmployeeApi("all")); // API lấy toàn bộ nhân viên
+    dispatch(fetchEmployeeApi(user.id)); // API lấy toàn bộ nhân viên
   }, [dispatch]);
 
   // ⭐ 2) Load kpi toàn bộ khu nuôi ngay khi mở trang
@@ -79,7 +81,6 @@ function Areas() {
 
     //   setStaffList(Array.from(staffSet.values()));
   };
-
   return (
     <div className="p-6">
       <HeaderArea refresh={fetchAreas} />
