@@ -14,6 +14,10 @@ export const materialAPI = {
   update: (id, data) => {
     return axios.put(`/materials/${id}`, data);
   },
+  //Xóa vật tư
+  remove: (id) => {
+    return axios.delete(`/materials/${id}`);
+  },
 
   // Nhập Excel
   importExcel: (file) => {

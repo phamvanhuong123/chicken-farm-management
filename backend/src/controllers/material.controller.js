@@ -159,3 +159,21 @@ export const updateMaterial = async (req, res, next) => {
     next(error);
   }
 };
+//Xóa vật tư
+export const deleteMaterial = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await materialService.deleteMaterial(id);
+
+    return res.status(200).json({
+      status: "success",
+      message: "Xóa vật tư thành công.",
+    });
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({
+      status: "error",
+      message: error.message || "Không thể xóa vật tư.",
+    });
+  }
+};
