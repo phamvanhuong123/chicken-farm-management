@@ -2,17 +2,20 @@ import { Outlet } from 'react-router-dom'
 import { useState } from 'react'
 import Header from './Header'
 import SideBar from './SideBar'
-import Footer from './Footer'
+
 
 function LayoutDefault() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
-
+  
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed)
   }
+  
+
+ 
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="min-h-screen  flex flex-col overflow-auto">
       {/* Fixed Header */}
       <Header 
         onToggleSidebar={toggleSidebar} 
@@ -28,14 +31,15 @@ function LayoutDefault() {
         <main className={`
           flex-1 transition-all duration-300 ease-in-out
           ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}
-          min-h-[calc(100vh-4rem)] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900
+          min-h-[calc(100vh-4rem)]
+          bg-gray-100
         `}>
           <Outlet />
         </main>
       </div>
       
       {/* Footer */}
-      <Footer />
+      {/* <Footer /> */}
     </div>
   )
 }

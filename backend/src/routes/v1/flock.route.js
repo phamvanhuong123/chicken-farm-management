@@ -4,7 +4,7 @@ import {
   getFlockDetail,
   createFlock,
   getAllFlocks,
-  deleteFlock, // 👈 thêm dòng này
+  deleteFlock, 
 } from "../../controllers/flock.controller.js";
 import {
   validateFlockUpdate,

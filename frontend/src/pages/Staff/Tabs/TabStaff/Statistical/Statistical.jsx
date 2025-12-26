@@ -1,0 +1,73 @@
+import { CircleDollarSign, User, UserRoundX, UsersRound } from "lucide-react";
+import { useSelector } from "react-redux";
+import { getEmployeeState } from "~/slices/employeeSlice";
+
+function Statistical() {
+  const employees = useSelector((state) => getEmployeeState(state));
+
+  const numbberStatus = {
+    working: employees.filter((item) => item.status === "working").length,
+    onLeave: employees.filter((item) => item.status === "onLeave").length,
+  };
+  const totalSalary =
+    Math.round(
+      (employees.reduce(
+        (total, employee) => total + Number(employee?.salary || 0),
+        0
+      ) /
+        1000000) *
+        100
+    ) / 100;
+  console.log(employees);
+  return (
+    <>
+      <div className="grid max-[1024px]:grid-cols-2 max-[640px]:grid-cols-1 grid-cols-4 gap-4 mb-9 ">
+        <div className=" p-4 rounded-2xl shadow-sm flex gap-3 items-center bg-white">
+          <div className="bg-green-100 p-3 rounded-sm">
+            <UsersRound color="green" />
+          </div>
+          <div>
+            <p className="text-gray-500 text-sm">Tổng nhân viên</p>
+            <h2 className="text-2xl font-bold text-green-700">
+              {employees?.length}
+            </h2>
+          </div>
+        </div>
+        <div className=" p-4 rounded-2xl shadow-sm flex gap-3 items-center bg-white">
+          <div className="bg-blue-200 p-3 rounded-sm">
+            <User color="blue" />
+          </div>
+          <div>
+            <p className="text-gray-500 text-sm">Đang làm việc</p>
+            <h2 className="text-2xl font-bold text-blue-700">
+              {numbberStatus.working}
+            </h2>
+          </div>
+        </div>
+        <div className=" p-4 rounded-2xl shadow-sm flex gap-3 items-center bg-white">
+          <div className="bg-purple-200 p-3 rounded-sm">
+            <UserRoundX color="purple" />
+          </div>
+          <div>
+            <p className="text-gray-500 text-sm">Nghĩ phép</p>
+            <h2 className="text-2xl font-bold text-purple-700">
+              {numbberStatus.onLeave}
+            </h2>
+          </div>
+        </div>
+        <div className=" p-4 rounded-2xl shadow-sm flex gap-3 items-center bg-white">
+          <div className="bg-orange-200 p-3 rounded-sm">
+            <CircleDollarSign color="orange" />
+          </div>
+          <div>
+            <p className="text-gray-500 text-sm">Tổng lương</p>
+            <h2 className="text-2xl font-bold text-orange-700">
+              {totalSalary}M
+            </h2>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+export default Statistical;
