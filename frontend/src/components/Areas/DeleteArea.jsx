@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import axios from "axios";
+import axios from "~/apis/index";
 import { Trash2, X } from "lucide-react";
 import swal from "sweetalert";
 
-const API_BASE = "http://localhost:8071/v1";
 
 /** Modal xác nhận xóa */
 function ConfirmModal({ open, title, message, onConfirm, onCancel }) {
@@ -57,7 +56,7 @@ export default function DeleteArea({ area, onDeleted, onError }) {
     try {
       setLoading(true);
 
-      const res = await axios.delete(`${API_BASE}/areas/${area._id}`);
+      const res = await axios.delete(`/areas/${area._id}`);
 
       if (res.data.status === "error") {
         swal(res.data.message, "", "warning");
