@@ -1,7 +1,5 @@
 import axios from "~/apis/index";
 
-const API = "http://localhost:8071/v1/imports";
-
 export const importApi = {
   getList(params = {}) {
     return axios.get("/imports", { params });

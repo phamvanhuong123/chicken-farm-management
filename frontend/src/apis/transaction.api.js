@@ -1,29 +1,28 @@
 // src/apis/transaction.api.js
-import axios from "axios";
+import axios from "~/apis/index";
 
-const API_BASE_URL = "http://localhost:8071/v1/transactions";
 
 export const transactionAPI = {
   // Lấy danh sách giao dịch xuất chuồng
-  getAll: (params = {}) => axios.get(API_BASE_URL, { params }),
+  getAll: (params = {}) => axios.get("transactions", { params }),
 
   // Lấy thống kê KPI theo tháng
-  getStats: (params = {}) => axios.get(`${API_BASE_URL}/stats`, { params }),
+  getStats: (params = {}) => axios.get(`transactions/stats`, { params }),
 
   // Lấy chi tiết giao dịch
-  getById: (id) => axios.get(`${API_BASE_URL}/${id}`),
+  getById: (id) => axios.get(`transactions/${id}`),
 
   // Tạo đơn xuất chuồng
-  createExport: (data) => axios.post(`${API_BASE_URL}/export`, data),
+  createExport: (data) => axios.post(`transactions/export`, data),
 
   // Cập nhật trạng thái
 updateStatus: (id, data) =>
-  axios.patch(`${API_BASE_URL}/${id}/status`, data, {
+  axios.patch(`transactions/${id}/status`, data, {
     headers: { "Content-Type": "application/json" }
   }),
 
   // Xuất hóa đơn PDF
   exportInvoice: (id) =>
-    axios.get(`${API_BASE_URL}/${id}/invoice`, { responseType: "blob" }),
+    axios.get(`transactions/${id}/invoice`, { responseType: "blob" }),
 
 };
