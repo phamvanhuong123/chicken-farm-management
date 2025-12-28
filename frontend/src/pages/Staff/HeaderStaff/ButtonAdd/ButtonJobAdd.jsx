@@ -36,11 +36,14 @@ import { getUserState } from "~/slices/authSlice";
 import { fetchAddTaskApi, fetchGetAllTaskApi, getLoadingState } from "~/slices/taskSlice";
 import { toast } from "react-toastify";
 import { ClipLoader } from "react-spinners";
+import { useIsEmployer } from "~/hooks/useIsEmployer";
 
 function ButtonJobAdd() {
   const [open, setOpen] = useState(false);
   const user = useSelector(state => getUserState(state))
   const loading = useSelector(state => getLoadingState(state))
+  const isEmpoyer = useIsEmployer()
+  
   const dispatch = useDispatch()
   const {
     register,
@@ -95,6 +98,7 @@ function ButtonJobAdd() {
     };
     fetchAreas();
   }, [open]);
+  if (!isEmpoyer) return null
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>

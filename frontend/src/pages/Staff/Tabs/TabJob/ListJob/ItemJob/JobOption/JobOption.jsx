@@ -13,10 +13,12 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
+import { useIsEmployer } from "~/hooks/useIsEmployer";
 import { fetchDeleteTaskApi, fetchUpdateTaskApi } from "~/slices/taskSlice";
 
 function JobOption({ task, areaId }) {
   const dispatch = useDispatch();
+  const isEmpoyer = useIsEmployer()
 
   const objectStatus  ={
     toDo : "To Do",
@@ -81,14 +83,14 @@ function JobOption({ task, areaId }) {
                 </DropdownMenuItem> */}
               </DropdownMenuSubContent>
             </DropdownMenuSub>
-
-            <DropdownMenuItem className="cursor-pointer" onClick={handleDelete}>
+            {isEmpoyer && <DropdownMenuItem className="cursor-pointer" onClick={handleDelete}>
               Xoá
               <DropdownMenuShortcut>
                 {" "}
                 <Trash />
               </DropdownMenuShortcut>
-            </DropdownMenuItem>
+            </DropdownMenuItem>}
+            
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>

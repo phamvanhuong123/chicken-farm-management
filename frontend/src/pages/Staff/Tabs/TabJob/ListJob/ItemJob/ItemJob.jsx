@@ -17,6 +17,7 @@ import JobOption from "./JobOption/JobOption";
 import { getLastUpperChar } from "~/utils/formatter";
 
 const TaskCard = ({ task, hasMenu, areaId }) => {
+  
   // const statusColor =
   //   status === "todo" ? "border-l-emerald-500" :
   //   status === "doing" ? "border-l-blue-500" : "border-l-slate-400";

@@ -22,6 +22,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
+import { useIsEmployer } from "~/hooks/useIsEmployer";
 
 // 🎨 Badge màu động (nếu có)
 const TypeBadge = ({ type, color }) => {
@@ -38,7 +39,7 @@ const TypeBadge = ({ type, color }) => {
 };
 
 export default function Inventory() {
-  // 🧠 Toàn bộ state
+  const isEmployer = useIsEmployer();
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -54,13 +55,11 @@ export default function Inventory() {
   const [editingMaterialId, setEditingMaterialId] = useState(null);
   const [deletingMaterial, setDeletingMaterial] = useState(null);
 
-  // ⏱ Debounce tìm kiếm
   useEffect(() => {
     const t = setTimeout(() => setDebouncedKeyword(keyword.trim()), 500);
     return () => clearTimeout(t);
   }, [keyword]);
 
-  // 📦 Lấy dữ liệu
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -71,7 +70,6 @@ export default function Inventory() {
       const items = res.data.data.items || [];
       setMaterials(items);
 
-      // Map loại và màu
       const colorMap = {};
       const typeList = new Set();
       for (const i of items) {
@@ -94,7 +92,6 @@ export default function Inventory() {
     fetchData();
   }, [typeFilter, statusFilter, debouncedKeyword]);
 
-  // 📤 Xuất Excel
   const handleExport = async () => {
     try {
       const params = {};
@@ -112,7 +109,6 @@ export default function Inventory() {
     }
   };
 
-  // 📥 Nhập Excel
   const handleImport = async () => {
     if (!file) return toast.error("Vui lòng chọn file Excel!");
     try {
@@ -129,7 +125,6 @@ export default function Inventory() {
     }
   };
 
-  // 💡 Thống kê
   const total = materials.length;
   const almostEmpty = materials.filter(
     (m) => m.statusInfo.label === "Sắp hết"
@@ -166,9 +161,6 @@ export default function Inventory() {
     );
   };
 
-  // ==============================
-  // 📋 Giao diện chính
-  // ==============================
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen text-[14px]">
       {/* Header */}
@@ -180,15 +172,17 @@ export default function Inventory() {
           </p>
         </div>
         <div className="flex gap-2 items-center">
-          <label className="px-2 py-2 border rounded-md bg-white hover:bg-gray-100 text-sm cursor-pointer flex items-center gap-1.5">
-            <ArrowDownToLine size={15} /> Nhập Excel
-            <input
-              type="file"
-              accept=".xlsx"
-              onChange={(e) => setFile(e.target.files[0])}
-              className="hidden"
-            />
-          </label>
+          {isEmployer && (
+            <label className="px-2 py-2 border rounded-md bg-white hover:bg-gray-100 text-sm cursor-pointer flex items-center gap-1.5">
+              <ArrowDownToLine size={15} /> Nhập Excel
+              <input
+                type="file"
+                accept=".xlsx"
+                onChange={(e) => setFile(e.target.files[0])}
+                className="hidden"
+              />
+            </label>
+          )}
 
           <button
             onClick={handleExport}
@@ -205,15 +199,15 @@ export default function Inventory() {
               Xác nhận
             </button>
           )}
-
-          <Button
+          {isEmployer && <Button
             onClick={() => setIsAddModalOpen(true)}
             className={"bg-green-400 hover:bg-green-500 cursor-pointer"}
           >
             {" "}
             <PlusIcon />
             Thêm vật tư
-          </Button>
+          </Button>}
+          
         </div>
       </div>
 
@@ -364,18 +358,19 @@ export default function Inventory() {
                     >
                       <Eye size={16} className="w-4 h-4 text-gray-600 " />
                     </button>
-                    <button
+                    {isEmployer && <button
                       className="p-2 rounded cursor-pointer hover:bg-blue-200"
                       onClick={() => setEditingMaterialId(m._id)} //mở modal sửa
                     >
                       <Edit size={16} className="w-4 h-4 text-blue-500" />
-                    </button>
-                    <button
+                    </button>}
+                    {isEmployer && <button
                       className="p-2 rounded hover:bg-red-50 text-red-600 disabled:opacity-50 cursor-pointer"
                       onClick={() => setDeletingMaterial(m)}
                     >
                       <Trash2 size={16} />
-                    </button>
+                    </button>}
+                    
                   </td>
                 </tr>
               ))
