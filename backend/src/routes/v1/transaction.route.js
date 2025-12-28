@@ -8,6 +8,7 @@ import {
   updateTransactionStatus,
   exportInvoicePDF,
 } from "../../controllers/transaction.controller.js";
+import { authorize } from "~/middlewares/authorizeMiddleware.js";
 
 const router = express.Router();
 

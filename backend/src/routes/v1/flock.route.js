@@ -10,6 +10,8 @@ import {
   validateFlockUpdate,
   validateFlockCreate,
 } from "../../validators/flock.validation.js";
+import { authorize } from "~/middlewares/authorizeMiddleware.js";
+import { ROLE } from "~/utils/constants.js";
 
 const router = express.Router();
 
@@ -23,7 +25,7 @@ router.get("/", getAllFlocks);
 router.get("/:id", getFlockDetail);
 
 // [POST] /v1/flocks - Lưu thông tin đàn mới
-router.post("/", validateFlockCreate, createFlock);
+router.post("/",authorize(ROLE.EMPLOYER), validateFlockCreate, createFlock);
 
 // [PUT] /v1/flocks/:id - Cập nhật thông tin đàn
 router.put("/:id", validateFlockUpdate, updateFlock);

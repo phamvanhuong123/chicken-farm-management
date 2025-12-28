@@ -115,7 +115,7 @@ const login = async ({ idName, password }) => {
   const phone = idName.trim();
 
   const user = await userModel.findByEmailOrPhone(email, phone);
-
+  console.log(user.roleId)
   if (!user) {
     const err = new Error("Không tìm thấy tài khoản");
     err.statusCode = 404;

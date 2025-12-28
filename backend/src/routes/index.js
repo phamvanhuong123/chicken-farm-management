@@ -11,23 +11,20 @@ import { logRoute } from "./v1/log.route.js";
 import dashboardRoute from "./v1/dashboard.route.js";
 import dashboardChartRoutes from "./v1/dashboard.chart.routes.js";
 import { verifyToken } from "~/middlewares/authMiddleware.js";
-
 const router = express.Router();
 
 router.get("/status", (req, res) => {
   res.json({ data: "ok" });
 });
 
-// nhóm route đàn gà (Chỉ định rõ prefix /flocks)
 router.use("/flocks", verifyToken, flockRoute);
-// nhóm route kho, vật tư
 router.use("/materials", verifyToken, materialRoute);
-// nhóm route chuồng
+
 router.use("/areas", verifyToken, areaRoute);
-// nhập chuồng
+
 router.use("/imports", verifyToken, importRoute);
 router.use("/auth", authRoutes);
-router.use("/transactions", transactionRoute);
+router.use("/transactions",verifyToken, transactionRoute);
 router.use("/logs", verifyToken, logRoute);
 router.use("/tasks", verifyToken, taskRoute);
 router.use("/dashboard", verifyToken, dashboardRoute);

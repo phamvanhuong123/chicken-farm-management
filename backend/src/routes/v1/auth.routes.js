@@ -13,7 +13,9 @@ import {
   
 } from "~/controllers/authController.js";
 import { verifyToken } from "~/middlewares/authMiddleware";
+import { authorize } from "~/middlewares/authorizeMiddleware";
 import rateLimiter from "~/middlewares/rateLimiter.js";
+import { ROLE } from "~/utils/constants";
 import { userValidate } from "~/validators/user.validation";
 
 const router = express.Router();
@@ -39,14 +41,14 @@ router.post("/login", login);
 router.get("/:parentId", findUserByParentId);
 
 // Thêm nhân viên
-router.post("/addEmployee/:parentId",verifyToken, userValidate.addEmployee, addEmployee);
+router.post("/addEmployee/:parentId",verifyToken,authorize(ROLE.EMPLOYER), userValidate.addEmployee, addEmployee);
 
 //Xác thực token
 router.get("/verify", verifyTokenController);
 // Xoá nhân viên và sửa nhân viên
 router
   .route("/:idEmployee")
-  .delete(deleteEmployee)
-  .put(userValidate.updateEmployee, updateEmployee);
+  .delete(verifyToken,authorize(ROLE.EMPLOYER),deleteEmployee)
+  .put(verifyToken,authorize(ROLE.EMPLOYER),userValidate.updateEmployee, updateEmployee);
 
 export default router;

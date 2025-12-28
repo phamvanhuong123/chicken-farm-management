@@ -143,7 +143,7 @@ const deleteEmployee = async (idEmployee) => {
       .collection(USER_COLLECTION_NAME)
       .findOneAndUpdate(
         { _id: new ObjectId(String(idEmployee)) },
-        { $set: { parentId: null } },
+        { $set: { parentId: null, status: null, salary: null } },
         { returnDocument: "after", projection: { password: 0 } }
       );
     if (!res) throw new ApiError(StatusCodes.NOT_FOUND, "KHông tìm thấy");
