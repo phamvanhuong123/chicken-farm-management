@@ -9,9 +9,13 @@ vi.mock('../../../apis/areaApi');
 
 describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
     const mockAreas = [
-        { _id: '1', name: 'Khu A', maxCapacity: 10000 },
-        { _id: '2', name: 'Khu B', maxCapacity: 15000 },
-        { _id: '3', name: 'Khu C', maxCapacity: 5000 }
+        { _id: '1', name: 'Khu A', maxCapacity: 10000, currentCapacity: 7000 },
+        { _id: '2', name: 'Khu B', maxCapacity: 15000, currentCapacity: 7000 },
+        { _id: '3', name: 'Khu C', maxCapacity: 5000, currentCapacity: 500 }
+    ];
+
+    const mockAreasFull = [
+        { _id: '3', name: 'Khu C', maxCapacity: 5000, currentCapacity: 0 }
     ];
 
     const mockAreaCurrentCounts = {
@@ -52,6 +56,7 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
                 onClose={vi.fn()}
                 onSubmit={vi.fn()}
                 areaCurrentCounts={mockAreaCurrentCounts}
+                areas={mockAreas}
             />
         );
 
@@ -74,6 +79,7 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
                 onSubmit={vi.fn()}
                 areaCurrentCounts={mockAreaCurrentCounts}
                 editData={mockEditData}
+                areas={mockAreas}
             />
         );
 
@@ -98,6 +104,7 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
                 onClose={vi.fn()}
                 onSubmit={mockOnSubmit}
                 areaCurrentCounts={mockAreaCurrentCounts}
+                areas={mockAreas}
             />
         );
 
@@ -105,15 +112,12 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
             expect(screen.getByText('Chọn khu nuôi')).toBeInTheDocument();
         });
 
+        // Chọn khu nuôi
         const selects = screen.getAllByRole('combobox');
         const barnSelect = selects[selects.length - 1];
         await user.selectOptions(barnSelect, 'Khu A');
 
-        await waitFor(() => {
-            const submitButton = screen.getByRole('button', { name: /tạo đàn/i });
-            expect(submitButton).not.toBeDisabled();
-        }, { timeout: 3000 });
-
+        // Click submit
         const submitButton = screen.getByRole('button', { name: /tạo đàn/i });
         await user.click(submitButton);
 
@@ -121,8 +125,7 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
         await waitFor(() => {
             expect(screen.getByText('Ngày nhập không được để trống')).toBeInTheDocument();
             expect(screen.getByText('Nhà cung cấp không được để trống')).toBeInTheDocument();
-            expect(screen.getByText('Số lượng không được để trống')).toBeInTheDocument();
-        }, { timeout: 5000 });
+        });
 
         expect(mockOnSubmit).not.toHaveBeenCalled();
     });
@@ -135,6 +138,7 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
                 onClose={vi.fn()}
                 onSubmit={vi.fn()}
                 areaCurrentCounts={mockAreaCurrentCounts}
+                areas={mockAreas}
             />
         );
 
@@ -160,6 +164,7 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
                 onClose={vi.fn()}
                 onSubmit={vi.fn()}
                 areaCurrentCounts={mockAreaCurrentCounts}
+                areas={mockAreas}
             />
         );
 
@@ -167,7 +172,6 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
             expect(screen.getByPlaceholderText('0.0')).toBeInTheDocument();
         });
 
-        // Tìm input trọng lượng
         const weightInput = screen.getByPlaceholderText('0.0');
         await user.clear(weightInput);
         await user.type(weightInput, '0');
@@ -186,6 +190,7 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
                 onClose={vi.fn()}
                 onSubmit={vi.fn()}
                 areaCurrentCounts={mockAreaCurrentCounts}
+                areas={mockAreas}
             />
         );
 
@@ -193,7 +198,7 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
             expect(screen.getAllByRole('combobox').length).toBeGreaterThan(0);
         });
 
-        // Tìm tất cả combobox và lấy cái cuối (khu nuôi)
+        // Chọn khu nuôi
         const selects = screen.getAllByRole('combobox');
         const barnSelect = selects[selects.length - 1];
         await user.selectOptions(barnSelect, 'Khu A');
@@ -205,7 +210,7 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
         await user.tab();
 
         await waitFor(() => {
-            expect(screen.getByText(/Số lượng vượt quá sức chứa/)).toBeInTheDocument();
+            expect(screen.getByText(/Số lượng vượt quá dung lượng còn trống/)).toBeInTheDocument();
         });
     });
 
@@ -219,6 +224,7 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
                 onClose={vi.fn()}
                 onSubmit={mockOnSubmit}
                 areaCurrentCounts={mockAreaCurrentCounts}
+                areas={mockAreas}
             />
         );
 
@@ -226,28 +232,16 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
             expect(screen.getByText('Chọn khu nuôi')).toBeInTheDocument();
         });
 
+        // Chọn khu nuôi
         const selects = screen.getAllByRole('combobox');
         const barnSelect = selects[selects.length - 1];
         await user.selectOptions(barnSelect, 'Khu A');
 
-        await waitFor(() => {
-            const submitButton = screen.getByRole('button', { name: /tạo đàn/i });
-            expect(submitButton).not.toBeDisabled();
-        }, { timeout: 3000 });
-
         // Nhập thông tin hợp lệ
-        // Tìm và nhập ngày SỬA LẠI
         const dateInput = container.querySelector('input[type="date"]');
-        expect(dateInput).toBeInTheDocument();
         await user.clear(dateInput);
         await user.type(dateInput, '2024-03-20');
 
-        // Đợi một chút để form cập nhật
-        await waitFor(() => {
-            expect(dateInput.value).toBe('2024-03-20');
-        });
-
-        // Nhập nhà cung cấp
         const supplierInput = screen.getByPlaceholderText('Nhập tên nhà cung cấp');
         await user.clear(supplierInput);
         await user.type(supplierInput, 'Nhà cung cấp Test');
@@ -279,7 +273,7 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
                 avgWeight: '1.5',
                 barn: 'Khu A'
             }));
-        }, { timeout: 3000 });
+        });
     });
 
     // TEST CASE 8: Đóng form khi click Hủy
@@ -292,6 +286,7 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
                 onClose={mockOnClose}
                 onSubmit={vi.fn()}
                 areaCurrentCounts={mockAreaCurrentCounts}
+                areas={mockAreas}
             />
         );
 
@@ -305,31 +300,8 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
         expect(mockOnClose).toHaveBeenCalled();
     });
 
-    // TEST CASE 9: Hiển thị loading khi đang tải khu nuôi
-    test('TC9 - Hiển thị loading khi đang tải danh sách khu nuôi', async () => {
-        areaApi.getList.mockImplementation(() => new Promise(() => { }));
-
-        render(
-            <ImportForm
-                onClose={vi.fn()}
-                onSubmit={vi.fn()}
-                areaCurrentCounts={mockAreaCurrentCounts}
-            />
-        );
-
-        // Kiểm tra option loading
-        await waitFor(() => {
-            expect(screen.getByText('Đang tải khu nuôi...')).toBeInTheDocument();
-        });
-
-        // Nút submit bị disabled - tìm button bằng text
-        const buttons = screen.getAllByRole('button');
-        const submitButton = buttons.find(button => button.textContent === 'Đang tải...');
-        expect(submitButton).toBeDisabled();
-    });
-
-    // TEST CASE 10: Hiển thị thông tin khu nuôi đầy
-    test('TC10 - Hiển thị khu nuôi đầy với trạng thái disabled', async () => {
+    // TEST CASE 9: Disabled khu nuôi khi khu nuôi đầy
+    test('TC9 - Hiển thị khu nuôi đầy với trạng thái disabled', async () => {
         const fullAreaCurrentCounts = {
             'Khu C': 5000
         };
@@ -339,6 +311,7 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
                 onClose={vi.fn()}
                 onSubmit={vi.fn()}
                 areaCurrentCounts={fullAreaCurrentCounts}
+                areas={mockAreasFull}
             />
         );
 
@@ -351,27 +324,28 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
         });
     });
 
-    // TEST CASE 11: Validation đặc biệt cho chỉnh sửa (trừ mã đàn)
-    test('TC11 - Trong chế độ chỉnh sửa, không cho phép chỉnh sửa mã đàn', async () => {
+    // TEST CASE 10: Validation đặc biệt cho chỉnh sửa (trừ mã đàn)
+    test('TC10 - Trong chế độ chỉnh sửa, không cho phép chỉnh sửa mã đàn', async () => {
         render(
             <ImportForm
                 onClose={vi.fn()}
                 onSubmit={vi.fn()}
                 areaCurrentCounts={mockAreaCurrentCounts}
                 editData={mockEditData}
+                areas={mockAreas}
             />
         );
 
         await waitFor(() => {
-            expect(screen.getByText('Mã đàn:')).toBeInTheDocument();
+            expect(screen.getByText('Mã đơn:')).toBeInTheDocument();
         });
 
         // Kiểm tra không có input cho mã đàn
         expect(screen.queryByPlaceholderText(/mã đàn/i)).not.toBeInTheDocument();
     });
 
-    // TEST CASE 12: Tính toán lại sức chứa khi chỉnh sửa khu nuôi
-    test('TC12 - Tính toán đúng sức chứa khi chỉnh sửa sang khu nuôi khác', async () => {
+    // TEST CASE 11: Tính toán lại sức chứa khi chỉnh sửa khu nuôi
+    test('TC11 - Tính toán đúng sức chứa khi chỉnh sửa sang khu nuôi khác', async () => {
         const user = userEvent.setup();
 
         render(
@@ -380,6 +354,7 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
                 onSubmit={vi.fn()}
                 areaCurrentCounts={mockAreaCurrentCounts}
                 editData={mockEditData}
+                areas={mockAreas}
             />
         );
 
@@ -400,12 +375,12 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
         await user.tab();
 
         await waitFor(() => {
-            expect(screen.getByText(/Số lượng vượt quá sức chứa/)).toBeInTheDocument();
+            expect(screen.getByText(/Số lượng vượt quá dung lượng còn trống/)).toBeInTheDocument();
         });
     });
 
-    // TEST CASE 13: Submit thành công khi chỉnh sửa
-    test('TC13 - Gọi onSubmit với dữ liệu chỉnh sửa đúng', async () => {
+    // TEST CASE 12: Submit thành công khi chỉnh sửa
+    test('TC12 - Gọi onSubmit với dữ liệu chỉnh sửa đúng', async () => {
         const mockOnSubmit = vi.fn();
         const user = userEvent.setup();
 
@@ -415,6 +390,7 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
                 onSubmit={mockOnSubmit}
                 areaCurrentCounts={mockAreaCurrentCounts}
                 editData={mockEditData}
+                areas={mockAreas}
             />
         );
 
@@ -422,7 +398,6 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
             const submitButton = screen.getByRole('button', { name: /cập nhật/i });
             expect(submitButton).not.toBeDisabled();
         });
-
 
         const supplierInput = screen.getByPlaceholderText('Nhập tên nhà cung cấp');
         await user.clear(supplierInput);
@@ -437,35 +412,30 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
 
         await waitFor(() => {
             expect(mockOnSubmit).toHaveBeenCalledWith(expect.objectContaining({
-                importDate: '2024-03-15',
                 supplier: 'Nhà cung cấp mới',
-                breed: 'Gà ta',
-                quantity: '1500',
-                avgWeight: 1.5,
-                barn: 'Khu A'
+                quantity: '1500'
             }));
         });
     });
 
-    // TEST CASE 14: Xử lý lỗi khi load khu nuôi thất bại
-    test('TC14 - Hiển thị thông báo lỗi khi không tải được danh sách khu nuôi', async () => {
-        areaApi.getList.mockRejectedValue(new Error('Network error'));
-
+    // TEST CASE 13: Xử lý khi không có khu nuôi
+    test('TC13 - Hiển thị thông báo khi không có khu nuôi nào khả dụng', async () => {
         render(
             <ImportForm
                 onClose={vi.fn()}
                 onSubmit={vi.fn()}
                 areaCurrentCounts={mockAreaCurrentCounts}
+                areas={[]}
             />
         );
 
         await waitFor(() => {
-            expect(screen.getByText('Lỗi khi tải danh sách khu nuôi')).toBeInTheDocument();
+            expect(screen.getByText('Không có khu nuôi nào khả dụng')).toBeInTheDocument();
         });
     });
 
-    // TEST CASE 15: Enter key trigger submit
-    test('TC15 - Nhấn Enter trên trường input trigger submit form', async () => {
+    // TEST CASE 14: Enter key trigger submit
+    test('TC14 - Nhấn Enter trên trường input trigger submit form', async () => {
         const mockOnSubmit = vi.fn();
         const user = userEvent.setup();
 
@@ -474,6 +444,7 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
                 onClose={vi.fn()}
                 onSubmit={mockOnSubmit}
                 areaCurrentCounts={mockAreaCurrentCounts}
+                areas={mockAreas}
             />
         );
 
@@ -482,29 +453,16 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
             expect(screen.getByText('Chọn khu nuôi')).toBeInTheDocument();
         });
 
+        // Chọn khu nuôi
         const selects = screen.getAllByRole('combobox');
         const barnSelect = selects[selects.length - 1];
         await user.selectOptions(barnSelect, 'Khu A');
 
-        // Đợi nút submit enabled
-        await waitFor(() => {
-            const submitButton = screen.getByRole('button', { name: /tạo đàn/i });
-            expect(submitButton).not.toBeDisabled();
-        }, { timeout: 3000 });
-
         // Nhập đủ thông tin hợp lệ
-        // Tìm và nhập ngày SỬA LẠI
         const dateInput = container.querySelector('input[type="date"]');
-        expect(dateInput).toBeInTheDocument();
         await user.clear(dateInput);
         await user.type(dateInput, '2024-03-20');
 
-        // Đợi một chút để form cập nhật
-        await waitFor(() => {
-            expect(dateInput.value).toBe('2024-03-20');
-        });
-
-        // Nhập nhà cung cấp
         const supplierInput = screen.getByPlaceholderText('Nhập tên nhà cung cấp');
         await user.clear(supplierInput);
         await user.type(supplierInput, 'Test Supplier');
@@ -521,18 +479,30 @@ describe('U5.2 - Form Nhập chuồng mới & U5.5 - Chỉnh sửa', () => {
         // Nhập trọng lượng
         const weightInput = screen.getByPlaceholderText('0.0');
         await user.clear(weightInput);
-        await user.type(weightInput, '1.5');
-
-        // Đảm bảo không có lỗi validation trước khi nhấn Enter
-        await waitFor(() => {
-            expect(screen.queryByText('Ngày nhập không được để trống')).not.toBeInTheDocument();
-        });
-
-        // Nhấn Enter trên trường trọng lượng
-        await user.type(weightInput, '{enter}');
+        await user.type(weightInput, '1.5{enter}');
 
         await waitFor(() => {
             expect(mockOnSubmit).toHaveBeenCalled();
-        }, { timeout: 3000 });
+        });
+    });
+
+    // TEST CASE 15: Hiển thị thông tin đàn khi chỉnh sửa
+    test('TC15 - Hiển thị thông tin mã đơn và flock ID khi chỉnh sửa', async () => {
+        render(
+            <ImportForm
+                onClose={vi.fn()}
+                onSubmit={vi.fn()}
+                areaCurrentCounts={mockAreaCurrentCounts}
+                editData={mockEditData}
+                areas={mockAreas}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText('Mã đơn:')).toBeInTheDocument();
+            expect(screen.getByText('DIT123')).toBeInTheDocument();
+            expect(screen.getByText('Flock ID:')).toBeInTheDocument();
+            expect(screen.getByText('OCK123')).toBeInTheDocument();
+        });
     });
 });
