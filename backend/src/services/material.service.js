@@ -65,18 +65,10 @@ const importFromExcel = async (filePath) => {
 
   for (let i = 2; i <= sheet.rowCount; i++) {
     const row = sheet.getRow(i);
-    const [name, type, quantity, unit, expiryDate, threshold, storageLocation] =
+    const [name, type, quantity, unit, expiryDate, threshold] =
       row.values.slice(1);
 
-    if (
-      !name ||
-      !type ||
-      !quantity ||
-      !unit ||
-      !expiryDate ||
-      !threshold ||
-      !storageLocation
-    ) {
+    if (!name || !type || !quantity || !unit || !expiryDate || !threshold) {
       errors.push({ row: i, message: "Thiếu dữ liệu bắt buộc." });
       continue;
     }
@@ -94,7 +86,7 @@ const importFromExcel = async (filePath) => {
       unit: String(unit).trim(),
       expiryDate: new Date(expiryDate),
       threshold: Number(threshold),
-      storageLocation: String(storageLocation).trim(),
+
       createdAt: new Date(),
       updatedAt: null,
     };
@@ -215,7 +207,6 @@ const getFeedInfoForDashboard = async () => {
         quantity: m.quantity,
         unit: m.unit,
         expiryDate: m.expiryDate,
-        storageLocation: m.storageLocation,
       })),
     };
   } catch (error) {
