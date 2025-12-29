@@ -4,7 +4,8 @@ import {
   getFlockDetail,
   createFlock,
   getAllFlocks,
-  deleteFlock, 
+  deleteFlock,
+  deleteFlockByImport
 } from "../../controllers/flock.controller.js";
 import {
   validateFlockUpdate,
@@ -25,11 +26,13 @@ router.get("/", getAllFlocks);
 router.get("/:id", getFlockDetail);
 
 // [POST] /v1/flocks - Lưu thông tin đàn mới
-router.post("/",authorize(ROLE.EMPLOYER), validateFlockCreate, createFlock);
+router.post("/", authorize(ROLE.EMPLOYER), validateFlockCreate, createFlock);
 
 // [PUT] /v1/flocks/:id - Cập nhật thông tin đàn
 router.put("/:id", validateFlockUpdate, updateFlock);
 // [DELETE] /v1/flocks/:id - TEAM-90: Xóa đàn
 router.delete("/:id", deleteFlock);
+
+router.delete("/by-import/:importId", deleteFlockByImport);
 
 export default router;

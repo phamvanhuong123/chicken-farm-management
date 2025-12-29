@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { areaApi } from "../../../apis/areaApi";
 
-export default function ImportForm({ onClose, onSubmit, areaCurrentCounts = {}, editData = null }) { 
+export default function ImportForm({ onClose, onSubmit, areaCurrentCounts = {}, editData = null, areas = [] }) {
   const isEditMode = !!editData;
-  
+
   const [form, setForm] = useState({
     importDate: editData?.importDate?.split('T')[0] || "",
     supplier: editData?.supplier || "",
@@ -15,64 +14,40 @@ export default function ImportForm({ onClose, onSubmit, areaCurrentCounts = {}, 
 
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
-  const [areas, setAreas] = useState([]);
   const [loadingAreas, setLoadingAreas] = useState(false);
   const [areaError, setAreaError] = useState(null);
-  
   const [selectedArea, setSelectedArea] = useState(null);
   const [originalData, setOriginalData] = useState(editData || null);
 
   useEffect(() => {
-    const fetchAreas = async () => {
-      setLoadingAreas(true);
-      setAreaError(null);
-      try {
-        const response = await areaApi.getList();
-        
-        if (response.data.status === "success" && response.data.data) {
-          const areaData = response.data.data;
-          setAreas(areaData);
-          
-          if (editData?.barn) {
-            const area = areaData.find(a => a.name === editData.barn);
-            setSelectedArea(area);
-          }
-        } else {
-          setAreas([]);
-          setAreaError("Không thể tải danh sách khu nuôi");
-        }
-      } catch (error) {
-        setAreas([]);
-        setAreaError("Lỗi khi tải danh sách khu nuôi");
-      } finally {
-        setLoadingAreas(false);
-      }
-    };
+    if (editData?.barn && areas.length > 0) {
+      const area = areas.find(a => a.name === editData.barn);
+      setSelectedArea(area);
+    }
 
-    fetchAreas();
-    
     if (editData) {
       setOriginalData(editData);
     }
-  }, [editData]);
+  }, [editData, areas]);
 
-  const getCurrentCountInBarn = (barnName) => {
-    return areaCurrentCounts?.[barnName] || 0;
+  // Hàm tính dung lượng còn trống
+  const getRemainingCapacity = (barnName) => {
+    const area = areas.find(a => a.name === barnName);
+    if (!area) return 0;
+
+    return area.currentCapacity || 0; // currentCapacity chính là dung lượng còn trống
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-    
+
     if (name === "barn") {
       const selected = areas.find(area => area.name === value);
       setSelectedArea(selected);
-      
-      if (form.quantity) {
-        validateField('quantity', form.quantity, selected);
-      }
     }
-    
+
+    setForm({ ...form, [name]: value });
+
     if (errors[name]) {
       setErrors({ ...errors, [name]: '' });
     }
@@ -81,7 +56,7 @@ export default function ImportForm({ onClose, onSubmit, areaCurrentCounts = {}, 
   const handleBlur = (e) => {
     const { name, value } = e.target;
     setTouched({ ...touched, [name]: true });
-    
+
     if (name === "quantity" && selectedArea) {
       validateField(name, value, selectedArea);
     } else {
@@ -96,6 +71,8 @@ export default function ImportForm({ onClose, onSubmit, areaCurrentCounts = {}, 
       case 'importDate':
         if (!value.trim()) {
           error = 'Ngày nhập không được để trống';
+        } else if (new Date(value) > new Date()) {
+          error = 'Ngày nhập không được lớn hơn ngày hiện tại';
         }
         break;
 
@@ -121,21 +98,22 @@ export default function ImportForm({ onClose, onSubmit, areaCurrentCounts = {}, 
         } else if (value > 100000) {
           error = 'Số lượng không được vượt quá 100,000';
         } else if (selectedAreaForValidation && selectedAreaForValidation.maxCapacity) {
-          const maxCapacity = parseInt(selectedAreaForValidation.maxCapacity);
-          const currentCount = getCurrentCountInBarn(selectedAreaForValidation.name);
+          const remainingCapacity = getRemainingCapacity(selectedAreaForValidation.name);
           const requestedQuantity = parseInt(value);
-          
-          let actualCurrentCount = currentCount;
-          
+
+          let actualRemainingCapacity = remainingCapacity;
+
+          // XỬ LÝ ĐẶC BIỆT KHI EDIT
           if (isEditMode && originalData) {
             if (selectedAreaForValidation.name === originalData.barn) {
-              actualCurrentCount = currentCount - originalData.quantity;
+              // CÙNG KHU: cộng thêm số lượng cũ vào dung lượng trống
+              actualRemainingCapacity = remainingCapacity + originalData.quantity;
             }
+            // KHÁC KHU: giữ nguyên (vì chưa chuyển qua)
           }
-          
-          if (actualCurrentCount + requestedQuantity > maxCapacity) {
-            const remainingCapacity = maxCapacity - actualCurrentCount;
-            error = `Số lượng vượt quá sức chứa. Khu nuôi còn trống: ${remainingCapacity}`;
+
+          if (requestedQuantity > actualRemainingCapacity) {
+            error = `Số lượng vượt quá dung lượng còn trống. Khu nuôi còn trống: ${actualRemainingCapacity}`;
           }
         }
         break;
@@ -174,6 +152,8 @@ export default function ImportForm({ onClose, onSubmit, areaCurrentCounts = {}, 
 
     if (!form.importDate.trim()) {
       newErrors.importDate = 'Ngày nhập không được để trống';
+    } else if (new Date(form.importDate) > new Date()) {
+      newErrors.importDate = 'Ngày nhập không được lớn hơn ngày hiện tại';
     }
 
     if (!form.supplier.trim()) {
@@ -193,21 +173,21 @@ export default function ImportForm({ onClose, onSubmit, areaCurrentCounts = {}, 
     } else if (form.quantity > 100000) {
       newErrors.quantity = 'Số lượng không được vượt quá 100,000';
     } else if (selectedArea && selectedArea.maxCapacity) {
-      const maxCapacity = parseInt(selectedArea.maxCapacity);
-      const currentCount = getCurrentCountInBarn(selectedArea.name);
+      const remainingCapacity = getRemainingCapacity(selectedArea.name);
       const requestedQuantity = parseInt(form.quantity);
-      
-      let actualCurrentCount = currentCount;
-      
+
+      // XỬ LÝ ĐẶC BIỆT KHI EDIT
+      let actualRemainingCapacity = remainingCapacity;
       if (isEditMode && originalData) {
         if (selectedArea.name === originalData.barn) {
-          actualCurrentCount = currentCount - originalData.quantity;
+          // CÙNG KHU: cộng thêm số lượng cũ vào dung lượng trống
+          actualRemainingCapacity = remainingCapacity + originalData.quantity;
         }
+        // KHÁC KHU: giữ nguyên (vì chưa chuyển qua)
       }
-      
-      if (actualCurrentCount + requestedQuantity > maxCapacity) {
-        const remainingCapacity = maxCapacity - actualCurrentCount;
-        newErrors.quantity = `Số lượng vượt quá sức chứa. Khu nuôi còn trống: ${remainingCapacity}`;
+
+      if (requestedQuantity > actualRemainingCapacity) {
+        newErrors.quantity = `Số lượng vượt quá dung lượng còn trống. Khu nuôi còn trống: ${actualRemainingCapacity}`;
       }
     }
 
@@ -252,28 +232,39 @@ export default function ImportForm({ onClose, onSubmit, areaCurrentCounts = {}, 
     return touched[fieldName] && errors[fieldName];
   };
 
-  const getRemainingCapacity = () => {
+  // Hàm tính dung lượng còn trống để hiển thị
+  const calculateRemainingCapacity = () => {
     if (!selectedArea) return null;
-    
-    const maxCapacity = parseInt(selectedArea.maxCapacity) || 0;
-    const currentCount = getCurrentCountInBarn(selectedArea.name);
-    
-    let actualCurrentCount = currentCount;
-    
+
+    let remainingCapacity = getRemainingCapacity(selectedArea.name);
+    const maxCapacity = selectedArea.maxCapacity || 0;
+
+    // Xử lý đặc biệt khi edit
     if (isEditMode && originalData) {
       if (selectedArea.name === originalData.barn) {
-        actualCurrentCount = currentCount - originalData.quantity;
+        remainingCapacity = remainingCapacity + originalData.quantity;
       }
     }
-    
-    const remaining = maxCapacity - actualCurrentCount;
-    
-    return remaining >= 0 ? remaining : 0;
+
+    return {
+      remaining: remainingCapacity,
+      max: maxCapacity
+    };
+  };
+
+  // Hàm để định dạng tên option
+  const formatAreaOption = (area) => {
+    const remainingCapacity = area.currentCapacity || 0; // Dung lượng còn trống
+    const maxCapacity = area.maxCapacity || 0;
+    const currentCount = maxCapacity - remainingCapacity; // Số gà hiện có
+
+    // Hiển thị dung lượng còn trống/tối đa
+    return `${area.name} (Còn trống: ${remainingCapacity}/${maxCapacity})`;
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white w-[480px] p-6 rounded-lg shadow-lg">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-y-auto py-4">
+      <div className="bg-white w-[620px] max-w-[95vw] p-6 rounded-lg shadow-lg my-auto">
         <h2 className="text-xl font-semibold mb-6 text-gray-800 border-b pb-4">
           {isEditMode ? 'Chỉnh sửa đơn nhập' : 'Nhập chuồng mới'}
         </h2>
@@ -281,7 +272,7 @@ export default function ImportForm({ onClose, onSubmit, areaCurrentCounts = {}, 
         {isEditMode && originalData && (
           <div className="mb-4 p-3 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-700">
-              <span className="font-semibold">Mã đàn:</span> {originalData._id?.slice(-6).toUpperCase()}
+              <span className="font-semibold">Mã đơn:</span> {originalData._id?.slice(-6).toUpperCase()}
             </p>
             {originalData.flockId && (
               <p className="text-xs text-blue-600 mt-1">
@@ -296,15 +287,15 @@ export default function ImportForm({ onClose, onSubmit, areaCurrentCounts = {}, 
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Ngày nhập <span className="text-red-500">*</span>
             </label>
-            <input 
-              type="date" 
-              name="importDate" 
+            <input
+              type="date"
+              name="importDate"
               value={form.importDate}
               onChange={handleChange}
               onBlur={handleBlur}
-              className={`border p-3 rounded w-full focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                shouldShowError('importDate') ? 'border-red-500' : 'border-gray-300'
-              }`}
+              max={new Date().toISOString().split('T')[0]}
+              className={`border p-3 rounded w-full focus:ring-2 focus:ring-green-500 focus:border-transparent ${shouldShowError('importDate') ? 'border-red-500' : 'border-gray-300'
+                }`}
             />
             {shouldShowError('importDate') && (
               <p className="text-red-500 text-xs mt-1">{errors.importDate}</p>
@@ -315,17 +306,16 @@ export default function ImportForm({ onClose, onSubmit, areaCurrentCounts = {}, 
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Nhà cung cấp <span className="text-red-500">*</span>
             </label>
-            <input 
-              type="text" 
-              name="supplier" 
+            <input
+              type="text"
+              name="supplier"
               value={form.supplier}
-              placeholder="Nhập tên nhà cung cấp" 
+              placeholder="Nhập tên nhà cung cấp"
               onChange={handleChange}
               onBlur={handleBlur}
               onKeyPress={handleSubmitWithEnter}
-              className={`border p-3 rounded w-full focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                shouldShowError('supplier') ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`border p-3 rounded w-full focus:ring-2 focus:ring-green-500 focus:border-transparent ${shouldShowError('supplier') ? 'border-red-500' : 'border-gray-300'
+                }`}
             />
             {shouldShowError('supplier') && (
               <p className="text-red-500 text-xs mt-1">{errors.supplier}</p>
@@ -336,14 +326,13 @@ export default function ImportForm({ onClose, onSubmit, areaCurrentCounts = {}, 
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Giống <span className="text-red-500">*</span>
             </label>
-            <select 
-              name="breed" 
+            <select
+              name="breed"
               value={form.breed}
               onChange={handleChange}
               onBlur={handleBlur}
-              className={`border p-3 rounded w-full focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                shouldShowError('breed') ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`border p-3 rounded w-full focus:ring-2 focus:ring-green-500 focus:border-transparent ${shouldShowError('breed') ? 'border-red-500' : 'border-gray-300'
+                }`}
             >
               <option value="">Chọn giống</option>
               <option value="Gà ta">Gà ta</option>
@@ -363,26 +352,25 @@ export default function ImportForm({ onClose, onSubmit, areaCurrentCounts = {}, 
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Số lượng <span className="text-red-500">*</span>
               </label>
-              <input 
-                type="number" 
-                name="quantity" 
+              <input
+                type="number"
+                name="quantity"
                 value={form.quantity}
-                placeholder="0" 
+                placeholder="0"
                 min="1"
                 max={selectedArea ? selectedArea.maxCapacity || "100000" : "100000"}
                 onChange={handleChange}
                 onBlur={handleBlur}
                 onKeyPress={handleSubmitWithEnter}
-                className={`border p-3 rounded w-full focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                  shouldShowError('quantity') ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`border p-3 rounded w-full focus:ring-2 focus:ring-green-500 focus:border-transparent ${shouldShowError('quantity') ? 'border-red-500' : 'border-gray-300'
+                  }`}
               />
               {shouldShowError('quantity') && (
                 <p className="text-red-500 text-xs mt-1">{errors.quantity}</p>
               )}
               {selectedArea && form.quantity && !errors.quantity && (
                 <p className="text-green-600 text-xs mt-1">
-                  Còn trống: {getRemainingCapacity()} / {selectedArea.maxCapacity}
+                  Còn trống: {calculateRemainingCapacity()?.remaining} / {calculateRemainingCapacity()?.max}
                 </p>
               )}
             </div>
@@ -390,20 +378,19 @@ export default function ImportForm({ onClose, onSubmit, areaCurrentCounts = {}, 
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Trọng lượng TB (kg) <span className="text-red-500">*</span>
               </label>
-              <input 
-                type="number" 
-                name="avgWeight" 
+              <input
+                type="number"
+                name="avgWeight"
                 value={form.avgWeight}
-                placeholder="0.0" 
+                placeholder="0.0"
                 step="0.1"
                 min="0.1"
                 max="1000"
                 onChange={handleChange}
                 onBlur={handleBlur}
                 onKeyPress={handleSubmitWithEnter}
-                className={`border p-3 rounded w-full focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                  shouldShowError('avgWeight') ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`border p-3 rounded w-full focus:ring-2 focus:ring-green-500 focus:border-transparent ${shouldShowError('avgWeight') ? 'border-red-500' : 'border-gray-300'
+                  }`}
               />
               {shouldShowError('avgWeight') && (
                 <p className="text-red-500 text-xs mt-1">{errors.avgWeight}</p>
@@ -415,54 +402,58 @@ export default function ImportForm({ onClose, onSubmit, areaCurrentCounts = {}, 
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Khu nuôi <span className="text-red-500">*</span>
             </label>
-            <select 
-              name="barn" 
+            <select
+              name="barn"
               value={form.barn}
               onChange={handleChange}
               onBlur={handleBlur}
               disabled={loadingAreas}
-              className={`border p-3 rounded w-full focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                shouldShowError('barn') ? 'border-red-500' : 'border-gray-300'
-              } ${loadingAreas ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              className={`border p-3 rounded w-full focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm ${shouldShowError('barn') ? 'border-red-500' : 'border-gray-300'
+                } ${loadingAreas ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              style={{ minHeight: '44px' }}
             >
               <option value="">
                 {loadingAreas ? 'Đang tải khu nuôi...' : 'Chọn khu nuôi'}
               </option>
               {areas.map((area) => {
-                const currentCount = getCurrentCountInBarn(area.name);
+                const remainingCapacity = area.currentCapacity || 0; // Dung lượng còn trống
                 const maxCapacity = area.maxCapacity || 0;
-                
-                let actualCurrentCount = currentCount;
-                
-                if (isEditMode && originalData) {
-                  if (area.name === originalData.barn) {
-                    actualCurrentCount = currentCount - originalData.quantity;
-                  }
-                }
-                
-                const remaining = maxCapacity - actualCurrentCount;
-                const isFull = remaining <= 0;
-                
+                const isFull = remainingCapacity <= 0;
+                const currentCount = maxCapacity - remainingCapacity; // Số gà hiện có
+
+                // Tạo tooltip với thông tin đầy đủ
+                const fullInfo = `${area.name} (Tối đa: ${maxCapacity}, Đang có: ${currentCount}, Còn trống: ${remainingCapacity})${isFull ? ' - ĐẦY' : ''}`;
+
                 return (
-                  <option 
-                    key={area._id} 
+                  <option
+                    key={area._id}
                     value={area.name}
-                    disabled={isFull && !isEditMode}
-                    className={isFull && !isEditMode ? 'bg-gray-100 text-gray-400' : ''}
+                    disabled={(!isEditMode && isFull)}
+                    title={fullInfo}
+                    className={`
+                      text-sm
+                      ${(!isEditMode && isFull) ? 'bg-gray-100 text-gray-400' : ''}
+                      ${!(!isEditMode && isFull) ? 'hover:bg-green-50' : ''}
+                    `}
                   >
-                    {area.name} {maxCapacity ? `(Tối đa: ${maxCapacity}, Còn trống: ${remaining >= 0 ? remaining : 0})` : ''}
-                    {isFull && !isEditMode && ' - ĐẦY'}
+                    {formatAreaOption(area)}
+                    {!isEditMode && isFull && ' - ĐẦY'}
                   </option>
                 );
               })}
             </select>
+
+            <div className="mt-2 text-xs text-gray-500">
+              <p>Hover vào tùy chọn để xem thông tin đầy đủ</p>
+            </div>
+
             {shouldShowError('barn') && (
               <p className="text-red-500 text-xs mt-1">{errors.barn}</p>
             )}
             {areaError && (
               <p className="text-red-500 text-xs mt-1">{areaError}</p>
             )}
-            {areas.length === 0 && !loadingAreas && !areaError && (
+            {areas.length === 0 && !loadingAreas && (
               <p className="text-yellow-600 text-xs mt-1">
                 Không có khu nuôi nào khả dụng
               </p>
@@ -471,14 +462,14 @@ export default function ImportForm({ onClose, onSubmit, areaCurrentCounts = {}, 
         </div>
 
         <div className="flex justify-end mt-8 gap-3 pt-4 border-t">
-          <button 
+          <button
             className="px-6 py-2.5 bg-gray-300 rounded-md hover:bg-gray-400 transition-colors text-gray-700"
             onClick={onClose}
             type="button"
           >
             Hủy
           </button>
-          <button 
+          <button
             className="px-6 py-2.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             onClick={handleSubmit}
             type="button"

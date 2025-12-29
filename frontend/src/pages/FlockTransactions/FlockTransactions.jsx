@@ -15,9 +15,9 @@ import { Eye, Printer } from "lucide-react";
 import toast from "react-hot-toast";
 
 function FlockTransactions() {
-  const { 
+  const {
     imports,
-    areas,             
+    areas,
     areaCurrentCounts,
     loadData,
     loadAreas,
@@ -49,7 +49,7 @@ function FlockTransactions() {
 
   // State cho flocks (đàn gà)
   const [flocks, setFlocks] = useState([]);
-  
+
   // State cho imports và exports đã lọc
   const [filteredImports, setFilteredImports] = useState([]);
   const [filteredExports, setFilteredExports] = useState([]);
@@ -57,7 +57,7 @@ function FlockTransactions() {
   // State cho dữ liệu hiển thị sau khi phân trang
   const [pagedImports, setPagedImports] = useState([]);
   const [pagedExports, setPagedExports] = useState([]);
-    const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
 
   // Load dữ liệu khi component mount
@@ -79,7 +79,7 @@ function FlockTransactions() {
 
   // Hàm lọc flocks đang nuôi
   const getActiveFlocks = () => {
-    return flocks.filter(f => 
+    return flocks.filter(f =>
       f.status === "Raising" || f.status === "Đang nuôi"
     );
   };
@@ -88,14 +88,14 @@ function FlockTransactions() {
   const loadFlocks = async () => {
     try {
       const response = await flockApi.getList();
-      const flockData = Array.isArray(response.data?.data) 
-        ? response.data.data 
+      const flockData = Array.isArray(response.data?.data)
+        ? response.data.data
         : [];
-      
-      const filteredFlocks = flockData.filter(f => 
+
+      const filteredFlocks = flockData.filter(f =>
         f.status === "Raising" || f.status === "Đang nuôi"
       );
-      
+
       setFlocks(filteredFlocks);
     } catch (error) {
       console.error("Error loading flocks:", error);
@@ -105,13 +105,13 @@ function FlockTransactions() {
 
   const updatePagedData = () => {
     const { importPage, exportPage, rowsPerPage } = pagination;
-    
+
     // Tính toán dữ liệu phân trang cho imports
     const importStartIndex = (importPage - 1) * rowsPerPage;
     const importEndIndex = importStartIndex + rowsPerPage;
     const currentImports = filteredImports.slice(importStartIndex, importEndIndex);
     setPagedImports(currentImports);
-    
+
     // Tính toán dữ liệu phân trang cho exports
     const exportStartIndex = (exportPage - 1) * rowsPerPage;
     const exportEndIndex = exportStartIndex + rowsPerPage;
@@ -122,10 +122,11 @@ function FlockTransactions() {
   const loadAllData = async () => {
     setLoading(true);
     try {
-      await Promise.all([    
+      await Promise.all([
         loadData(),
         loadExports(),
-        loadFlocks()
+        loadFlocks(),
+        loadAreas()
       ])
     } finally {
       setLoading(false);
@@ -136,13 +137,13 @@ function FlockTransactions() {
   // Lọc dữ liệu theo tháng
   const filterDataByMonth = () => {
     const [year, month] = selectedMonth.split('-');
-    
+
     // Lọc imports
     const filteredImportData = imports.filter(imp => {
       if (!imp.importDate) return false;
       const importDate = new Date(imp.importDate);
-      return importDate.getFullYear() === parseInt(year) && 
-             importDate.getMonth() + 1 === parseInt(month);
+      return importDate.getFullYear() === parseInt(year) &&
+        importDate.getMonth() + 1 === parseInt(month);
     });
     setFilteredImports(filteredImportData);
 
@@ -151,11 +152,11 @@ function FlockTransactions() {
       const transactionDate = exp.transactionDate || exp.exportDate;
       if (!transactionDate) return false;
       const date = new Date(transactionDate);
-      return date.getFullYear() === parseInt(year) && 
-             date.getMonth() + 1 === parseInt(month);
+      return date.getFullYear() === parseInt(year) &&
+        date.getMonth() + 1 === parseInt(month);
     });
     setFilteredExports(filteredExportData);
-    
+
     // Cập nhật tổng số hàng
     setPagination(prev => ({
       ...prev,
@@ -205,34 +206,34 @@ function FlockTransactions() {
     }
   };
 
-    // Xem trước hóa đơn (mở popup)
+  // Xem trước hóa đơn (mở popup)
   const handleOpenInvoice = (transaction) => {
     setSelectedTransaction(transaction);
     setShowInvoiceModal(true);
   };
   const mapStatus = (label) => {
-  switch (label) {
-    case "Hoàn thành":
-      return "Hoàn thành";
-    case "Đã hủy":
-      return "Đã hủy";
-    default:
-      return "Đang xử lý";
-  }
-};
+    switch (label) {
+      case "Hoàn thành":
+        return "Hoàn thành";
+      case "Đã hủy":
+        return "Đã hủy";
+      default:
+        return "Đang xử lý";
+    }
+  };
 
   const handleUpdateStatus = async (id, newStatus) => {
-  try {
-    await transactionAPI.updateStatus(id, { status: mapStatus(newStatus) });
+    try {
+      await transactionAPI.updateStatus(id, { status: mapStatus(newStatus) });
 
-    toast.success(`Đã cập nhật trạng thái: ${newStatus}`);
+      toast.success(`Đã cập nhật trạng thái: ${newStatus}`);
 
-    loadExports();
-  } catch (error) {
-    console.error("Status update failed:", error);
-    toast.error("Không thể cập nhật trạng thái.");
-  }
-};
+      loadExports();
+    } catch (error) {
+      console.error("Status update failed:", error);
+      toast.error("Không thể cập nhật trạng thái.");
+    }
+  };
 
   // Xử lý phân trang cho imports
   const handleImportPageChange = (page) => {
@@ -266,16 +267,16 @@ function FlockTransactions() {
   };
 
   const handleEditImport = (item) => {
-  setEditImport(item);      
-  setShowImportForm(true);  
+    setEditImport(item);
+    setShowImportForm(true);
   };
 
   const handleSubmitImport = async (formData) => {
     if (editImport) {
       const ok = await updateImport(editImport._id, formData);
       if (ok?.success) {
-          swal("Thành công", editImport ? "Cập nhật thành công!" : "Thêm lứa nhập thành công!", "success");
-          setShowImportForm(false);
+        swal("Thành công", editImport ? "Cập nhật thành công!" : "Thêm lứa nhập thành công!", "success");
+        setShowImportForm(false);
       }
     } else {
       const result = await createImport(formData);
@@ -305,15 +306,15 @@ function FlockTransactions() {
     <div className="px-8 mt-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0">Nhập / Xuất chuồng</h1>
-        
+
         {/* Bộ lọc chung cho toàn trang */}
-        <MonthYearFilter 
+        <MonthYearFilter
           selectedMonth={selectedMonth}
           onMonthChange={setSelectedMonth}
           loading={loading}
         />
       </div>
-      
+
       {/* DASHBOARD KPI */}
       <DashboardKPI
         selectedMonth={selectedMonth}
@@ -321,7 +322,7 @@ function FlockTransactions() {
         exports={filteredExports}
       />
 
-      
+
       {/* TAB */}
       <ImportTabs tab={tab} setTab={setTab} />
 
@@ -414,12 +415,12 @@ function FlockTransactions() {
         </>
       )}
       {showInvoiceModal && selectedTransaction && (
-          <InvoicePreviewModal
-            isOpen={showInvoiceModal}
-            onClose={() => setShowInvoiceModal(false)}
-            transaction={selectedTransaction}
-            onStatusChange={handleUpdateStatus}
-          />
+        <InvoicePreviewModal
+          isOpen={showInvoiceModal}
+          onClose={() => setShowInvoiceModal(false)}
+          transaction={selectedTransaction}
+          onStatusChange={handleUpdateStatus}
+        />
       )}
 
       {/* TAB: NHẬP CHUỒNG */}
@@ -472,7 +473,7 @@ function FlockTransactions() {
                 setEditImport(null);
               }}
               onSubmit={handleSubmitImport}
-              editData={editImport}           
+              editData={editImport}
               areas={areas}
               areaCurrentCounts={areaCurrentCounts}
             />
@@ -538,20 +539,19 @@ function ExportItem({ item, onPreviewInvoice }) {
         {formatCurrency(calculateRevenue(item))}
       </td>
       <td className="py-4 px-4">
-        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-          item.status === "completed" || item.status === "Hoàn thành"
-            ? "bg-green-100 text-green-800" 
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${item.status === "completed" || item.status === "Hoàn thành"
+            ? "bg-green-100 text-green-800"
             : item.status === "pending" || item.status === "Đang xử lý"
-            ? "bg-yellow-100 text-yellow-800"
-            : "bg-gray-100 text-gray-800"
-        }`}>
-          {item.status === "completed" ? "Hoàn thành" : 
-           item.status === "pending" ? "Đang xử lý" : 
-           item.status === "Đang xử lý" ? "Đang xử lý" :
-           item.status === "Hoàn thành" ? "Hoàn thành" : "Đã hủy"}
+              ? "bg-yellow-100 text-yellow-800"
+              : "bg-gray-100 text-gray-800"
+          }`}>
+          {item.status === "completed" ? "Hoàn thành" :
+            item.status === "pending" ? "Đang xử lý" :
+              item.status === "Đang xử lý" ? "Đang xử lý" :
+                item.status === "Hoàn thành" ? "Hoàn thành" : "Đã hủy"}
         </span>
       </td>
-         {/* HÀNH ĐỘNG */}
+      {/* HÀNH ĐỘNG */}
       <td className="py-4 px-4 text-center">
         <div className="flex items-center justify-center gap-3">
 

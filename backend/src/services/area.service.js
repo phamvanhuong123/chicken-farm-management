@@ -223,6 +223,37 @@ const deleteArea = async (id) => {
     };
   }
 };
+// Thêm hàm mới để lấy thông tin capacity
+const getAreaCapacityInfo = async (areaName) => {
+  try {
+    const areas = await areaModel.find({ name: areaName });
+    if (!areas || areas.length === 0) {
+      return null;
+    }
+
+    const area = areas[0];
+
+    // Tính số lượng hiện tại từ imports
+    const imports = await GET_DB()
+      .collection('imports')
+      .find({
+        barn: areaName,
+        status: "Đang nuôi"
+      })
+      .toArray();
+
+    const currentCapacity = imports.reduce((sum, imp) => sum + (imp.quantity || 0), 0);
+
+    return {
+      ...area,
+      currentCapacity,
+      remainingCapacity: area.maxCapacity - currentCapacity
+    };
+  } catch (error) {
+    console.error("Error getting area capacity info:", error);
+    throw error;
+  }
+};
 
 export const areaService = {
   createArea,
@@ -231,4 +262,5 @@ export const areaService = {
   exportAreasToExcel,
   updateArea,
   deleteArea,
+  getAreaCapacityInfo,
 };
