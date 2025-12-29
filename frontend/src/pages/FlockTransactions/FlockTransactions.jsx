@@ -13,6 +13,7 @@ import InvoicePreviewModal from "../FlockTransactions/components/InvoicePreviewM
 import { flockApi } from "../../apis/flockApi";
 import { Eye, Printer } from "lucide-react";
 import toast from "react-hot-toast";
+import swal from "sweetalert";
 
 function FlockTransactions() {
   const {
@@ -32,11 +33,8 @@ function FlockTransactions() {
   const [exports, setExports] = useState([]);
   const [editImport, setEditImport] = useState(null);
 
-  // State cho lọc tháng
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
+  // State cho lọc tháng - mặc định là tất cả (null hoặc empty)
+  const [selectedMonth, setSelectedMonth] = useState(null);
 
   // State cho phân trang
   const [pagination, setPagination] = useState({
@@ -65,17 +63,15 @@ function FlockTransactions() {
     loadAllData();
   }, []);
 
-  // Filter dữ liệu khi selectedMonth thay đổi
-  useEffect(() => {
-    if (imports.length > 0 || exports.length > 0 || flocks.length > 0) {
-      filterDataByMonth();
-    }
-  }, [selectedMonth, imports, exports, flocks]);
-
   // Cập nhật dữ liệu phân trang khi filtered data thay đổi
   useEffect(() => {
     updatePagedData();
   }, [filteredImports, filteredExports, pagination]);
+
+  // Filter dữ liệu khi selectedMonth thay đổi
+  useEffect(() => {
+    filterDataByMonth();
+  }, [selectedMonth, imports, exports, flocks]);
 
   // Hàm lọc flocks đang nuôi
   const getActiveFlocks = () => {
@@ -127,15 +123,96 @@ function FlockTransactions() {
         loadExports(),
         loadFlocks(),
         loadAreas()
-      ])
+      ]);
     } finally {
       setLoading(false);
     }
   };
 
-
-  // Lọc dữ liệu theo tháng
+  // Lọc dữ liệu theo tháng - SỬA ĐỔI QUAN TRỌNG để hỗ trợ 3 loại lọc
   const filterDataByMonth = () => {
+    // Nếu không chọn tháng (selectedMonth là null hoặc rỗng), hiển thị tất cả
+    if (!selectedMonth) {
+      setFilteredImports(imports);
+      setFilteredExports(exports);
+
+      // Cập nhật tổng số hàng
+      setPagination(prev => ({
+        ...prev,
+        totalImportRows: imports.length,
+        totalExportRows: exports.length,
+        importPage: 1,
+        exportPage: 1
+      }));
+      return;
+    }
+
+    // KIỂM TRA FORMAT của selectedMonth
+    // Trường hợp 1: Chỉ có năm (format: "YYYY") - lọc theo năm
+    if (/^\d{4}$/.test(selectedMonth)) {
+      const year = parseInt(selectedMonth, 10);
+
+      // Lọc imports theo năm
+      const filteredImportData = imports.filter(imp => {
+        if (!imp.importDate) return false;
+        const importDate = new Date(imp.importDate);
+        return importDate.getFullYear() === year;
+      });
+      setFilteredImports(filteredImportData);
+
+      // Lọc exports theo năm
+      const filteredExportData = exports.filter(exp => {
+        const transactionDate = exp.transactionDate || exp.exportDate;
+        if (!transactionDate) return false;
+        const date = new Date(transactionDate);
+        return date.getFullYear() === year;
+      });
+      setFilteredExports(filteredExportData);
+
+      // Cập nhật tổng số hàng
+      setPagination(prev => ({
+        ...prev,
+        totalImportRows: filteredImportData.length,
+        totalExportRows: filteredExportData.length,
+        importPage: 1,
+        exportPage: 1
+      }));
+      return;
+    }
+
+    // Trường hợp 2: Chỉ có tháng (format: "MM") - lọc tất cả năm có tháng đó
+    if (/^\d{2}$/.test(selectedMonth)) {
+      const month = parseInt(selectedMonth, 10);
+
+      // Lọc imports theo tháng (bất kỳ năm nào)
+      const filteredImportData = imports.filter(imp => {
+        if (!imp.importDate) return false;
+        const importDate = new Date(imp.importDate);
+        return importDate.getMonth() + 1 === month; // getMonth() trả về 0-11
+      });
+      setFilteredImports(filteredImportData);
+
+      // Lọc exports theo tháng (bất kỳ năm nào)
+      const filteredExportData = exports.filter(exp => {
+        const transactionDate = exp.transactionDate || exp.exportDate;
+        if (!transactionDate) return false;
+        const date = new Date(transactionDate);
+        return date.getMonth() + 1 === month;
+      });
+      setFilteredExports(filteredExportData);
+
+      // Cập nhật tổng số hàng
+      setPagination(prev => ({
+        ...prev,
+        totalImportRows: filteredImportData.length,
+        totalExportRows: filteredExportData.length,
+        importPage: 1,
+        exportPage: 1
+      }));
+      return;
+    }
+
+    // Trường hợp 3: Có cả năm và tháng (format: "YYYY-MM")
     const [year, month] = selectedMonth.split('-');
 
     // Lọc imports
@@ -211,6 +288,7 @@ function FlockTransactions() {
     setSelectedTransaction(transaction);
     setShowInvoiceModal(true);
   };
+
   const mapStatus = (label) => {
     switch (label) {
       case "Hoàn thành":
@@ -301,6 +379,26 @@ function FlockTransactions() {
     }
   };
 
+  // Hàm hiển thị label tháng
+  const getMonthLabel = () => {
+    if (!selectedMonth) {
+      return "Tất cả tháng";
+    }
+
+    // Nếu chỉ có năm (format: "YYYY")
+    if (/^\d{4}$/.test(selectedMonth)) {
+      return `Năm ${selectedMonth}`;
+    }
+
+    // Nếu chỉ có tháng (format: "MM")
+    if (/^\d{2}$/.test(selectedMonth)) {
+      return `Tháng ${selectedMonth} (tất cả năm)`;
+    }
+
+    // Nếu có cả năm và tháng
+    const [year, month] = selectedMonth.split('-');
+    return `Tháng ${month}/${year}`;
+  };
 
   return (
     <div className="px-8 mt-8">
@@ -322,7 +420,6 @@ function FlockTransactions() {
         exports={filteredExports}
       />
 
-
       {/* TAB */}
       <ImportTabs tab={tab} setTab={setTab} />
 
@@ -334,7 +431,7 @@ function FlockTransactions() {
             <div>
               <h2 className="text-lg font-semibold text-gray-700">Danh sách xuất chuồng</h2>
               <p className="text-sm text-gray-500">
-                Quản lý các đơn xuất gia súc - Tháng {selectedMonth.split('-')[1]}/{selectedMonth.split('-')[0]}
+                Quản lý các đơn xuất gia súc - {getMonthLabel()}
               </p>
               {/* Thêm thông tin số đàn đang nuôi */}
               <p className="text-sm text-blue-600 mt-1">
@@ -379,8 +476,8 @@ function FlockTransactions() {
               <tbody className="divide-y divide-gray-200">
                 {pagedExports.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="py-8 px-4 text-center text-gray-500">
-                      {loading ? "Đang tải dữ liệu..." : "Không có dữ liệu xuất chuồng trong tháng này"}
+                    <td colSpan="10" className="py-8 px-4 text-center text-gray-500">
+                      {loading ? "Đang tải dữ liệu..." : "Không có dữ liệu xuất chuồng"}
                     </td>
                   </tr>
                 ) : (
@@ -431,7 +528,7 @@ function FlockTransactions() {
             <div>
               <h2 className="text-lg font-semibold text-gray-700">Danh sách nhập chuồng</h2>
               <p className="text-sm text-gray-500">
-                Quản lý các lứa gia súc nhập chuồng - Tháng {selectedMonth.split('-')[1]}/{selectedMonth.split('-')[0]}
+                Quản lý các lứa gia súc nhập chuồng - {getMonthLabel()}
               </p>
             </div>
             <button
@@ -451,7 +548,6 @@ function FlockTransactions() {
             onEdit={handleEditImport}
             onDelete={handleDeleteImport}
           />
-
 
           {/* PHÂN TRANG CHO NHẬP CHUỒNG */}
           {filteredImports.length > 0 && (
@@ -484,7 +580,7 @@ function FlockTransactions() {
   );
 }
 
-// Component cho item xuất chuồng
+// Component cho item xuất chuồng (giữ nguyên)
 function ExportItem({ item, onPreviewInvoice }) {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -507,6 +603,7 @@ function ExportItem({ item, onPreviewInvoice }) {
     if (item.totalRevenue) return item.totalRevenue;
     return (item.quantity * item.avgWeight * item.pricePerKg) || 0;
   };
+
   // Xem chi tiết
   const handleView = () => {
     alert("Xem chi tiết đơn: " + item._id);
@@ -540,10 +637,10 @@ function ExportItem({ item, onPreviewInvoice }) {
       </td>
       <td className="py-4 px-4">
         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${item.status === "completed" || item.status === "Hoàn thành"
-            ? "bg-green-100 text-green-800"
-            : item.status === "pending" || item.status === "Đang xử lý"
-              ? "bg-yellow-100 text-yellow-800"
-              : "bg-gray-100 text-gray-800"
+          ? "bg-green-100 text-green-800"
+          : item.status === "pending" || item.status === "Đang xử lý"
+            ? "bg-yellow-100 text-yellow-800"
+            : "bg-gray-100 text-gray-800"
           }`}>
           {item.status === "completed" ? "Hoàn thành" :
             item.status === "pending" ? "Đang xử lý" :
@@ -554,7 +651,6 @@ function ExportItem({ item, onPreviewInvoice }) {
       {/* HÀNH ĐỘNG */}
       <td className="py-4 px-4 text-center">
         <div className="flex items-center justify-center gap-3">
-
           {/* 👁 Xem */}
           <button
             onClick={handleView}

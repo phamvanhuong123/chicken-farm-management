@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 
-export default function MonthYearFilter({ 
-  selectedMonth, 
+export default function MonthYearFilter({
+  selectedMonth,
   onMonthChange,
   loading = false,
-  showLabel = true 
+  showLabel = true
 }) {
   const [monthOptions, setMonthOptions] = useState([]);
   const [yearOptions, setYearOptions] = useState([]);
@@ -13,19 +13,41 @@ export default function MonthYearFilter({
 
   useEffect(() => {
     if (selectedMonth) {
-      const [year, month] = selectedMonth.split('-');
-      setSelectedYear(year);
-      setSelectedMonthOnly(month);
+      // Kiểm tra xem selectedMonth có phải chỉ là tháng (format: "MM") không
+      if (/^\d{2}$/.test(selectedMonth)) {
+        // Chỉ có tháng, không có năm
+        setSelectedYear("");
+        setSelectedMonthOnly(selectedMonth);
+      } else if (/^\d{4}$/.test(selectedMonth)) {
+        // Chỉ có năm (format: "YYYY")
+        setSelectedYear(selectedMonth);
+        setSelectedMonthOnly("");
+      } else if (/^\d{4}-\d{2}$/.test(selectedMonth)) {
+        // Có cả năm và tháng
+        const [year, month] = selectedMonth.split('-');
+        setSelectedYear(year);
+        setSelectedMonthOnly(month);
+      }
+    } else {
+      // Nếu không có selectedMonth (hiển thị tất cả), reset các select
+      setSelectedYear("");
+      setSelectedMonthOnly("");
     }
   }, [selectedMonth]);
 
   useEffect(() => {
     const months = [];
+    // Thêm option "Tất cả tháng"
+    months.push({
+      value: "",
+      label: "Tất cả tháng"
+    });
+
     for (let i = 1; i <= 12; i++) {
       const month = String(i).padStart(2, '0');
-      months.push({ 
-        value: month, 
-        label: `Tháng ${i}` 
+      months.push({
+        value: month,
+        label: `Tháng ${i}`
       });
     }
     setMonthOptions(months);
@@ -34,30 +56,50 @@ export default function MonthYearFilter({
   useEffect(() => {
     const years = [];
     const currentYear = new Date().getFullYear();
-    
+
+    // Thêm option "Tất cả năm"
+    years.push({
+      value: "",
+      label: "Tất cả năm"
+    });
+
     for (let i = 0; i < 5; i++) {
       const year = currentYear - i;
-      years.push({ 
-        value: year.toString(), 
-        label: `Năm ${year}` 
+      years.push({
+        value: year.toString(),
+        label: `Năm ${year}`
       });
     }
-    
+
     setYearOptions(years);
-    
-    if (!selectedYear) {
-      setSelectedYear(currentYear.toString());
-    }
   }, []);
 
+  // Xử lý khi thay đổi năm hoặc tháng
   useEffect(() => {
+    // Nếu không có tháng và không có năm -> hiển thị tất cả
+    if (!selectedMonthOnly && !selectedYear) {
+      onMonthChange("");
+      return;
+    }
+
+    // Nếu có tháng nhưng không có năm -> chỉ lọc theo tháng (tất cả năm)
+    if (selectedMonthOnly && !selectedYear) {
+      onMonthChange(selectedMonthOnly); // Chỉ gửi tháng (format: "MM")
+      return;
+    }
+
+    // Nếu có năm nhưng không có tháng -> chỉ lọc theo năm
+    if (selectedYear && !selectedMonthOnly) {
+      onMonthChange(selectedYear); // Chỉ gửi năm (format: "YYYY")
+      return;
+    }
+
+    // Nếu có cả năm và tháng -> lọc theo năm-tháng
     if (selectedYear && selectedMonthOnly) {
       const newMonthYear = `${selectedYear}-${selectedMonthOnly}`;
-      if (newMonthYear !== selectedMonth) {
-        onMonthChange(newMonthYear);
-      }
+      onMonthChange(newMonthYear);
     }
-  }, [selectedYear, selectedMonthOnly]);
+  }, [selectedYear, selectedMonthOnly, onMonthChange]);
 
   const handleYearChange = (e) => {
     setSelectedYear(e.target.value);
@@ -74,7 +116,7 @@ export default function MonthYearFilter({
           Lọc theo:
         </div>
       )}
-      
+
       <div className="flex flex-wrap gap-2">
         <select
           value={selectedYear}
@@ -82,7 +124,6 @@ export default function MonthYearFilter({
           disabled={loading}
           className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent min-w-[120px]"
         >
-          <option value="">Chọn năm</option>
           {yearOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -93,10 +134,9 @@ export default function MonthYearFilter({
         <select
           value={selectedMonthOnly}
           onChange={handleMonthChange}
-          disabled={loading || !selectedYear}
+          disabled={loading}
           className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent min-w-[130px]"
         >
-          <option value="">Chọn tháng</option>
           {monthOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}

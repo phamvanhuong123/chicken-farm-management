@@ -1,3 +1,4 @@
+// src/pages/FlockTransactions/components/DashboardKPI.jsx
 import { useMemo } from "react";
 
 export default function DashboardKPI({
@@ -28,8 +29,8 @@ export default function DashboardKPI({
       (sum, e) =>
         sum +
         Number(e.quantity || 0) *
-          Number(e.avgWeight || 0) *
-          Number(e.pricePerKg || 0),
+        Number(e.avgWeight || 0) *
+        Number(e.pricePerKg || 0),
       0
     );
 
@@ -54,19 +55,46 @@ export default function DashboardKPI({
 
   const formatNumber = (number) =>
     new Intl.NumberFormat("vi-VN").format(number);
-
   const getCurrentMonthLabel = () => {
+    // Nếu không chọn tháng, hiển thị "Tất cả tháng"
+    if (!selectedMonth) return "Tất cả tháng";
+
+    // Nếu chỉ có năm (format: "YYYY")
+    if (/^\d{4}$/.test(selectedMonth)) {
+      return `Năm ${selectedMonth}`;
+    }
+
+    // Nếu chỉ có tháng (format: "MM")
+    if (/^\d{2}$/.test(selectedMonth)) {
+      return `Tháng ${selectedMonth} (tất cả năm)`;
+    }
+
+    // Nếu có cả năm và tháng
     const [year, month] = selectedMonth.split("-");
     return `Tháng ${month}/${year}`;
   };
 
-  /* =======================
-     ⛔ UI GIỮ NGUYÊN 100%
-     ======================= */
+  const getKPITitle = () => {
+    if (!selectedMonth) return "Tổng";
+
+    // Nếu chỉ có năm (format: "YYYY")
+    if (/^\d{4}$/.test(selectedMonth)) {
+      return "Tổng năm";
+    }
+
+    // Nếu chỉ có tháng (format: "MM")
+    if (/^\d{2}$/.test(selectedMonth)) {
+      return `Tổng tháng ${selectedMonth}`;
+    }
+
+    // Nếu có cả năm và tháng
+    return "Tổng tháng";
+  };
+
   return (
     <div className="mb-8">
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-800">Tổng quan tháng</h2>
+        <h2 className="text-xl font-bold text-gray-800">Tổng quan {getCurrentMonthLabel()}</h2>
         <p className="text-sm text-gray-500 mt-1">
           Thống kê nhập/xuất chuồng {getCurrentMonthLabel()}
         </p>
@@ -78,7 +106,9 @@ export default function DashboardKPI({
         <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Tổng nhập tháng</p>
+              <p className="text-sm font-medium text-gray-600">
+                {getKPITitle()} nhập
+              </p>
               <p className="text-2xl font-bold text-gray-900 mt-2">
                 {formatNumber(dashboardData.totalImport)}
               </p>
@@ -99,7 +129,9 @@ export default function DashboardKPI({
         <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Tổng xuất tháng</p>
+              <p className="text-sm font-medium text-gray-600">
+                {getKPITitle()} xuất
+              </p>
               <p className="text-2xl font-bold text-gray-900 mt-2">
                 {formatNumber(dashboardData.totalExport)}
               </p>
@@ -120,7 +152,9 @@ export default function DashboardKPI({
         <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Doanh thu tháng</p>
+              <p className="text-sm font-medium text-gray-600">
+                {getKPITitle()} doanh thu
+              </p>
               <p className="text-2xl font-bold text-gray-900 mt-2">
                 {formatCurrency(dashboardData.revenue)}
               </p>
