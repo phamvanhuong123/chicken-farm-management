@@ -54,11 +54,23 @@ const KPICard = ({
     const formatValue = (val) => {
         // Xử lý tiền tệ - cả VND và isCurrency
         if (isCurrency || unit === 'VND' || unit === '₫') {
+            // Hiển thị chính xác không làm tròn
+            // Chỉ sử dụng compact notation khi giá trị ≥ 1 tỷ
+            if (val >= 1000000000) {
+                return new Intl.NumberFormat('vi-VN', {
+                    style: 'currency',
+                    currency: 'VND',
+                    notation: 'compact',
+                    compactDisplay: 'short',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 1
+                }).format(val);
+            }
+
+            // Hiển thị đầy đủ cho giá trị < 1 tỷ
             return new Intl.NumberFormat('vi-VN', {
                 style: 'currency',
                 currency: 'VND',
-                notation: val >= 1000000 ? 'compact' : 'standard',
-                compactDisplay: 'short',
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0
             }).format(val);

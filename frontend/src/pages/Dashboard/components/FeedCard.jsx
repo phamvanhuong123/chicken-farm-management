@@ -17,6 +17,7 @@ const FeedCard = ({
             case 'red': return 'border-red-500 bg-red-50';
             case 'orange': return 'border-orange-500 bg-orange-50';
             case 'green': return 'border-green-500 bg-green-50';
+            case 'gray': return 'border-gray-500 bg-gray-50';
             default: return 'border-gray-500 bg-gray-50';
         }
     };
@@ -26,6 +27,7 @@ const FeedCard = ({
             case 'red': return 'bg-red-100 text-red-800';
             case 'orange': return 'bg-orange-100 text-orange-800';
             case 'green': return 'bg-green-100 text-green-800';
+            case 'gray': return 'bg-gray-100 text-gray-800';
             default: return 'bg-gray-100 text-gray-800';
         }
     };
@@ -53,7 +55,8 @@ const FeedCard = ({
                         color === 'red' ? 'text-red-500 text-base' :
                             color === 'orange' ? 'text-orange-500 text-base' :
                                 color === 'green' ? 'text-green-500 text-base' :
-                                    'text-gray-500 text-base'
+                                    color === 'gray' ? 'text-gray-500 text-base' :
+                                        'text-gray-500 text-base'
                     } />}
                 </div>
                 <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide truncate">

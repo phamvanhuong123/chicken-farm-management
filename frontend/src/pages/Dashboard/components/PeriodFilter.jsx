@@ -5,7 +5,8 @@ const PeriodFilter = ({ selectedPeriod, onPeriodChange, loading = false }) => {
     const periods = [
         { value: '7d', label: '7 ngày' },
         { value: '30d', label: '30 ngày' },
-        { value: '90d', label: '90 ngày' }
+        { value: '90d', label: '90 ngày' },
+        { value: 'all', label: 'Tất cả' }
     ];
 
     return (
@@ -21,8 +22,8 @@ const PeriodFilter = ({ selectedPeriod, onPeriodChange, loading = false }) => {
                         onClick={() => !loading && onPeriodChange(period.value)}
                         disabled={loading}
                         className={`px-2 py-1 text-xs rounded transition-colors ${selectedPeriod === period.value
-                            ? 'bg-blue-600 text-white'
-                            : 'text-gray-700 hover:bg-gray-200'
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-700 hover:bg-gray-200'
                             } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         {period.label}
