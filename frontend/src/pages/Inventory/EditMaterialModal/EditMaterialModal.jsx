@@ -11,7 +11,6 @@ export default function EditMaterialModal({ materialId, onClose, onSuccess }) {
     unit: "",
     expiryDate: "",
     threshold: "",
-    storageLocation: "",
   });
 
   const [loadingDetail, setLoadingDetail] = useState(false); // load dữ liệu cũ
@@ -36,7 +35,6 @@ export default function EditMaterialModal({ materialId, onClose, onSuccess }) {
           unit: data.unit || "",
           expiryDate: data.expiryDate ? data.expiryDate.slice(0, 10) : "",
           threshold: data.threshold ?? "",
-          storageLocation: data.storageLocation || "",
         });
       } catch (error) {
         toast.error("Không thể tải dữ liệu vật tư.");
@@ -62,8 +60,6 @@ export default function EditMaterialModal({ materialId, onClose, onSuccess }) {
     if (form.quantity === "" || Number(form.quantity) < 0)
       newErrors.quantity = "Số lượng phải ≥ 0";
     if (!form.expiryDate) newErrors.expiryDate = "Vui lòng chọn hạn sử dụng";
-    if (!form.storageLocation)
-      newErrors.storageLocation = "Vui lòng nhập vị trí lưu trữ";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -224,24 +220,6 @@ export default function EditMaterialModal({ materialId, onClose, onSuccess }) {
             />
             {errors.expiryDate && (
               <p className="text-xs text-red-500">{errors.expiryDate}</p>
-            )}
-          </div>
-
-          {/* Vị trí */}
-          <div className="flex flex-col gap-1">
-            <label className="text-gray-600 font-medium">
-              Vị trí lưu trữ <span className="text-red-500">*</span>
-            </label>
-            <input
-              name="storageLocation"
-              value={form.storageLocation}
-              onChange={handleChange}
-              className="h-10 px-3 rounded-lg border border-gray-300
-        focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Kho lạnh A1"
-            />
-            {errors.storageLocation && (
-              <p className="text-xs text-red-500">{errors.storageLocation}</p>
             )}
           </div>
         </div>

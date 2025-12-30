@@ -18,7 +18,7 @@ export const MATERIAL_SCHEMA = Joi.object({
   unit: Joi.string().required(),
   expiryDate: Joi.date().required(),
   threshold: Joi.number().integer().min(0).default(0),
-  storageLocation: Joi.string().required(),
+  storageLocation: Joi.string().allow("", null),
   createdAt: Joi.date().default(() => new Date()),
   updatedAt: Joi.date().default(null),
 });
@@ -31,7 +31,7 @@ export const validateBeforeCreateMaterial = async (data) => {
 };
 
 /**
- * 🔠 Chuẩn hóa tiếng Việt (bỏ dấu, chuyển thường)
+ *  Chuẩn hóa tiếng Việt (bỏ dấu, chuyển thường)
  */
 const normalizeVietnamese = (str = "") => {
   return str
@@ -44,7 +44,7 @@ const normalizeVietnamese = (str = "") => {
 };
 
 /**
- * 📋 Lấy danh sách vật tư (lọc, phân trang, tính trạng thái)
+ *  Lấy danh sách vật tư (lọc, phân trang, tính trạng thái)
  */
 const findAll = async (
   filter = {},
@@ -99,7 +99,7 @@ const findAll = async (
 };
 
 /**
- * 🧮 Đếm tổng số vật tư theo filter
+ *  Đếm tổng số vật tư theo filter
  */
 const count = async (filter = {}) => {
   const db = GET_DB();
@@ -107,7 +107,7 @@ const count = async (filter = {}) => {
 };
 
 /**
- * ➕ Tạo vật tư mới (tự thêm normalizedName / normalizedType)
+ *  Tạo vật tư mới (tự thêm normalizedName / normalizedType)
  */
 const create = async (data) => {
   const db = GET_DB();

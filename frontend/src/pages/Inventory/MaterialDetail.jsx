@@ -84,10 +84,7 @@ export default function MaterialDetail({ materialId, onClose }) {
                   : "-"
               }
             />
-            <InfoItem
-              label="Vị trí lưu trữ"
-              value={material.storageLocation || "-"}
-            />
+
             <InfoItem label="Nhà cung cấp" value={material.supplier || "-"} />
           </div>
         </div>

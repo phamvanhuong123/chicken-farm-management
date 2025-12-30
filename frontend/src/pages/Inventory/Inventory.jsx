@@ -199,15 +199,16 @@ export default function Inventory() {
               Xác nhận
             </button>
           )}
-          {isEmployer && <Button
-            onClick={() => setIsAddModalOpen(true)}
-            className={"bg-green-400 hover:bg-green-500 cursor-pointer"}
-          >
-            {" "}
-            <PlusIcon />
-            Thêm vật tư
-          </Button>}
-          
+          {isEmployer && (
+            <Button
+              onClick={() => setIsAddModalOpen(true)}
+              className={"bg-green-400 hover:bg-green-500 cursor-pointer"}
+            >
+              {" "}
+              <PlusIcon />
+              Thêm vật tư
+            </Button>
+          )}
         </div>
       </div>
 
@@ -305,7 +306,7 @@ export default function Inventory() {
               <th className="p-3 text-center">Đơn vị</th>
               <th className="p-3 text-center">HSD</th>
               <th className="p-3 text-center">Ngưỡng</th>
-              <th className="p-3 text-center">Vị trí</th>
+
               <th className="p-3 text-center">Trạng thái</th>
               <th className="p-3 text-center">Hành động</th>
             </tr>
@@ -313,14 +314,14 @@ export default function Inventory() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="9" className="text-center py-4 text-gray-500">
+                <td colSpan="8" className="text-center py-4 text-gray-500">
                   Đang tải dữ liệu...
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan="9"
+                  colSpan="8"
                   className="text-center py-4 italic text-gray-500"
                 >
                   Không có vật tư phù hợp.
@@ -347,7 +348,7 @@ export default function Inventory() {
                     {new Date(m.expiryDate).toLocaleDateString("vi-VN")}
                   </td>
                   <td className="p-3 text-center">{m.threshold}</td>
-                  <td className="p-3 text-center">{m.storageLocation}</td>
+
                   <td className="p-3 text-center">
                     <StatusBadge label={m.statusInfo.label} />
                   </td>
@@ -358,19 +359,22 @@ export default function Inventory() {
                     >
                       <Eye size={16} className="w-4 h-4 text-gray-600 " />
                     </button>
-                    {isEmployer && <button
-                      className="p-2 rounded cursor-pointer hover:bg-blue-200"
-                      onClick={() => setEditingMaterialId(m._id)} //mở modal sửa
-                    >
-                      <Edit size={16} className="w-4 h-4 text-blue-500" />
-                    </button>}
-                    {isEmployer && <button
-                      className="p-2 rounded hover:bg-red-50 text-red-600 disabled:opacity-50 cursor-pointer"
-                      onClick={() => setDeletingMaterial(m)}
-                    >
-                      <Trash2 size={16} />
-                    </button>}
-                    
+                    {isEmployer && (
+                      <button
+                        className="p-2 rounded cursor-pointer hover:bg-blue-200"
+                        onClick={() => setEditingMaterialId(m._id)} //mở modal sửa
+                      >
+                        <Edit size={16} className="w-4 h-4 text-blue-500" />
+                      </button>
+                    )}
+                    {isEmployer && (
+                      <button
+                        className="p-2 rounded hover:bg-red-50 text-red-600 disabled:opacity-50 cursor-pointer"
+                        onClick={() => setDeletingMaterial(m)}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))

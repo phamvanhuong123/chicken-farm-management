@@ -27,7 +27,7 @@ export const getAllMaterials = async (req, res, next) => {
         { header: "Đơn vị", key: "unit", width: 12 },
         { header: "Hạn sử dụng", key: "expiryDate", width: 18 },
         { header: "Ngưỡng cảnh báo", key: "threshold", width: 18 },
-        { header: "Vị trí lưu trữ", key: "storageLocation", width: 20 },
+
         { header: "Trạng thái", key: "status", width: 18 },
       ];
 
@@ -41,7 +41,7 @@ export const getAllMaterials = async (req, res, next) => {
           unit: m.unit,
           expiryDate: new Date(m.expiryDate).toLocaleDateString("vi-VN"),
           threshold: m.threshold,
-          storageLocation: m.storageLocation,
+
           status: label,
         });
         if (color === "red")
