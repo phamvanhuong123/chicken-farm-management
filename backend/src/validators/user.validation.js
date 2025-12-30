@@ -111,36 +111,38 @@ const updateUser = async (req, res, next) => {
     next(customError);
   }
 };
-const resetpassword =async (req,res, next) => {
+const resetpassword = async (req, res, next) => {
   const conditionCorrect = Joi.object({
     password: Joi.string()
       .trim()
       .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,50}$/)
-      .message("Định dạng không hợp lệ").required(),
+      .message("Định dạng không hợp lệ")
+      .required(),
     email: Joi.string().email().required(),
     otp: Joi.string().trim().strict(),
-    updatedAt: Joi.date().timestamp("javascript").default(Date.now)
+    imgUrl: Joi.string().default(null),
+    imgPublicId: Joi.string().default(null),
+    updatedAt: Joi.date().timestamp("javascript").default(Date.now),
   });
-  try{
+  try {
     const validateData = await conditionCorrect.validateAsync(req.body, {
       abortEarly: false,
     });
     req.body = validateData;
-    next()
-  }
-  catch(error){
- const errorMessage = new Error(error).message;
+    next();
+  } catch (error) {
+    const errorMessage = new Error(error).message;
     const customError = new ApiError(
       StatusCodes.UNPROCESSABLE_ENTITY,
       errorMessage
     );
     next(customError);
   }
-}
+};
 export const userValidate = {
   createNew,
   addEmployee,
   updateEmployee,
   updateUser,
-  resetpassword
+  resetpassword,
 };

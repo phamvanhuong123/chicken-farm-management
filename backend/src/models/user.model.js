@@ -9,6 +9,8 @@ const USER_COLLECTION_NAME = "users";
 const USER_COLLECTION_SCHEMA = Joi.object({
   username: Joi.string().min(2).max(50).required(),
   phone: Joi.string().allow(null).default(null),
+  imgUrl : Joi.string().allow(null).default(null),
+  imgPublicId : Joi.string().allow(null).default(null),
   email: Joi.string().email().required(),
   password: Joi.string().required(),
   verified: Joi.boolean().default(false),

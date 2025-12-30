@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import {
@@ -15,11 +15,15 @@ import {
 import { singleFileValidator } from "~/utils/validators";
 import { toast } from "react-toastify";
 import axiosInstance from "~/apis";
+import { useSelector } from "react-redux";
+import { getUserState } from "~/slices/authSlice";
+import { ClipLoader } from "react-spinners";
+import { getLastUpperChar } from "~/utils/formatter";
 
 export default function AvatarSection({dataUser}) {
-  const [avatarPreview, setAvatarPreview] = useState(
-    "https://github.com/shadcn.png"
-  );
+  const userData = useSelector(state => getUserState(state))
+  const [avatarPreview, setAvatarPreview] = useState();
+  const fileInputRef = useRef();
   const [avatarFile, setAvatarFile] = useState(null);
   const [loading,setLoading] = useState(false)
 
@@ -27,7 +31,7 @@ export default function AvatarSection({dataUser}) {
     const file = e.target.files[0];
     if (!file){
       setAvatarFile(null)
-      setAvatarPreview("https://github.com/shadcn.png")
+      setAvatarPreview(userData.imgUrl)
       return;
     }
 
@@ -57,8 +61,19 @@ export default function AvatarSection({dataUser}) {
     }
     finally{
       setLoading(false)
+      fileInputRef.current.value = "";
     }
   };
+
+  useEffect(()=> {
+    const fetchDataUser = async()=> {
+
+      const res = await axiosInstance.get(`/auth/user/${userData.id}`)
+      console.log(res.data)
+      setAvatarPreview(res?.data?.data?.imgUrl)
+    }
+    fetchDataUser()
+  },[])
 
   return (
     <Card>
@@ -69,12 +84,12 @@ export default function AvatarSection({dataUser}) {
       <CardContent className="flex items-center gap-6">
         <Avatar className="w-24 h-24">
           <AvatarImage src={avatarPreview} />
-          <AvatarFallback>U</AvatarFallback>
+          <AvatarFallback>{getLastUpperChar(userData.username)}</AvatarFallback>
         </Avatar>
 
         <div className="space-y-3">
-          <Input type="file" accept="image/*" onChange={handleChange} />
-          <Button onClick={handleSubmit}>Cập nhật avatar</Button>
+          <Input type="file" accept="image/*" ref={fileInputRef} onChange={handleChange} />
+          <Button className={'cursor-pointer'} disabled={loading} onClick={handleSubmit}>Cập nhật avatar {loading && <ClipLoader color="white" size={15} />}</Button>
         </div>
       </CardContent>
     </Card>

@@ -5,6 +5,7 @@ import { sendOTPEmail } from "~/providers/NodeMailerProVider.js";
 import { env } from "../config/environment.js";
 import ApiError from "~/utils/ApiError.js";
 import { StatusCodes } from "http-status-codes";
+import { deleteImage, uploadFile } from "~/providers/CloudinaryProvider.js";
 
 const OTP_EXPIRY = 3 * 60 * 1000;
 
@@ -248,6 +249,15 @@ const updateUser = async (id, updateData, userAvataFile) => {
     //Trường hợp cật nhập upload file
     if (userAvataFile) {
       //upload file cloudinary
+      const result = await uploadFile(userAvataFile)
+      // console.log(result)
+      //Xoá ảnh cũ đi
+      if (existUser.imgPublicId){
+        await deleteImage(existUser.imgPublicId)
+      }
+      // Cật nhật ảnh mới
+      updateData.imgPublicId = result.public_id
+      updateData.imgUrl = result.secure_url
     }
 
     const updatedUser = await userModel.updateUser(id, updateData);
