@@ -7,5 +7,8 @@ export const env = {
   EMAIL_USER : process.env.EMAIL_USER,
   EMAIL_PASS : process.env.EMAIL_PASS,
   JWT_SECRET : process.env.JWT_SECRET || 'please-set-JWT_SECRET-in-env',
-  JWT_EXPIRES_IN : process.env.JWT_EXPIRES_IN || '3h'
+  JWT_EXPIRES_IN : process.env.JWT_EXPIRES_IN || '3h',
+  CLOUD_NAME : process.env.CLOUD_NAME,
+  API_KEY_CLOUDINARY : process.env.API_KEY_CLOUDINARY,
+  API_SECRET_CLOUDINARY : process.env.API_SECRET_CLOUDINARY
 }

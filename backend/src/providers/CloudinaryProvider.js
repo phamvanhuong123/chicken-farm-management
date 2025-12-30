@@ -2,13 +2,14 @@ import cloudinary from "cloudinary";
 import { StatusCodes } from "http-status-codes";
 import streamifier from "streamifier";
 import ApiError from "~/utils/ApiError";
+import { env } from '~/config/environment.js'
 
 //Câu hình
 const cloudinaryV2 = cloudinary.v2;
 cloudinaryV2.config({
-  cloud_name: "dj5i0dfhk",
-  api_key: "788447978177883",
-  api_secret: "ID9fN6BSTqlwKykUu4b9jZ0E-M4",
+  cloud_name: env.CLOUD_NAME,
+  api_key: env.API_KEY_CLOUDINARY,
+  api_secret: env.API_SECRET_CLOUDINARY,
 });
 
 //upload File
