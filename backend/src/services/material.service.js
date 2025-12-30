@@ -20,9 +20,11 @@ const getAllMaterials = async (query) => {
     type,
     sort = "createdAt",
     order = "desc",
+    ...otherFilters
   } = query;
 
-  const filters = {};
+  // Tạo filters từ otherFilters (nếu có)
+  const filters = { ...otherFilters };
 
   if (keyword) {
     const normalizedKeyword = normalizeVietnamese(keyword);
@@ -119,7 +121,7 @@ const createMaterial = async (data) => {
     ...valid,
   };
 };
-//cap nhat vat tu
+
 const updateMaterial = async (id, data) => {
   const validData = await materialModel.validateBeforeCreateMaterial(data);
 
@@ -136,7 +138,7 @@ const updateMaterial = async (id, data) => {
     ...validData,
   };
 };
-//Xóa vật tư
+
 const deleteMaterial = async (id) => {
   const result = await materialModel.deleteById(id);
 
@@ -151,23 +153,39 @@ const deleteMaterial = async (id) => {
 
 const getFeedInfoForDashboard = async () => {
   try {
-    // Lấy vật tư loại thức ăn
+    // Sửa bộ lọc: chỉ lấy vật tư loại thức ăn thực sự
+    // Cải thiện bộ lọc để chính xác hơn
     const filters = {
       $or: [
-        { type: { $regex: "feed", $options: "i" } },
-        { type: { $regex: "thức ăn", $options: "i" } },
-      ],
+        {
+          $and: [
+            { type: { $regex: "thức ăn", $options: "i" } },
+            { normalizedType: { $regex: "thuc an", $options: "i" } }
+          ]
+        },
+        {
+          $and: [
+            { type: { $regex: "feed", $options: "i" } },
+            { normalizedType: { $regex: "feed", $options: "i" } }
+          ]
+        },
+        // Thêm các từ khóa khác có thể chỉ thức ăn
+        { normalizedName: { $regex: "thuc an", $options: "i" } },
+        { normalizedName: { $regex: "feed", $options: "i" } },
+        { name: { $regex: "thức ăn", $options: "i" } },
+        { name: { $regex: "feed", $options: "i" } }
+      ]
     };
 
     const result = await getAllMaterials({ ...filters, page: 1, limit: 100 });
     const materials = result.items || [];
 
-    if (!materials || materials.length === 0) {
+    if (materials.length === 0) {
       return {
-        source: "fallback",
+        source: "material_service",
         value: 0,
         unit: "kg",
-        note: "Không có dữ liệu thức ăn trong kho",
+        note: "Không có vật tư thức ăn trong kho",
       };
     }
 
@@ -177,10 +195,10 @@ const getFeedInfoForDashboard = async () => {
 
     const unit = materials[0]?.unit || "kg";
 
+    // Xác định trạng thái dựa trên ngưỡng
     let status = "normal";
     let label = "Bình thường";
 
-    // Dùng ngưỡng từ dashboard service
     if (totalQuantity <= 500) {
       status = "low";
       label = "Thiếu";
@@ -211,7 +229,12 @@ const getFeedInfoForDashboard = async () => {
     };
   } catch (error) {
     console.error("Material Service - getFeedInfoForDashboard error:", error);
-    return { source: "fallback" };
+    return {
+      source: "fallback",
+      value: 0,
+      unit: "kg",
+      note: "Không thể lấy dữ liệu thức ăn"
+    };
   }
 };
 
@@ -221,8 +244,6 @@ export const materialService = {
   getMaterialById,
   createMaterial,
   updateMaterial,
-
   deleteMaterial,
-
   getFeedInfoForDashboard,
 };

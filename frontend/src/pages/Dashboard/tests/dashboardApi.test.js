@@ -1,9 +1,23 @@
 import { dashboardApi } from '../../../apis/dashboardApi';
-import axios from 'axios';
 import { describe, test, expect, vi, beforeEach } from "vitest";
 
-// Mock axios
-vi.mock('axios');
+// Mock axios instance từ module ~/apis/index
+vi.mock('~/apis/index', () => {
+    return {
+        default: {
+            get: vi.fn(),
+            post: vi.fn(),
+            put: vi.fn(),
+            delete: vi.fn(),
+            interceptors: {
+                request: { use: vi.fn() },
+                response: { use: vi.fn() }
+            }
+        }
+    };
+});
+
+import axiosInstance from '~/apis/index';
 
 describe('U1.1 - Dashboard API Module', () => {
     const API_BASE_URL = 'http://localhost:8071/v1';
@@ -20,11 +34,11 @@ describe('U1.1 - Dashboard API Module', () => {
             }
         };
 
-        axios.get.mockResolvedValue(mockResponse);
+        axiosInstance.get.mockResolvedValue(mockResponse);
 
         const result = await dashboardApi.getDashboardKPIs();
 
-        expect(axios.get).toHaveBeenCalledWith(`${API_BASE_URL}/dashboard/summary?period=7d`);
+        expect(axiosInstance.get).toHaveBeenCalledWith(`/dashboard/summary?period=7d`);
         expect(result).toEqual(mockResponse);
     });
 
@@ -36,11 +50,11 @@ describe('U1.1 - Dashboard API Module', () => {
             }
         };
 
-        axios.get.mockResolvedValue(mockResponse);
+        axiosInstance.get.mockResolvedValue(mockResponse);
 
         const result = await dashboardApi.getDashboardKPIs('30d');
 
-        expect(axios.get).toHaveBeenCalledWith(`${API_BASE_URL}/dashboard/summary?period=30d`);
+        expect(axiosInstance.get).toHaveBeenCalledWith(`/dashboard/summary?period=30d`);
         expect(result).toEqual(mockResponse);
     });
 
@@ -52,12 +66,12 @@ describe('U1.1 - Dashboard API Module', () => {
             }
         };
 
-        axios.get.mockResolvedValue(mockResponse);
+        axiosInstance.get.mockResolvedValue(mockResponse);
 
         const result = await dashboardApi.getDashboardTrend('30d', 'weight');
 
-        expect(axios.get).toHaveBeenCalledWith(
-            `${API_BASE_URL}/dashboard/trend?period=30d&chartType=weight`
+        expect(axiosInstance.get).toHaveBeenCalledWith(
+            `/dashboard/trend?period=30d&chartType=weight`
         );
         expect(result).toEqual(mockResponse);
     });
@@ -70,11 +84,11 @@ describe('U1.1 - Dashboard API Module', () => {
             }
         };
 
-        axios.get.mockResolvedValue(mockResponse);
+        axiosInstance.get.mockResolvedValue(mockResponse);
 
         const result = await dashboardApi.getDashboardAlerts();
 
-        expect(axios.get).toHaveBeenCalledWith(`${API_BASE_URL}/dashboard/alerts`);
+        expect(axiosInstance.get).toHaveBeenCalledWith(`/dashboard/alerts`);
         expect(result).toEqual(mockResponse);
     });
 
@@ -86,12 +100,12 @@ describe('U1.1 - Dashboard API Module', () => {
             }
         };
 
-        axios.get.mockResolvedValue(mockResponse);
+        axiosInstance.get.mockResolvedValue(mockResponse);
 
         const result = await dashboardApi.getWeeklyConsumptionChart();
 
-        expect(axios.get).toHaveBeenCalledWith(
-            `${API_BASE_URL}/dashboard/charts/weekly-consumption`
+        expect(axiosInstance.get).toHaveBeenCalledWith(
+            `/dashboard/charts/weekly-consumption`
         );
         expect(result).toEqual(mockResponse);
     });
@@ -104,12 +118,12 @@ describe('U1.1 - Dashboard API Module', () => {
             }
         };
 
-        axios.get.mockResolvedValue(mockResponse);
+        axiosInstance.get.mockResolvedValue(mockResponse);
 
         const result = await dashboardApi.getCostStructureChart();
 
-        expect(axios.get).toHaveBeenCalledWith(
-            `${API_BASE_URL}/dashboard/charts/cost-structure`
+        expect(axiosInstance.get).toHaveBeenCalledWith(
+            `/dashboard/charts/cost-structure`
         );
         expect(result).toEqual(mockResponse);
     });
@@ -122,11 +136,11 @@ describe('U1.1 - Dashboard API Module', () => {
             }
         };
 
-        axios.get.mockResolvedValue(mockResponse);
+        axiosInstance.get.mockResolvedValue(mockResponse);
 
         const result = await dashboardApi.getAllDashboardCharts();
 
-        expect(axios.get).toHaveBeenCalledWith(`${API_BASE_URL}/dashboard/charts/all`);
+        expect(axiosInstance.get).toHaveBeenCalledWith(`/dashboard/charts/all`);
         expect(result).toEqual(mockResponse);
     });
 
@@ -138,17 +152,17 @@ describe('U1.1 - Dashboard API Module', () => {
             }
         };
 
-        axios.get.mockResolvedValue(mockResponse);
+        axiosInstance.get.mockResolvedValue(mockResponse);
 
         const result = await dashboardApi.checkApiStatus();
 
-        expect(axios.get).toHaveBeenCalledWith(`${API_BASE_URL}/dashboard/status`);
+        expect(axiosInstance.get).toHaveBeenCalledWith(`/dashboard/status`);
         expect(result).toEqual(mockResponse);
     });
 
     test('TC9 - Xử lý lỗi khi gọi API', async () => {
         const error = new Error('Network Error');
-        axios.get.mockRejectedValue(error);
+        axiosInstance.get.mockRejectedValue(error);
 
         await expect(dashboardApi.getDashboardKPIs()).rejects.toThrow('Network Error');
     });

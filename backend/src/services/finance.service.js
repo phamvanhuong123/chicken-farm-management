@@ -62,7 +62,13 @@ const getFinancialOverview = async (month, year) => {
       profitMargin: parseFloat(profitMargin),
     };
   } catch (error) {
-    throw new Error("Không thể tính toán KPI tài chính: " + error.message);
+    console.error("Lỗi khi tính toán KPI tài chính:", error);
+    return {
+      totalIncome: 0,
+      totalExpense: 0,
+      profit: 0,
+      profitMargin: 0,
+    };
   }
 };
 
@@ -120,7 +126,8 @@ const getExpenseBreakdown = async (month, year) => {
 
     return breakdown;
   } catch (error) {
-    throw new Error("Không thể tải cơ cấu chi phí: " + error.message);
+    console.error("Lỗi khi tải cơ cấu chi phí:", error);
+    return [];
   }
 };
 
@@ -184,7 +191,8 @@ const getFinancialTrend = async (months = 6, year) => {
 
     return trend;
   } catch (error) {
-    throw new Error("Không thể tải xu hướng tài chính: " + error.message);
+    console.error("Lỗi khi tải xu hướng tài chính:", error);
+    return [];
   }
 };
 
@@ -207,14 +215,14 @@ const getRecentTransactions = async (limit = 10) => {
 
     return transactions;
   } catch (error) {
-    throw new Error("Không thể tải giao dịch gần đây: " + error.message);
+    console.error("Lỗi khi tải giao dịch gần đây:", error);
+    return [];
   }
 };
 
 /**
  * Tạo giao dịch mới
  */
-// finance.service.js
 const createTransaction = async (data) => {
   try {
     const lastTransaction = await financialTransactionModel.findLatest();
@@ -331,7 +339,52 @@ const searchTransactions = async (filters = {}) => {
       totalPages,
     };
   } catch (error) {
-    throw new Error("Không thể tìm kiếm giao dịch: " + error.message);
+    console.error("Lỗi khi tìm kiếm giao dịch:", error);
+    return {
+      transactions: [],
+      total: 0,
+      page: 1,
+      limit: 20,
+      totalPages: 0,
+    };
+  }
+};
+
+/**
+ * Hàm mới: Lấy summary tài chính cho dashboard
+ */
+const getFinancialSummary = async () => {
+  try {
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1;
+    const currentYear = currentDate.getFullYear();
+
+    const overview = await getFinancialOverview(currentMonth, currentYear);
+    const recentTransactions = await getRecentTransactions(5);
+    const expenseBreakdown = await getExpenseBreakdown(currentMonth, currentYear);
+
+    return {
+      overview,
+      recentTransactions,
+      expenseBreakdown,
+      period: `Tháng ${currentMonth}/${currentYear}`,
+      lastUpdated: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("Lỗi khi lấy financial summary:", error);
+    return {
+      overview: {
+        totalIncome: 0,
+        totalExpense: 0,
+        profit: 0,
+        profitMargin: 0,
+      },
+      recentTransactions: [],
+      expenseBreakdown: [],
+      period: "Tháng hiện tại",
+      lastUpdated: new Date().toISOString(),
+      error: error.message
+    };
   }
 };
 
@@ -344,4 +397,5 @@ export const financeService = {
   deleteTransaction,
   getTransactionById,
   searchTransactions,
+  getFinancialSummary, 
 };

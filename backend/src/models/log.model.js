@@ -487,6 +487,43 @@ const getLogStatistics = async (startDate, endDate) => {
     throw new Error("Lỗi model getLogStatistics: " + error.message);
   }
 };
+/**
+ * Lấy log theo type và khoảng thời gian (CHO DASHBOARD - ưu tiên updatedAt)
+ */
+const getLogsByTypeAndDateRange = async (type, startDate, endDate) => {
+  try {
+    const logs = await GET_DB()
+      .collection(LOG_COLLECTION_NAME)
+      .find({
+        type: type,
+        $or: [
+          {
+            $and: [
+              { updatedAt: { $exists: true, $ne: null } },
+              { updatedAt: { $gte: startDate, $lte: endDate } }
+            ]
+          },
+          {
+            $and: [
+              {
+                $or: [
+                  { updatedAt: { $exists: false } },
+                  { updatedAt: null }
+                ]
+              },
+              { createdAt: { $gte: startDate, $lte: endDate } }
+            ]
+          }
+        ]
+      })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return logs;
+  } catch (error) {
+    throw new Error("Lỗi model getLogsByTypeAndDateRange: " + error.message);
+  }
+};
 
 export const logModel = {
   LOG_COLLECTION_NAME,
@@ -501,6 +538,7 @@ export const logModel = {
   deleteById,
   getTotalQuantityByTypeAndTimeRange,
   getLogsByTypeAndTimeRange,
+  getLogsByTypeAndDateRange,
   getTrendData,
   getLogStatistics,
 };

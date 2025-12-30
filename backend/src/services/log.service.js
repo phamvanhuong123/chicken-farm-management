@@ -65,16 +65,10 @@ const getLogById = async (id) => {
 const getAllLogs = async () => {
   try {
     const logs = await logModel.getAllLogs();
-    if (!logs || logs.length === 0) {
-      const err = new Error("Chưa có dữ liệu nhật ký.");
-      err.statusCode = 404;
-      throw err;
-    }
-    return logs;
+    return logs || [];
   } catch (error) {
-    if (!error.statusCode) error.statusCode = 500;
-    error.message = "Không thể tải danh sách nhật ký: " + error.message;
-    throw error;
+    console.error("Lỗi khi lấy tất cả logs:", error);
+    return [];
   }
 };
 
@@ -138,31 +132,65 @@ const getTrendDataForDashboard = async (chartType, period) => {
       case "90d":
         startDate.setDate(startDate.getDate() - 90);
         break;
+      case "all":
+        startDate = new Date(0); // Từ ngày đầu tiên
+        break;
       default:
         startDate.setDate(startDate.getDate() - 7);
     }
 
-    let trendData = await logModel.getTrendData(
-      chartType,
-      startDate,
-      endDate
-    );
+    // Lấy tất cả logs và filter
+    const allLogs = await getAllLogs();
 
-    // Xử lý đặc biệt cho weight: dùng giá trị trung bình thay vì tổng
-    if (chartType === 'weight' && trendData.length > 0) {
-      trendData = trendData.map(item => ({
-        ...item,
-        value: item.avg || item.value // Ưu tiên avg nếu có
-      }));
-    }
+    // Filter theo type và thời gian
+    let filteredLogs = allLogs.filter(log => {
+      if (!log.createdAt) return false;
+      const logDate = new Date(log.createdAt);
+      if (logDate < startDate || logDate > endDate) return false;
+
+      switch (chartType) {
+        case "weight":
+          return log.type === "WEIGHT";
+        case "death":
+          return log.type === "DEATH";
+        case "feed":
+          return log.type === "FOOD";
+        default:
+          return log.type === "WEIGHT";
+      }
+    });
+
+    // Nhóm theo ngày
+    const groupedByDate = {};
+    filteredLogs.forEach(log => {
+      const date = new Date(log.createdAt).toISOString().split('T')[0];
+      if (!groupedByDate[date]) {
+        groupedByDate[date] = {
+          date: date,
+          value: 0,
+          count: 0
+        };
+      }
+      groupedByDate[date].value += log.quantity || 0;
+      groupedByDate[date].count += 1;
+    });
+
+    // Chuyển thành mảng và sắp xếp
+    const trendData = Object.values(groupedByDate)
+      .map(item => ({
+        date: item.date,
+        value: chartType === "weight" ? (item.value / Math.max(item.count, 1)) : item.value,
+        count: item.count
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
 
     return trendData;
   } catch (error) {
-    if (!error.statusCode) error.statusCode = 500;
-    error.message = "Không thể lấy dữ liệu biểu đồ: " + error.message;
-    throw error;
+    console.error("Lỗi khi lấy dữ liệu biểu đồ:", error);
+    return [];
   }
 };
+
 /**
  * Lấy cảnh báo từ log (cho dashboard)
  */
@@ -231,9 +259,8 @@ const getAlertsFromLogs = async () => {
 
     return alerts;
   } catch (error) {
-    if (!error.statusCode) error.statusCode = 500;
-    error.message = "Không thể lấy cảnh báo từ nhật ký: " + error.message;
-    throw error;
+    console.error("Lỗi khi lấy cảnh báo từ logs:", error);
+    return [];
   }
 };
 
@@ -292,6 +319,82 @@ const getLogsByTypeAndTimeRange = async (type, startDate, endDate) => {
   }
 };
 
+// Thêm hàm mới để hỗ trợ dashboard
+const getDashboardLogSummary = async () => {
+  try {
+    const allLogs = await getAllLogs();
+
+    // Tính tổng số logs
+    const totalLogs = allLogs.length;
+
+    // Tính tổng theo loại
+    const summaryByType = {};
+    allLogs.forEach(log => {
+      const type = log.type || 'UNKNOWN';
+      if (!summaryByType[type]) {
+        summaryByType[type] = {
+          type: type,
+          count: 0,
+          totalQuantity: 0
+        };
+      }
+      summaryByType[type].count += 1;
+      summaryByType[type].totalQuantity += log.quantity || 0;
+    });
+
+    return {
+      totalLogs,
+      summaryByType: Object.values(summaryByType),
+      lastUpdated: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("Lỗi khi lấy summary logs:", error);
+    return {
+      totalLogs: 0,
+      summaryByType: [],
+      lastUpdated: new Date().toISOString(),
+      error: error.message
+    };
+  }
+};
+
+/**
+ * Lấy log theo type và khoảng thời gian (CHO DASHBOARD - ưu tiên updatedAt)
+ */
+const getLogsByTypeAndDateRange = async (type, startDate, endDate) => {
+  try {
+    const logs = await GET_DB()
+      .collection(LOG_COLLECTION_NAME)
+      .find({
+        type: type,
+        $or: [
+          {
+            $and: [
+              { updatedAt: { $exists: true, $ne: null } },
+              { updatedAt: { $gte: startDate, $lte: endDate } }
+            ]
+          },
+          {
+            $and: [
+              {
+                $or: [
+                  { updatedAt: { $exists: false } },
+                  { updatedAt: null }
+                ]
+              },
+              { createdAt: { $gte: startDate, $lte: endDate } }
+            ]
+          }
+        ]
+      })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return logs;
+  } catch (error) {
+    throw new Error("Lỗi model getLogsByTypeAndDateRange: " + error.message);
+  }
+};
 
 export const logService = {
   createLog,
@@ -305,4 +408,6 @@ export const logService = {
   getLogStatistics,
   deleteLog,
   getLogsByTypeAndTimeRange,
+  getDashboardLogSummary,
+  getLogsByTypeAndDateRange,
 };

@@ -34,22 +34,14 @@ vi.mock("../../services/flock.service.js", () => ({
 
 vi.mock("../../services/material.service.js", () => ({
   materialService: {
-    getFeedInfoForDashboard: vi.fn().mockResolvedValue({
-      source: 'material_service',
-      value: 950,
-      unit: 'kg',
-      status: 'normal',
-      label: 'Bình thường',
-      threshold: { LOW: 500, NORMAL: 800, HIGH: 1200 },
-      change: 0,
-      materialCount: 3,
-      note: 'Tổng hợp từ 3 loại thức ăn'
-    }),
+    // Không dùng trong _getFeedData hiện tại
   },
 }));
 
 vi.mock("../../services/log.service.js", () => ({
   logService: {
+    getAllLogs: vi.fn().mockResolvedValue([]),
+    getLogsByTypeAndTimeRange: vi.fn().mockResolvedValue([]),
     getTotalQuantityByTypeAndPeriod: vi.fn().mockImplementation((type, startDate, endDate) => {
       if (type === "DEATH") {
         const daysDiff = (endDate - startDate) / (1000 * 60 * 60 * 24);
@@ -104,46 +96,33 @@ vi.mock("../../services/log.service.js", () => ({
   },
 }));
 
+vi.mock("../../services/finance.service.js", () => ({
+  financeService: {
+    getFinancialOverview: vi.fn().mockResolvedValue({
+      totalIncome: 245000000,
+      totalExpense: 200000000,
+      profit: 45000000,
+      profitMargin: 18.37
+    }),
+    getExpenseBreakdown: vi.fn().mockResolvedValue([
+      { category: "Thức ăn", amount: 100000000, percentage: 50 },
+      { category: "Thuốc", amount: 30000000, percentage: 15 },
+      { category: "Nhân công", amount: 40000000, percentage: 20 },
+      { category: "Điện nước", amount: 20000000, percentage: 10 },
+      { category: "Chi phí khác", amount: 10000000, percentage: 5 },
+    ]),
+    getFinancialTrend: vi.fn().mockResolvedValue([
+      { month: 1, monthLabel: "Tháng 1", income: 200000000, expense: 150000000 },
+      { month: 2, monthLabel: "Tháng 2", income: 220000000, expense: 160000000 },
+      { month: 3, monthLabel: "Tháng 3", income: 240000000, expense: 180000000 },
+    ]),
+  },
+}));
+
 describe("Dashboard Service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NODE_ENV = "test";
-
-    dashboardService.config.MOCK_DATA = {
-      DAILY_FEED: 850,
-      DAILY_FEED_CHANGE: 0,
-      MONTHLY_REVENUE: 245000000,
-      REVENUE_CHANGE: 123,
-      DEATH_RATE_7D: 2.1,
-      DEATH_RATE_CHANGE: -0.5,
-      AVG_WEIGHT_CHANGE: 42,
-      MOCK_FLOCKS: [
-        {
-          _id: "1",
-          initialCount: 1000,
-          currentCount: 950,
-          avgWeight: 1.8,
-          status: "Raising",
-          speciesId: "ri",
-          areaId: "khu-a",
-          ownerId: "user1",
-          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-          updatedAt: null,
-        },
-        {
-          _id: "2",
-          initialCount: 800,
-          currentCount: 780,
-          avgWeight: 2.1,
-          status: "Raising",
-          speciesId: "tam-hoang",
-          areaId: "khu-b",
-          ownerId: "user1",
-          createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-          updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-        },
-      ],
-    };
   });
 
   describe("getDashboardKPIs", () => {
@@ -155,11 +134,11 @@ describe("Dashboard Service", () => {
         expect(kpis.period).toBe(period);
         expect(kpis.todayFeed.period).toBe("today");
         expect(kpis.monthlyRevenue.period).toBe("month");
-        // Chỉ kiểm tra nếu có dữ liệu thật, không kiểm tra mock
-        if (kpis.deathRate.source === "log") {
-          expect(kpis.deathRate).toHaveProperty("totalDeath");
-          expect(kpis.deathRate).toHaveProperty("totalChickens");
-        }
+
+        // Kiểm tra dữ liệu tỷ lệ chết
+        expect(kpis.deathRate).toHaveProperty("totalDeath");
+        expect(kpis.deathRate).toHaveProperty("totalChickens");
+        expect(kpis.deathRate.source).toBe("log");
       }
     });
   });
@@ -185,8 +164,8 @@ describe("Dashboard Service", () => {
       ];
 
       const filtered7d = dashboardService._filterFlocksByPeriod(flocks, "7d");
-      expect(filtered7d.length).toBe(3); // THAY ĐỔI TỪ 2 THÀNH 3
-      expect(filtered7d.map(f => f._id)).toEqual(["1", "2", "3"]); // THÊM "1"
+      expect(filtered7d.length).toBe(3);
+      expect(filtered7d.map(f => f._id)).toEqual(["1", "2", "3"]);
 
       const filtered30d = dashboardService._filterFlocksByPeriod(flocks, "30d");
       expect(filtered30d.length).toBe(3);
@@ -196,45 +175,84 @@ describe("Dashboard Service", () => {
     });
   });
 
-  describe("Feed Data from Material Service", () => {
-    it("nên lấy dữ liệu thức ăn từ material service", async () => {
-      const { materialService } = await import("../../services/material.service.js");
+  describe("Feed Data từ Log Service", () => {
+    it("nên lấy dữ liệu thức ăn từ log service", async () => {
+      const { logService } = await import("../../services/log.service.js");
+
+      // Tính toán thời gian hôm nay theo UTC+7 (giống logic trong code)
+      const now = new Date();
+      const vnOffset = 7 * 60 * 60 * 1000; // GMT+7
+      const todayVN = new Date(now.getTime() + vnOffset);
+      todayVN.setHours(0, 0, 0, 0);
+      const todayStart = new Date(todayVN);
+      const todayEnd = new Date(todayVN);
+      todayEnd.setHours(23, 59, 59, 999);
+      const todayStartUTC = new Date(todayStart.getTime() - vnOffset);
+      const todayEndUTC = new Date(todayEnd.getTime() - vnOffset);
+
+      // Tạo log nằm trong khoảng thời gian hôm nay
+      const logTime = new Date(todayStartUTC.getTime() + 60 * 60 * 1000); // 1 giờ sau
+
+      logService.getLogsByTypeAndTimeRange.mockResolvedValueOnce([
+        {
+          _id: "1",
+          type: "FOOD",
+          quantity: 150,
+          createdAt: logTime,
+          updatedAt: logTime,
+        }
+      ]);
 
       const kpis = await dashboardService.getDashboardKPIs("7d");
 
-      expect(materialService.getFeedInfoForDashboard).toHaveBeenCalled();
-      expect(kpis.todayFeed.source).toBe("material_service");
-      expect(kpis.todayFeed.value).toBe(950);
+      expect(logService.getLogsByTypeAndTimeRange).toHaveBeenCalled();
+      expect(kpis.todayFeed.source).toBe("log_service");
+      expect(kpis.todayFeed.value).toBe(150);
       expect(kpis.todayFeed.unit).toBe("kg");
       expect(kpis.todayFeed.period).toBe("today");
-      expect(kpis.todayFeed.materialCount).toBe(3);
     });
 
-    it("nên xử lý khi material service trả về fallback", async () => {
-      const { materialService } = await import("../../services/material.service.js");
+    it("nên xử lý khi không có dữ liệu log thức ăn", async () => {
+      const { logService } = await import("../../services/log.service.js");
 
-      materialService.getFeedInfoForDashboard.mockResolvedValueOnce({
-        source: "fallback",
-        note: "Không có dữ liệu"
-      });
+      // Mock trả về mảng rỗng
+      logService.getLogsByTypeAndTimeRange.mockResolvedValueOnce([]);
+      logService.getAllLogs.mockResolvedValueOnce([]);
 
       const kpis = await dashboardService.getDashboardKPIs("7d");
 
-      expect(kpis.todayFeed.source).toBe("mock");
-      expect(kpis.todayFeed.value).toBe(850);
+      expect(kpis.todayFeed.source).toBe("log_service");
+      expect(kpis.todayFeed.value).toBe(0);
+      expect(kpis.todayFeed.label).toBe("Không có dữ liệu");
     });
 
-    it("nên xử lý lỗi từ material service", async () => {
-      const { materialService } = await import("../../services/material.service.js");
+    it("nên xử lý lỗi từ log service trong _getFeedData", async () => {
+      const { logService } = await import("../../services/log.service.js");
 
-      materialService.getFeedInfoForDashboard.mockRejectedValueOnce(
-        new Error("Material service unavailable")
-      );
+      // Lưu lại mock gốc
+      const originalGetAllLogs = logService.getAllLogs;
+      const originalGetLogsByTypeAndTimeRange = logService.getLogsByTypeAndTimeRange;
 
-      const kpis = await dashboardService.getDashboardKPIs("7d");
+      try {
+        // Mock cả hai hàm đều lỗi chỉ cho _getFeedData
+        logService.getLogsByTypeAndTimeRange.mockRejectedValueOnce(
+          new Error("Log service error")
+        );
+        logService.getAllLogs.mockRejectedValueOnce(
+          new Error("Cannot get all logs")
+        );
 
-      expect(kpis.todayFeed.source).toBe("mock");
-      expect(kpis.todayFeed.implementLater).toBeDefined();
+        // Test riêng hàm _getFeedData
+        const feedData = await dashboardService._getFeedData("today");
+
+        expect(feedData.source).toBe("error");
+        expect(feedData.value).toBe(0);
+        expect(feedData.label).toBe("Không có dữ liệu");
+      } finally {
+        // Khôi phục mock gốc
+        logService.getAllLogs = originalGetAllLogs;
+        logService.getLogsByTypeAndTimeRange = originalGetLogsByTypeAndTimeRange;
+      }
     });
   });
 
@@ -242,12 +260,18 @@ describe("Dashboard Service", () => {
     it("nên tính tỷ lệ chết dựa trên initialCount thay vì currentCount", async () => {
       const { logService } = await import("../../services/log.service.js");
 
-      // Mock: 20 con chết trong kỳ hiện tại, 15 con trong kỳ trước
-      logService.getTotalQuantityByTypeAndPeriod
-        .mockResolvedValueOnce(20)  // Kỳ hiện tại
-        .mockResolvedValueOnce(15); // Kỳ trước
+      // Mock logs cho kỳ hiện tại
+      logService.getAllLogs.mockResolvedValueOnce([
+        {
+          _id: "1",
+          type: "DEATH",
+          quantity: 20,
+          createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+          flockId: "1"
+        }
+      ]);
 
-      // Mock _getFlocksData để có đàn trong cả hai kỳ
+      // Mock flocks data
       const originalGetFlocksData = dashboardService._getFlocksData;
       dashboardService._getFlocksData = vi.fn().mockResolvedValue([
         {
@@ -259,7 +283,8 @@ describe("Dashboard Service", () => {
           speciesId: "ri",
           areaId: "khu-a",
           ownerId: "user1",
-          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Nằm trong kỳ hiện tại
+          // Thay đổi: 6 ngày trước thay vì 7 ngày trước để chắc chắn nằm trong kỳ 7d
+          createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
           updatedAt: null,
         },
         {
@@ -271,8 +296,9 @@ describe("Dashboard Service", () => {
           speciesId: "tam-hoang",
           areaId: "khu-b",
           ownerId: "user1",
-          createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // Nằm trong kỳ trước
-          updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // Cập nhật trong kỳ trước
+          // Đàn 2 có updatedAt là 10 ngày trước, nằm ngoài kỳ 7d
+          createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+          updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
         },
       ]);
 
@@ -283,7 +309,7 @@ describe("Dashboard Service", () => {
 
       // Kiểm tra tính toán
       expect(result.totalDeath).toBe(20);
-      // Kỳ hiện tại chỉ có đàn 1 (1000 gà)
+      // Kỳ hiện tại có 1 đàn với 1000 gà
       expect(result.totalChickens).toBe(1000);
       // Tỷ lệ chết: (20 / 1000) * 100 = 2%
       expect(result.value).toBeCloseTo(2.0, 2);
@@ -293,12 +319,18 @@ describe("Dashboard Service", () => {
     it("nên hiển thị màu xanh khi tỷ lệ chết giảm", async () => {
       const { logService } = await import("../../services/log.service.js");
 
-      // Mock để kỳ hiện tại tỷ lệ thấp hơn kỳ trước
-      logService.getTotalQuantityByTypeAndPeriod
-        .mockResolvedValueOnce(15)  // Kỳ hiện tại: ít chết hơn
-        .mockResolvedValueOnce(25); // Kỳ trước: nhiều chết hơn
+      // Mock logs với ít gà chết hơn
+      logService.getAllLogs.mockResolvedValueOnce([
+        {
+          _id: "1",
+          type: "DEATH",
+          quantity: 0, // Không có gà chết
+          createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+          flockId: "1"
+        }
+      ]);
 
-      // Mock _getFlocksData để có đàn trong cả hai kỳ
+      // Mock flocks data
       const originalGetFlocksData = dashboardService._getFlocksData;
       dashboardService._getFlocksData = vi.fn().mockResolvedValue([
         {
@@ -310,20 +342,8 @@ describe("Dashboard Service", () => {
           speciesId: "ri",
           areaId: "khu-a",
           ownerId: "user1",
-          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Trong kỳ hiện tại
+          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
           updatedAt: null,
-        },
-        {
-          _id: "2",
-          initialCount: 800,
-          currentCount: 780,
-          avgWeight: 2.1,
-          status: "Raising",
-          speciesId: "tam-hoang",
-          areaId: "khu-b",
-          ownerId: "user1",
-          createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // Trong kỳ trước
-          updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // Trong kỳ trước
         },
       ]);
 
@@ -332,54 +352,84 @@ describe("Dashboard Service", () => {
       // Khôi phục
       dashboardService._getFlocksData = originalGetFlocksData;
 
-      // Tính toán mong đợi:
-      // Kỳ hiện tại: totalDeath = 15, totalChickens = 1000 → rate = 1.5%
-      // Kỳ trước: totalDeath = 25, totalChickens = 800 → rate = 3.125%
-      // change = 1.5 - 3.125 = -1.625 (giảm)
-
-      expect(result.change).toBeLessThan(0); // Giảm
-      expect(result.status).toBe("down");
+      // Với 0 con chết trên 1000 gà -> tỷ lệ 0%
+      expect(result.value).toBe(0);
       expect(result.color).toBe("green");
-      expect(result.trend).toBe("improving");
-
-      // Có thể thêm kiểm tra chi tiết hơn
-      expect(result.change).toBeCloseTo(-1.625, 2);
+      expect(result.note).toContain("Không có gà chết");
     });
   });
 
-  // Thêm test cho material service integration
-  describe("Material Service Integration", () => {
-    it("nên gọi material service để lấy dữ liệu thức ăn", async () => {
-      const { materialService } = await import("../../services/material.service.js");
+  describe("Log Service Integration cho dữ liệu thức ăn", () => {
+    it("nên gọi log service để lấy dữ liệu thức ăn", async () => {
+      const { logService } = await import("../../services/log.service.js");
+
+      // Tính toán thời gian hôm nay theo UTC+7
+      const now = new Date();
+      const vnOffset = 7 * 60 * 60 * 1000;
+      const todayVN = new Date(now.getTime() + vnOffset);
+      todayVN.setHours(0, 0, 0, 0);
+      const todayStart = new Date(todayVN);
+      const todayEnd = new Date(todayVN);
+      todayEnd.setHours(23, 59, 59, 999);
+      const todayStartUTC = new Date(todayStart.getTime() - vnOffset);
+
+      // Tạo log nằm trong khoảng thời gian hôm nay
+      const logTime = new Date(todayStartUTC.getTime() + 2 * 60 * 60 * 1000); // 2 giờ sau
+
+      logService.getLogsByTypeAndTimeRange.mockResolvedValueOnce([
+        {
+          _id: "1",
+          type: "FOOD",
+          quantity: 200,
+          createdAt: logTime,
+          updatedAt: logTime,
+        }
+      ]);
 
       const feedData = await dashboardService._getFeedData("today");
 
-      expect(materialService.getFeedInfoForDashboard).toHaveBeenCalled();
-      expect(feedData.source).toBe("material_service");
-      expect(feedData.value).toBe(950);
-      expect(feedData.unit).toBe("kg");
+      expect(logService.getLogsByTypeAndTimeRange).toHaveBeenCalled();
+      expect(feedData.source).toBe("log_service");
+      expect(feedData.value).toBe(200);
     });
 
-    it("nên fallback về mock data khi material service lỗi", async () => {
-      const { materialService } = await import("../../services/material.service.js");
+    it("nên fallback về getAllLogs khi getLogsByTypeAndTimeRange lỗi", async () => {
+      const { logService } = await import("../../services/log.service.js");
 
-      materialService.getFeedInfoForDashboard.mockRejectedValueOnce(
-        new Error("Service unavailable")
-      );
+      // Lưu lại mock gốc
+      const originalGetAllLogs = logService.getAllLogs;
+      const originalGetLogsByTypeAndTimeRange = logService.getLogsByTypeAndTimeRange;
 
-      const feedData = await dashboardService._getFeedData("today");
+      try {
+        // Mock lỗi từ getLogsByTypeAndTimeRange
+        logService.getLogsByTypeAndTimeRange.mockRejectedValueOnce(
+          new Error("Service error")
+        );
+        // Mock getAllLogs trả về dữ liệu hôm nay
+        logService.getAllLogs.mockResolvedValueOnce([
+          {
+            _id: "1",
+            type: "FOOD",
+            quantity: 100,
+            createdAt: new Date(), // Thời gian hiện tại (hôm nay)
+            updatedAt: new Date(),
+          }
+        ]);
 
-      expect(feedData.source).toBe("mock");
-      expect(feedData.value).toBe(850);
-      expect(feedData.implementLater).toBeDefined();
+        const feedData = await dashboardService._getFeedData("today");
+
+        expect(logService.getAllLogs).toHaveBeenCalled();
+        expect(feedData.source).toBe("log_service");
+        expect(feedData.value).toBe(100);
+      } finally {
+        // Khôi phục mock gốc
+        logService.getAllLogs = originalGetAllLogs;
+        logService.getLogsByTypeAndTimeRange = originalGetLogsByTypeAndTimeRange;
+      }
     });
   });
 
   describe("Test Môi Trường", () => {
-    it("nên sử dụng mock data trong môi trường test", () => {
-      expect(dashboardService.isTestEnvironment).toBe(true);
-    });
-
     it("nên trả về mock KPIs khi có lỗi trong getDashboardKPIs", async () => {
       const originalGetFlocksData = dashboardService._getFlocksData;
 

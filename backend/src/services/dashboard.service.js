@@ -11,51 +11,13 @@ class DashboardService {
         NORMAL: 800,
         HIGH: 1200,
       },
-      MOCK_DATA: {
-        DAILY_FEED: 850,
-        DAILY_FEED_CHANGE: 0,
-        DEATH_RATE_7D: 2.1,
-        DEATH_RATE_CHANGE: -0.5,
-        AVG_WEIGHT_CHANGE: 42,
-        MOCK_FLOCKS: [
-          {
-            _id: "1",
-            initialCount: 1000,
-            currentCount: 950,
-            avgWeight: 1.8,
-            status: "Raising",
-            speciesId: "ri",
-            areaId: "khu-a",
-            ownerId: "user1",
-            createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-            updatedAt: null,
-          },
-          {
-            _id: "2",
-            initialCount: 800,
-            currentCount: 780,
-            avgWeight: 2.1,
-            status: "Raising",
-            speciesId: "tam-hoang",
-            areaId: "khu-b",
-            ownerId: "user1",
-            createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-            updatedAt: null,
-          },
-        ],
-      },
+      MAX_REASONABLE_WEIGHT: 10 // Thêm giới hạn trọng lượng hợp lý (kg)
     };
-
-    this.isTestEnvironment =
-      process.env.NODE_ENV === "test" ||
-      typeof jest !== "undefined" ||
-      typeof vi !== "undefined";
   }
 
   async getDashboardKPIs(period = "7d") {
     try {
       const [
-        flocksData,
         totalChickensKPI,
         totalFlocksKPI,
         deathRateKPI,
@@ -63,7 +25,6 @@ class DashboardService {
         feedKPI,
         revenueKPI,
       ] = await Promise.all([
-        this._getFlocksData(),
         this._calculateTotalChickens(period),
         this._calculateTotalFlocks(period),
         this._getDeathRateData(period),
@@ -85,23 +46,18 @@ class DashboardService {
 
       return kpis;
     } catch (error) {
-      if (this.isTestEnvironment) {
-        return this._getMockKPIs(period);
-      }
-      throw new Error("Không thể tính toán KPI dashboard: " + error.message);
+      console.error("Lỗi khi tính toán KPI dashboard:", error);
+      return this._getEmptyKPIs(period);
     }
   }
 
   async _getFlocksData() {
     try {
-      if (this.isTestEnvironment) {
-        return this.config.MOCK_DATA.MOCK_FLOCKS;
-      }
-      return await flockService.getAllFlocks();
+      const flocks = await flockService.getAllFlocks();
+      // Chỉ lấy đàn đang nuôi
+      return flocks.filter(flock => flock.status === "Raising" || flock.status === "Đang nuôi");
     } catch (error) {
-      if (this.isTestEnvironment) {
-        return this.config.MOCK_DATA.MOCK_FLOCKS;
-      }
+      console.error("Lỗi khi lấy dữ liệu đàn:", error);
       return [];
     }
   }
@@ -110,40 +66,48 @@ class DashboardService {
     try {
       const flocks = await this._getFlocksData();
       const filteredFlocks = this._filterFlocksByPeriod(flocks, period);
-      const activeFlocks = filteredFlocks.filter(
-        (flock) => flock.status === "Raising" || flock.status === "Đang nuôi"
-      );
 
-      const totalCurrent = activeFlocks.reduce(
+      if (filteredFlocks.length === 0) {
+        return {
+          value: 0,
+          change: 0,
+          status: "neutral",
+          previousValue: 0,
+          period,
+          unit: "con",
+          description: `Tổng số gà đang nuôi (${period})`,
+          color: "gray",
+          note: `Không có đàn nào trong khoảng thời gian ${period}`,
+        };
+      }
+
+      const totalCurrent = filteredFlocks.reduce(
         (sum, flock) => sum + (flock.currentCount || flock.initialCount || 0),
         0
       );
-      const previousTotal = this._getMockPreviousValue(totalCurrent, 42);
-      const change = previousTotal > 0
-        ? ((totalCurrent - previousTotal) / previousTotal) * 100
-        : 0;
 
       return {
         value: totalCurrent,
-        change: parseFloat(change.toFixed(1)),
-        status: this._getChangeStatus(change),
-        previousValue: previousTotal,
+        change: 0,
+        status: "neutral",
+        previousValue: 0,
         period,
         unit: "con",
-        description: `Tổng số gà đang nuôi (cập nhật trong ${period})`,
-        color: this._getChangeColor(change),
-        note: `Dựa trên ${activeFlocks.length} đàn có cập nhật trong khoảng thời gian này`,
+        description: `Tổng số gà đang nuôi (${period})`,
+        color: "gray",
+        note: `Dựa trên ${filteredFlocks.length} đàn`,
       };
     } catch (error) {
+      console.error("Lỗi khi tính tổng số gà:", error);
       return {
-        value: 12450,
-        change: 42,
-        status: "up",
-        previousValue: 8760,
+        value: 0,
+        change: 0,
+        status: "neutral",
+        previousValue: 0,
         period,
         unit: "con",
-        description: "Tổng số gà đang nuôi",
-        color: "green",
+        description: `Tổng số gà đang nuôi (${period})`,
+        color: "gray",
       };
     }
   }
@@ -162,6 +126,9 @@ class DashboardService {
       case "90d":
         cutoffDate.setDate(now.getDate() - 90);
         break;
+      case "all":
+        // Lấy tất cả đàn
+        return flocks;
       default:
         return flocks;
     }
@@ -178,35 +145,29 @@ class DashboardService {
     try {
       const flocks = await this._getFlocksData();
       const filteredFlocks = this._filterFlocksByPeriod(flocks, period);
-      const activeFlocks = filteredFlocks.filter(
-        (flock) => flock.status === "Raising" || flock.status === "Đang nuôi"
-      );
 
-      const totalCurrent = activeFlocks.length;
-      const previousTotal = this._getMockPreviousValue(totalCurrent, 0);
-      const change = previousTotal > 0
-        ? ((totalCurrent - previousTotal) / previousTotal) * 100
-        : 0;
+      const totalCurrent = filteredFlocks.length;
 
       return {
         value: totalCurrent,
-        change: parseFloat(change.toFixed(1)),
-        status: this._getChangeStatus(change),
-        previousValue: previousTotal,
-        period,
-        unit: "đàn",
-        description: `Tổng số đàn đang nuôi (cập nhật trong ${period})`,
-        color: this._getChangeColor(change),
-      };
-    } catch (error) {
-      return {
-        value: 8,
         change: 0,
         status: "neutral",
-        previousValue: 8,
+        previousValue: 0,
         period,
         unit: "đàn",
-        description: "Tổng số đàn đang nuôi",
+        description: `Tổng số đàn đang nuôi (${period})`,
+        color: "gray",
+      };
+    } catch (error) {
+      console.error("Lỗi khi tính tổng số đàn:", error);
+      return {
+        value: 0,
+        change: 0,
+        status: "neutral",
+        previousValue: 0,
+        period,
+        unit: "đàn",
+        description: `Tổng số đàn đang nuôi (${period})`,
         color: "gray",
       };
     }
@@ -214,290 +175,275 @@ class DashboardService {
 
   async _getDeathRateData(period) {
     try {
+      // Lấy logs từ service
+      const logs = await logService.getAllLogs();
+
+      // Lấy logs trong khoảng thời gian
       const endDate = new Date();
       let startDate = new Date();
-      let previousStartDate = new Date();
-
       switch (period) {
         case "7d":
           startDate.setDate(startDate.getDate() - 7);
-          previousStartDate.setDate(previousStartDate.getDate() - 14);
           break;
         case "30d":
           startDate.setDate(startDate.getDate() - 30);
-          previousStartDate.setDate(previousStartDate.getDate() - 60);
           break;
         case "90d":
           startDate.setDate(startDate.getDate() - 90);
-          previousStartDate.setDate(previousStartDate.getDate() - 180);
+          break;
+        case "all":
+          // Lấy tất cả logs
+          startDate = new Date(0); // Từ ngày đầu tiên
           break;
         default:
           startDate.setDate(startDate.getDate() - 7);
-          previousStartDate.setDate(previousStartDate.getDate() - 14);
       }
 
-      const totalDeathCurrent = await logService.getTotalQuantityByTypeAndPeriod(
-        "DEATH",
-        startDate,
-        endDate
-      );
+      const deathLogs = logs.filter(log => {
+        if (!log.createdAt) return false;
+        const logDate = new Date(log.createdAt);
+        return log.type === "DEATH" && logDate >= startDate && logDate <= endDate;
+      });
 
-      let totalDeathPrev = 0;
-      if (previousStartDate) {
-        totalDeathPrev = await logService.getTotalQuantityByTypeAndPeriod(
-          "DEATH",
-          previousStartDate,
-          startDate
-        );
-      }
+      const totalDeath = deathLogs.reduce((sum, log) => sum + (log.quantity || 0), 0);
 
+      // Lấy tổng số gà trong kỳ
       const flocks = await this._getFlocksData();
       const filteredFlocks = this._filterFlocksByPeriod(flocks, period);
       const totalChickensInPeriod = filteredFlocks.reduce(
         (sum, f) => sum + (f.initialCount || 0), 0
       );
 
-      const currentRate = totalChickensInPeriod > 0
-        ? (totalDeathCurrent / totalChickensInPeriod) * 100
-        : 0;
-
-      let prevRate = 0;
-      let change = 0;
-      let hasPreviousData = false;
-
-      if (previousStartDate && totalDeathPrev > 0) {
-        const previousFlocks = flocks.filter(f => {
-          const flockDate = f.updatedAt ? new Date(f.updatedAt) : new Date(f.createdAt);
-          return flockDate >= previousStartDate && flockDate < startDate;
-        });
-        const totalChickensPrev = previousFlocks.reduce(
-          (sum, f) => sum + (f.initialCount || 0), 0
-        );
-
-        if (totalChickensPrev > 0) {
-          prevRate = (totalDeathPrev / totalChickensPrev) * 100;
-          change = currentRate - prevRate;
-          hasPreviousData = true;
-        }
-      }
-
-      if (!hasPreviousData) {
-        change = this.config.MOCK_DATA.DEATH_RATE_CHANGE;
-      }
-
-      let status, color;
-      if (change < 0) {
-        status = "down";
-        color = "green";
-      } else if (change > 0) {
-        status = "up";
-        color = "red";
-      } else {
-        status = "neutral";
-        color = "gray";
-      }
+      const currentRate = totalChickensInPeriod > 0 ? (totalDeath / totalChickensInPeriod) * 100 : 0;
 
       return {
         value: parseFloat(currentRate.toFixed(2)),
-        change: parseFloat(change.toFixed(2)),
-        status: status,
+        change: 0,
+        status: currentRate > 5 ? "up" : currentRate > 0 ? "neutral" : "down",
         period: period,
         unit: "%",
         description: `Tỷ lệ chết (${period} gần nhất)`,
-        color: color,
-        note: hasPreviousData
-          ? `So sánh với ${period} trước đó`
-          : "Không có dữ liệu kỳ trước để so sánh",
-        source: hasPreviousData ? "log" : "mock",
-        trend: change < 0 ? "improving" : change > 0 ? "worsening" : "stable",
-        icon: change < 0 ? "arrow_downward" : change > 0 ? "arrow_upward" : "minimize",
-        totalDeath: totalDeathCurrent,
+        color: currentRate > 5 ? "red" : currentRate > 0 ? "gray" : "green",
+        note: totalDeath > 0 ? `Có ${totalDeath} con chết trong ${period}` : "Không có gà chết",
+        source: "log",
+        totalDeath: totalDeath,
         totalChickens: totalChickensInPeriod,
-        hasPreviousData: hasPreviousData
+        hasPreviousData: false
       };
     } catch (error) {
-      return this._getMockDeathRateData(period);
+      console.error("Lỗi khi tính tỷ lệ chết:", error);
+      return {
+        value: 0,
+        change: 0,
+        status: "neutral",
+        period: period,
+        unit: "%",
+        description: `Tỷ lệ chết (${period} gần nhất)`,
+        color: "gray",
+        source: "log",
+        totalDeath: 0,
+        totalChickens: 0,
+        note: "Không thể tính tỷ lệ chết"
+      };
     }
-  }
-
-  _getMockDeathRateData(period) {
-    const currentRate = this.config.MOCK_DATA.DEATH_RATE_7D;
-    const change = this.config.MOCK_DATA.DEATH_RATE_CHANGE;
-
-    let status, color;
-    if (change < 0) {
-      status = "down";
-      color = "green";
-    } else if (change > 0) {
-      status = "up";
-      color = "red";
-    } else {
-      status = "neutral";
-      color = "gray";
-    }
-
-    return {
-      value: currentRate,
-      change: change,
-      status: status,
-      period: period,
-      unit: "%",
-      description: `Tỷ lệ chết (${period} gần nhất)`,
-      color: color,
-      source: "mock",
-      totalDeath: 20,
-      totalChickens: 1730,
-    };
   }
 
   async _calculateAvgWeight(period) {
     try {
       const flocks = await this._getFlocksData();
       const filteredFlocks = this._filterFlocksByPeriod(flocks, period);
-      const flocksWithWeight = filteredFlocks.filter(
-        (f) =>
-          (f.status === "Raising" || f.status === "Đang nuôi") &&
-          (f.avgWeight || 0) > 0
+
+      // Lọc các đàn có trọng lượng hợp lý (≤ MAX_REASONABLE_WEIGHT kg)
+      const flocksWithReasonableWeight = filteredFlocks.filter(
+        (f) => (f.avgWeight || 0) > 0 && (f.avgWeight || 0) <= this.config.MAX_REASONABLE_WEIGHT
       );
 
-      if (flocksWithWeight.length === 0) {
+      if (flocksWithReasonableWeight.length === 0) {
+        // Nếu không có đàn nào có trọng lượng hợp lý, thử lấy tất cả
+        const flocksWithAnyWeight = filteredFlocks.filter(
+          (f) => (f.avgWeight || 0) > 0
+        );
+
+        if (flocksWithAnyWeight.length === 0) {
+          return {
+            value: 0,
+            change: 0,
+            status: "neutral",
+            period,
+            unit: "kg/con",
+            description: "Trọng lượng trung bình",
+            note: "Không có dữ liệu trọng lượng hợp lý"
+          };
+        }
+
+        // Sử dụng tất cả dữ liệu có trọng lượng > 0
+        let totalWeight = 0;
+        let totalChickens = 0;
+
+        flocksWithAnyWeight.forEach((flock) => {
+          const chickens = flock.currentCount || flock.initialCount || 0;
+          // Giới hạn trọng lượng tối đa
+          const weight = Math.min(flock.avgWeight || 0, this.config.MAX_REASONABLE_WEIGHT);
+          totalWeight += weight * chickens;
+          totalChickens += chickens;
+        });
+
+        const currentAvg = totalChickens > 0 ? totalWeight / totalChickens : 0;
+
         return {
-          value: 0,
+          value: parseFloat(currentAvg.toFixed(2)),
           change: 0,
           status: "neutral",
+          previousValue: 0,
           period,
           unit: "kg/con",
-          description: "Trọng lượng trung bình",
+          description: `Trọng lượng trung bình (${period})`,
+          color: "gray",
+          sampleSize: flocksWithAnyWeight.length,
+          totalChickensInSample: totalChickens,
+          note: `Tính từ ${flocksWithAnyWeight.length} đàn (đã giới hạn trọng lượng ≤ ${this.config.MAX_REASONABLE_WEIGHT}kg)`
         };
       }
 
       let totalWeight = 0;
       let totalChickens = 0;
 
-      flocksWithWeight.forEach((flock) => {
-        totalWeight +=
-          (flock.avgWeight || 0) * (flock.currentCount || flock.initialCount || 0);
-        totalChickens += flock.currentCount || flock.initialCount || 0;
+      flocksWithReasonableWeight.forEach((flock) => {
+        const chickens = flock.currentCount || flock.initialCount || 0;
+        totalWeight += (flock.avgWeight || 0) * chickens;
+        totalChickens += chickens;
       });
 
       const currentAvg = totalChickens > 0 ? totalWeight / totalChickens : 0;
-      const change = this.config.MOCK_DATA.AVG_WEIGHT_CHANGE;
-      const previousAvg = this._getMockPreviousValue(currentAvg, change);
 
       return {
         value: parseFloat(currentAvg.toFixed(2)),
-        change: parseFloat(change.toFixed(1)),
-        status: this._getChangeStatus(change),
-        previousValue: previousAvg,
+        change: 0,
+        status: "neutral",
+        previousValue: 0,
         period,
         unit: "kg/con",
-        description: `Trọng lượng trung bình (cập nhật trong ${period})`,
-        color: this._getChangeColor(change),
-        sampleSize: flocksWithWeight.length,
+        description: `Trọng lượng trung bình (${period})`,
+        color: "gray",
+        sampleSize: flocksWithReasonableWeight.length,
         totalChickensInSample: totalChickens,
+        note: `Tính từ ${flocksWithReasonableWeight.length} đàn có trọng lượng hợp lý`
       };
     } catch (error) {
+      console.error("Lỗi khi tính trọng lượng trung bình:", error);
       return {
-        value: 1.8,
-        change: 42,
-        status: "up",
-        previousValue: 1.27,
+        value: 0,
+        change: 0,
+        status: "neutral",
+        previousValue: 0,
         period,
         unit: "kg/con",
         description: "Trọng lượng trung bình",
-        color: "green",
-        sampleSize: 2,
-        totalChickensInSample: 1730,
+        color: "gray",
+        sampleSize: 0,
+        totalChickensInSample: 0,
+        note: "Lỗi khi tính toán trọng lượng"
       };
-    }
-  }
-
-  async _getFeedInfoFromMaterialService() {
-    try {
-      if (materialService && typeof materialService.getFeedInfoForDashboard === 'function') {
-        return await materialService.getFeedInfoForDashboard();
-      }
-
-      const filters = {
-        $or: [
-          { type: { $regex: 'feed', $options: 'i' } },
-          { type: { $regex: 'thức ăn', $options: 'i' } }
-        ]
-      };
-
-      const materials = await materialService.getAllMaterials({
-        ...filters,
-        page: 1,
-        limit: 100
-      });
-
-      const feedMaterials = materials.items || [];
-      const totalQuantity = feedMaterials.reduce((sum, m) => sum + (m.quantity || 0), 0);
-
-      return {
-        source: 'material_service',
-        value: totalQuantity,
-        unit: feedMaterials[0]?.unit || 'kg',
-        status: this._getFeedStatus(totalQuantity).status,
-        label: this._getFeedStatus(totalQuantity).label,
-        materialCount: feedMaterials.length,
-        note: `Tổng hợp từ ${feedMaterials.length} loại thức ăn`
-      };
-    } catch (error) {
-      return null;
     }
   }
 
   async _getFeedData(period) {
     try {
-      const feedInfo = await this._getFeedInfoFromMaterialService();
+      // Xác định ngày hôm nay theo múi giờ Việt Nam (UTC+7)
+      const now = new Date();
+      const vnOffset = 7 * 60 * 60 * 1000; // GMT+7
+      const todayVN = new Date(now.getTime() + vnOffset);
 
-      if (feedInfo && feedInfo.source !== "fallback") {
-        return {
-          value: feedInfo.value,
-          change: feedInfo.change || 0,
-          unit: feedInfo.unit || 'kg',
-          status: feedInfo.status || 'normal',
-          label: feedInfo.label || 'Bình thường',
-          description: "Thức ăn hôm nay",
-          color: this._getFeedColor(feedInfo.status || 'normal'),
-          threshold: this.config.FEED_THRESHOLD,
-          source: "material_service",
-          date: new Date().toISOString().split("T")[0],
-          period: "today",
-          materialCount: feedInfo.materialCount,
-          note: feedInfo.note || `Tổng hợp từ ${feedInfo.materialCount || 0} loại thức ăn`,
-        };
+      // Đặt thời gian bắt đầu và kết thúc của ngày hôm nay
+      todayVN.setHours(0, 0, 0, 0);
+      const todayStart = new Date(todayVN);
+      const todayEnd = new Date(todayVN);
+      todayEnd.setHours(23, 59, 59, 999);
+
+      // Chuyển về UTC để so sánh với dữ liệu trong DB
+      const todayStartUTC = new Date(todayStart.getTime() - vnOffset);
+      const todayEndUTC = new Date(todayEnd.getTime() - vnOffset);
+
+      // Lấy tất cả logs FOOD
+      let foodLogs = [];
+      try {
+        // Sử dụng hàm getLogsByTypeAndTimeRange với khoảng thời gian rộng (30 ngày)
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 30); // Lấy logs 30 ngày gần nhất
+
+        foodLogs = await logService.getLogsByTypeAndTimeRange("FOOD", startDate, new Date());
+      } catch (error) {
+        // Fallback: lấy tất cả logs và filter
+        const allLogs = await logService.getAllLogs();
+        foodLogs = allLogs.filter(log => log.type === 'FOOD');
       }
 
-      const todayFeed = this.config.MOCK_DATA.DAILY_FEED;
-      const feedChange = this.config.MOCK_DATA.DAILY_FEED_CHANGE;
-      const status = this._getFeedStatus(todayFeed);
+      // Lọc logs có trong ngày hôm nay (ưu tiên updatedAt, nếu không có thì createdAt)
+      const todayFoodLogs = foodLogs.filter(log => {
+        if (!log.createdAt) return false;
+
+        // Ưu tiên sử dụng updatedAt, nếu không có thì dùng createdAt
+        const logTime = log.updatedAt ? new Date(log.updatedAt) : new Date(log.createdAt);
+
+        // Kiểm tra xem logTime có nằm trong hôm nay không
+        return logTime >= todayStartUTC && logTime <= todayEndUTC;
+      });
+
+      // Tính tổng quantity thức ăn tiêu thụ hôm nay
+      const totalQuantity = todayFoodLogs.reduce((sum, log) => sum + (log.quantity || 0), 0);
+
+      // Xác định trạng thái dựa trên ngưỡng
+      const { LOW, NORMAL, HIGH } = this.config.FEED_THRESHOLD;
+      let status = "normal";
+      let label = "Bình thường";
+      let color = "green";
+
+      if (totalQuantity === 0) {
+        status = "normal";
+        label = "Không có dữ liệu";
+        color = "gray";
+      } else if (totalQuantity <= LOW) {
+        status = "low";
+        label = "Thiếu";
+        color = "red";
+      } else if (totalQuantity >= HIGH) {
+        status = "high";
+        label = "Dư thừa";
+        color = "orange";
+      }
 
       return {
-        value: todayFeed,
-        change: feedChange,
-        unit: "kg",
-        status: status.status,
-        label: status.label,
-        description: "Thức ăn hôm nay",
-        color: status.color,
-        threshold: this.config.FEED_THRESHOLD,
-        source: "mock",
-        date: new Date().toISOString().split("T")[0],
-        period: "today",
-        implementLater: "Đã thay bằng material.type='feed'",
-      };
-    } catch (error) {
-      return {
-        value: 850,
+        value: totalQuantity,
         change: 0,
         unit: "kg",
-        status: "normal",
-        label: "Bình thường",
-        description: "Thức ăn hôm nay",
-        color: "green",
+        status: status,
+        label: label,
+        description: "Lượng thức ăn tiêu thụ hôm nay",
+        color: color,
+        threshold: this.config.FEED_THRESHOLD,
+        source: "log_service",
+        date: todayVN.toISOString().split("T")[0],
         period: "today",
+        logCount: todayFoodLogs.length,
+        note: todayFoodLogs.length > 0
+          ? `Tổng hợp từ ${todayFoodLogs.length} log thức ăn hôm nay`
+          : "Không có dữ liệu thức ăn tiêu thụ hôm nay",
+      };
+    } catch (error) {
+      console.error("Lỗi khi lấy dữ liệu thức ăn từ logs:", error);
+      return {
+        value: 0,
+        change: 0,
+        unit: "kg",
+        status: "low",
+        label: "Không có dữ liệu",
+        description: "Lượng thức ăn tiêu thụ hôm nay",
+        color: "gray",
+        threshold: this.config.FEED_THRESHOLD,
+        source: "error",
+        date: new Date().toISOString().split("T")[0],
+        period: "today",
+        note: "Lỗi khi lấy dữ liệu thức ăn từ logs"
       };
     }
   }
@@ -511,60 +457,37 @@ class DashboardService {
       // Lấy dữ liệu từ finance service
       const financialOverview = await financeService.getFinancialOverview(currentMonth, currentYear);
 
-      // Lấy dữ liệu tháng trước để tính thay đổi
-      let previousMonth = currentMonth - 1;
-      let previousYear = currentYear;
-      if (previousMonth === 0) {
-        previousMonth = 12;
-        previousYear = currentYear - 1;
-      }
-
-      let previousRevenue = 0;
-      try {
-        const previousOverview = await financeService.getFinancialOverview(previousMonth, previousYear);
-        previousRevenue = previousOverview.totalIncome || 0;
-      } catch (error) {
-        // Nếu không có dữ liệu tháng trước, sử dụng mock
-        previousRevenue = financialOverview.totalIncome * 0.8;
-      }
-
       const currentRevenue = financialOverview.totalIncome || 0;
-      const change = previousRevenue > 0
-        ? ((currentRevenue - previousRevenue) / previousRevenue) * 100
-        : 0;
 
       return {
         value: currentRevenue,
-        change: parseFloat(change.toFixed(1)),
-        status: this._getChangeStatus(change),
+        change: 0,
+        status: "neutral",
         description: "Doanh thu tháng này",
         period: "month",
         currency: "VND",
         formatted: this._formatCurrency(currentRevenue),
-        color: this._getChangeColor(change),
+        color: "gray",
         source: "finance_service",
-        previousValue: previousRevenue,
+        previousValue: 0,
         profit: financialOverview.profit || 0,
         profitMargin: financialOverview.profitMargin || 0,
         totalExpense: financialOverview.totalExpense || 0,
         note: `Doanh thu tháng ${currentMonth}/${currentYear} từ hệ thống tài chính`,
       };
     } catch (error) {
-      // Fallback về mock data nếu finance service lỗi
-      const currentRevenue = 245000000;
-      const change = 123;
-
+      console.error("Lỗi khi lấy doanh thu:", error);
       return {
-        value: currentRevenue,
-        change: change,
-        status: this._getChangeStatus(change),
+        value: 0,
+        change: 0,
+        status: "neutral",
         description: "Doanh thu tháng này",
         period: "month",
         currency: "VND",
-        formatted: this._formatCurrency(currentRevenue),
-        color: this._getChangeColor(change),
-        source: "mock",
-        note: "Fallback: Finance service không khả dụng",
+        formatted: this._formatCurrency(0),
+        color: "gray",
+        source: "error",
+        note: "Không thể lấy dữ liệu doanh thu",
       };
     }
   }
@@ -574,7 +497,6 @@ class DashboardService {
       let data = [];
 
       if (chartType === "revenue") {
-        // Sử dụng finance service cho biểu đồ doanh thu
         try {
           const months = this._getMonthCountFromPeriod(period);
           const financialTrend = await financeService.getFinancialTrend(months);
@@ -593,56 +515,52 @@ class DashboardService {
             chartType,
             unit: "VND",
             source: "finance",
-            metadata: {
-              dataType: "monthly",
-              months: financialTrend.length,
-              lastMonth: financialTrend[financialTrend.length - 1]?.monthLabel || "N/A",
-            },
           };
         } catch (error) {
-          // Fallback về mock data nếu finance service lỗi
-          data = this._generateRevenueTrendData(period);
           return {
-            data,
+            data: [],
             period,
             chartType,
             unit: "VND",
-            source: "mock",
-            note: "Finance service không khả dụng, sử dụng dữ liệu mẫu",
+            source: "finance",
+            note: "Không có dữ liệu doanh thu",
           };
         }
       }
       else if (["weight", "death", "feed"].includes(chartType)) {
         try {
-          data = await logService.getTrendDataForDashboard(chartType, period);
+          // Sử dụng phương thức mới để lấy dữ liệu trend
+          data = await this._getLogTrendData(chartType, period);
           return {
             data,
             period,
             chartType,
             unit: this._getChartUnit(chartType),
             source: "log",
+            note: data.length === 0 ? "Không có dữ liệu log cho biểu đồ này" : ""
           };
         } catch (error) {
-          data = this._generateMockTrendData(period, chartType);
           return {
-            data,
+            data: [],
             period,
             chartType,
             unit: this._getChartUnit(chartType),
-            source: "mock",
+            source: "log",
+            note: "Không có dữ liệu log",
           };
         }
       } else {
-        data = this._generateMockTrendData(period, chartType);
         return {
-          data,
+          data: [],
           period,
           chartType,
           unit: this._getChartUnit(chartType),
-          source: "mock",
+          source: "no_data",
+          note: "Không có dữ liệu",
         };
       }
     } catch (error) {
+      console.error("Lỗi khi lấy dữ liệu biểu đồ:", error);
       return {
         data: [],
         period,
@@ -650,7 +568,101 @@ class DashboardService {
         unit: "",
         source: "error",
         error: error.message,
+        note: "Lỗi khi lấy dữ liệu biểu đồ"
       };
+    }
+  }
+
+  async _getLogTrendData(chartType, period) {
+    try {
+      // Tính toán startDate dựa trên period
+      const endDate = new Date();
+      let startDate = new Date();
+
+      switch (period) {
+        case "24h":
+          startDate.setDate(startDate.getDate() - 1);
+          break;
+        case "7d":
+          startDate.setDate(startDate.getDate() - 7);
+          break;
+        case "30d":
+          startDate.setDate(startDate.getDate() - 30);
+          break;
+        case "90d":
+          startDate.setDate(startDate.getDate() - 90);
+          break;
+        case "all":
+          startDate = new Date(0); // Từ ngày đầu tiên
+          break;
+        default:
+          startDate.setDate(startDate.getDate() - 7);
+      }
+
+      // Xác định loại log cần lấy
+      let logType;
+      switch (chartType) {
+        case "weight":
+          logType = "WEIGHT";
+          break;
+        case "death":
+          logType = "DEATH";
+          break;
+        case "feed":
+          logType = "FOOD";
+          break;
+        default:
+          logType = "WEIGHT";
+      }
+
+      // Lấy logs từ service
+      let logs = [];
+      try {
+        logs = await logService.getLogsByTypeAndTimeRange(logType, startDate, endDate);
+      } catch (error) {
+        // Fallback: lấy tất cả logs và filter
+        const allLogs = await logService.getAllLogs();
+        logs = allLogs.filter(log => {
+          if (!log.createdAt) return false;
+          const logDate = new Date(log.createdAt);
+          return log.type === logType && logDate >= startDate && logDate <= endDate;
+        });
+      }
+
+      if (logs.length === 0) {
+        return [];
+      }
+
+      // Nhóm theo ngày
+      const groupedByDate = {};
+      logs.forEach(log => {
+        const date = new Date(log.createdAt).toISOString().split('T')[0];
+        if (!groupedByDate[date]) {
+          groupedByDate[date] = {
+            date: date,
+            value: 0,
+            count: 0
+          };
+        }
+        groupedByDate[date].value += log.quantity || 0;
+        groupedByDate[date].count += 1;
+      });
+
+      // Chuyển thành mảng và sắp xếp
+      const trendData = Object.values(groupedByDate)
+        .map(item => ({
+          date: item.date,
+          value: chartType === "weight" && item.count > 0
+            ? (item.value / item.count).toFixed(2)
+            : item.value,
+          count: item.count
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      return trendData;
+    } catch (error) {
+      console.error("Lỗi khi lấy dữ liệu trend từ log:", error);
+      return [];
     }
   }
 
@@ -670,7 +682,7 @@ class DashboardService {
         alerts.push({
           type: "feed_low",
           title: "Thức ăn sắp hết",
-          message: `Chỉ còn ${feedData.value}kg thức ăn. Cần bổ sung thêm.`,
+          message: `Chỉ còn ${feedData.value}${feedData.unit} thức ăn. Cần bổ sung thêm.`,
           severity: "high",
           timestamp: new Date().toISOString(),
           source: "feed",
@@ -725,23 +737,6 @@ class DashboardService {
         // Bỏ qua lỗi finance service
       }
 
-      try {
-        const weeklyData = await this.getWeeklyConsumptionChart();
-        if (weeklyData.metadata.source === "mock" || weeklyData.total.overall === 0) {
-          alerts.push({
-            type: "missing_log_data",
-            title: "Thiếu dữ liệu nhật ký",
-            message: "Không có dữ liệu tiêu thụ trong 7 ngày qua. Cần cập nhật nhật ký.",
-            severity: "medium",
-            timestamp: new Date().toISOString(),
-            source: "dashboard_chart",
-            action: "Tạo nhật ký mới"
-          });
-        }
-      } catch (chartError) {
-        // Bỏ qua lỗi
-      }
-
       return {
         alerts,
         total: alerts.length,
@@ -758,72 +753,70 @@ class DashboardService {
     }
   }
 
-  _getMockKPIs(period) {
+  _getEmptyKPIs(period) {
     return {
       totalChickens: {
-        value: 12450,
-        change: 42,
-        status: "up",
-        previousValue: 8760,
-        period,
-        unit: "con",
-        description: "Tổng số gà đang nuôi",
-        color: "green",
-      },
-      totalFlocks: {
-        value: 8,
+        value: 0,
         change: 0,
         status: "neutral",
-        previousValue: 8,
+        previousValue: 0,
+        period,
+        unit: "con",
+        description: `Tổng số gà đang nuôi (${period})`,
+        color: "gray",
+      },
+      totalFlocks: {
+        value: 0,
+        change: 0,
+        status: "neutral",
+        previousValue: 0,
         period,
         unit: "đàn",
-        description: "Tổng số đàn đang nuôi",
+        description: `Tổng số đàn đang nuôi (${period})`,
         color: "gray",
       },
       deathRate: {
-        value: 2.1,
-        change: -0.5,
-        status: "down",
-        period: "7d",
+        value: 0,
+        change: 0,
+        status: "neutral",
+        period: period,
         unit: "%",
-        description: "Tỷ lệ chết (7 ngày gần nhất)",
-        color: "green",
-        source: "mock",
+        description: `Tỷ lệ chết (${period} gần nhất)`,
+        color: "gray",
+        source: "log",
       },
       avgWeight: {
-        value: 1.8,
-        change: 42,
-        status: "up",
-        previousValue: 1.27,
+        value: 0,
+        change: 0,
+        status: "neutral",
+        previousValue: 0,
         period,
         unit: "kg/con",
         description: "Trọng lượng trung bình",
-        color: "green",
-        sampleSize: 2,
-        totalChickensInSample: 1730,
+        color: "gray",
+        sampleSize: 0,
+        totalChickensInSample: 0,
       },
       todayFeed: {
-        value: 850,
+        value: 0,
         change: 0,
         unit: "kg",
-        status: "normal",
-        label: "Bình thường",
-        description: "Thức ăn hôm nay",
-        color: "green",
-        threshold: this.config.FEED_THRESHOLD,
-        source: "mock",
+        status: "low",
+        label: "Không có dữ liệu",
+        description: "Tổng lượng thức ăn trong kho",
+        color: "gray",
         period: "today",
       },
       monthlyRevenue: {
-        value: 245000000,
-        change: 123,
-        status: "up",
+        value: 0,
+        change: 0,
+        status: "neutral",
         description: "Doanh thu tháng này",
         period: "month",
         currency: "VND",
-        formatted: "245.000.000 ₫",
-        color: "green",
-        source: "mock",
+        formatted: this._formatCurrency(0),
+        color: "gray",
+        source: "error",
       },
       period,
       calculatedAt: new Date().toISOString(),
@@ -864,10 +857,6 @@ class DashboardService {
     return colors[status] || "gray";
   }
 
-  _getMockPreviousValue(currentValue, percentChange = 0) {
-    return currentValue * (100 / (100 + percentChange));
-  }
-
   _formatCurrency(value) {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -886,150 +875,20 @@ class DashboardService {
     return units[chartType] || "";
   }
 
-  _generateMockTrendData(period, chartType) {
-    switch (chartType) {
-      case "weight":
-        return this._generateWeightTrendData(period);
-      case "feed":
-        return this._generateFeedTrendData(period);
-      case "revenue":
-        return this._generateRevenueTrendData(period);
-      case "death":
-        return this._generateDeathTrendData(period);
-      default:
-        return this._generateWeightTrendData(period);
-    }
-  }
-
-  _generateWeightTrendData(period) {
-    const dataPoints = this._getDataPointCount(period);
-    const data = [];
-    const now = new Date();
-    let baseValue = 1.5;
-
-    for (let i = dataPoints - 1; i >= 0; i--) {
-      const date = this._getDateForTrend(now, i, period);
-      const value = baseValue + Math.random() * 0.3 - 0.15;
-      baseValue = value;
-
-      data.push({
-        date: date.label,
-        timestamp: date.timestamp,
-        value: parseFloat(value.toFixed(2)),
-      });
-    }
-
-    return data;
-  }
-
-  _generateFeedTrendData(period) {
-    const dataPoints = this._getDataPointCount(period);
-    const data = [];
-    const now = new Date();
-    let baseValue = 800;
-
-    for (let i = dataPoints - 1; i >= 0; i--) {
-      const date = this._getDateForTrend(now, i, period);
-      const value = baseValue + Math.random() * 200 - 100;
-
-      data.push({
-        date: date.label,
-        timestamp: date.timestamp,
-        value: Math.round(value),
-      });
-    }
-
-    return data;
-  }
-
-  _generateRevenueTrendData(period) {
-    const dataPoints = this._getDataPointCount(period);
-    const data = [];
-    const now = new Date();
-    let baseValue = 200000000;
-
-    for (let i = dataPoints - 1; i >= 0; i--) {
-      const date = this._getDateForTrend(now, i, period);
-      const value = baseValue * (1 + i * 0.02);
-
-      data.push({
-        date: date.label,
-        timestamp: date.timestamp,
-        value: Math.round(value / 1000000) * 1000000,
-      });
-    }
-
-    return data;
-  }
-
-  _generateDeathTrendData(period) {
-    const dataPoints = this._getDataPointCount(period);
-    const data = [];
-    const now = new Date();
-    let baseValue = 2.0;
-
-    for (let i = dataPoints - 1; i >= 0; i--) {
-      const date = this._getDateForTrend(now, i, period);
-      const value = baseValue - i * 0.05 + Math.random() * 0.5 - 0.25;
-
-      data.push({
-        date: date.label,
-        timestamp: date.timestamp,
-        value: parseFloat(Math.max(0.1, value).toFixed(2)),
-      });
-    }
-
-    return data;
-  }
-
-  _getDataPointCount(period) {
-    const counts = {
-      "7d": 7,
-      "30d": 30,
-      "90d": 12,
-      all: 12,
+  _getMonthCountFromPeriod(period) {
+    const monthMap = {
+      "7d": 1,
+      "30d": 1,
+      "90d": 3,
+      "all": 12,
     };
-    return counts[period] || 7;
+    return monthMap[period] || 6;
   }
 
-  _getDateForTrend(now, index, period) {
-    const date = new Date(now);
-
-    switch (period) {
-      case "7d":
-      case "30d":
-        date.setDate(now.getDate() - index);
-        return {
-          label: date.toLocaleDateString("vi-VN", {
-            day: "2-digit",
-            month: "2-digit",
-          }),
-          timestamp: date.toISOString(),
-        };
-      case "90d":
-        date.setDate(now.getDate() - index * 7);
-        return {
-          label: `Tuần ${index + 1}`,
-          timestamp: date.toISOString(),
-        };
-      default:
-        date.setMonth(now.getMonth() - index);
-        return {
-          label: date.toLocaleDateString('vi-VN', { month: 'short', year: '2-digit' }),
-          timestamp: date.toISOString()
-        };
-    }
-  }
-
-  _convertToVNTime(date) {
-    const vnOffset = 7 * 60 * 60 * 1000;
-    return new Date(date.getTime() + vnOffset);
-  }
-
-  _getDateStringVN(date) {
-    const vnDate = this._convertToVNTime(date);
-    vnDate.setHours(0, 0, 0, 0);
-    return vnDate.toISOString().split('T')[0];
+  _getFirstDayOfMonth(month) {
+    const currentDate = new Date();
+    const year = currentDate.getFullYear();
+    return new Date(year, month - 1, 1).toISOString();
   }
 
   async getWeeklyConsumptionChart() {
@@ -1166,8 +1025,8 @@ class DashboardService {
           overall: totalFood + totalMedicine
         },
         metadata: {
-          source: logsLast7Days.length > 0 ? "log" : "mock",
-          dataQuality: "real",
+          source: logsLast7Days.length > 0 ? "log" : "no_data",
+          dataQuality: logsLast7Days.length > 0 ? "real" : "no_data",
           dataPoints: {
             logs: logsLast7Days.length,
             foodLogs: logsLast7Days.filter(l => l.type === 'FOOD').length,
@@ -1181,11 +1040,12 @@ class DashboardService {
       };
 
     } catch (error) {
-      return this._generateMockWeeklyConsumptionData();
+      console.error("Lỗi khi lấy dữ liệu tiêu thụ hàng tuần:", error);
+      return this._getEmptyWeeklyConsumptionData();
     }
   }
 
-  _generateMockWeeklyConsumptionData() {
+  _getEmptyWeeklyConsumptionData() {
     const today = new Date();
     const days = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
     const weeklyData = [];
@@ -1202,24 +1062,19 @@ class DashboardService {
         month: '2-digit'
       });
 
-      const baseFood = 120 + Math.random() * 80;
-      const baseMedicine = 20 + Math.random() * 30;
-      const food = Math.round(baseFood);
-      const medicine = Math.round(baseMedicine);
-
       weeklyData.push({
         day: dayName,
         dayIndex: dayIndex === 0 ? 7 : dayIndex,
-        food,
-        medicine,
-        total: food + medicine,
+        food: 0,
+        medicine: 0,
+        total: 0,
         date: date.toISOString(),
         displayDate: displayDate
       });
     }
 
-    const totalFood = weeklyData.reduce((sum, day) => sum + day.food, 0);
-    const totalMedicine = weeklyData.reduce((sum, day) => sum + day.medicine, 0);
+    const totalFood = 0;
+    const totalMedicine = 0;
 
     return {
       chartType: "stacked_column",
@@ -1250,8 +1105,8 @@ class DashboardService {
         overall: totalFood + totalMedicine
       },
       metadata: {
-        source: "mock",
-        note: "Fallback mock data - không có dữ liệu logs"
+        source: "no_data",
+        note: "Không có dữ liệu logs"
       }
     };
   }
@@ -1279,6 +1134,7 @@ class DashboardService {
           "Điện nước": { color: "#9C27B0", icon: "bolt" },
           "Chi phí khác": { color: "#607D8B", icon: "payments" },
           "Thu nhập khác": { color: "#4CAF50", icon: "attach_money" },
+          "Bán hàng": { color: "#4CAF50", icon: "attach_money" },
         };
 
         costStructure = expenseBreakdown.map(item => ({
@@ -1290,9 +1146,6 @@ class DashboardService {
           description: `Chi phí ${item.category.toLowerCase()}`,
           formattedValue: this._formatCurrency(item.amount),
         }));
-      } else {
-        // Fallback về mock data nếu không có dữ liệu
-        costStructure = this._generateMockCostStructureData().data;
       }
 
       const totalCost = costStructure.reduce((sum, item) => sum + item.value, 0);
@@ -1313,69 +1166,29 @@ class DashboardService {
         metadata: {
           period: `Tháng ${currentMonth}/${currentYear}`,
           lastUpdated: new Date().toISOString(),
-          source: hasRealData ? "finance" : "mock",
-          dataQuality: hasRealData ? "real" : "mock",
+          source: hasRealData ? "finance" : "no_data",
+          dataQuality: hasRealData ? "real" : "no_data",
           note: hasRealData
             ? `Dữ liệu từ hệ thống tài chính tháng ${currentMonth}/${currentYear}`
-            : "Chưa có dữ liệu tài chính. Sử dụng giá trị mẫu."
+            : "Không có dữ liệu tài chính."
         }
       };
 
     } catch (error) {
-      return this._generateMockCostStructureData();
+      console.error("Lỗi khi lấy cơ cấu chi phí:", error);
+      return this._getEmptyCostStructureData();
     }
   }
 
-  _generateMockCostStructureData() {
-    const costStructure = [
-      {
-        category: "Thức ăn",
-        value: 159000000,
-        percentage: 65,
-        color: "#4CAF50",
-        icon: "restaurant",
-        description: "Chi phí thức ăn chăn nuôi",
-        formattedValue: "159.000.000 ₫"
-      },
-      {
-        category: "Thuốc & Vaccine",
-        value: 37000000,
-        percentage: 15,
-        color: "#FF9800",
-        icon: "medication",
-        description: "Chi phí thuốc thú y và vaccine",
-        formattedValue: "37.000.000 ₫"
-      },
-      {
-        category: "Nhân công",
-        value: 30000000,
-        percentage: 12,
-        color: "#2196F3",
-        icon: "groups",
-        description: "Chi phí lương nhân viên",
-        formattedValue: "30.000.000 ₫"
-      },
-      {
-        category: "Điện nước & Khác",
-        value: 19000000,
-        percentage: 8,
-        color: "#9C27B0",
-        icon: "bolt",
-        description: "Chi phí điện, nước, bảo trì",
-        formattedValue: "19.000.000 ₫"
-      }
-    ];
-
-    const totalCost = costStructure.reduce((sum, item) => sum + item.value, 0);
-
+  _getEmptyCostStructureData() {
     return {
       chartType: "cost_structure",
       title: "Cơ cấu chi phí",
       description: "Phân bổ chi phí hoạt động trang trại",
-      data: costStructure,
+      data: [],
       total: {
-        value: totalCost,
-        formatted: this._formatCurrency(totalCost),
+        value: 0,
+        formatted: this._formatCurrency(0),
         period: "month",
         currency: "VND"
       },
@@ -1384,8 +1197,8 @@ class DashboardService {
       metadata: {
         period: "Tháng hiện tại",
         lastUpdated: new Date().toISOString(),
-        source: "mock",
-        note: "Mock data - chờ dữ liệu từ finance service"
+        source: "no_data",
+        note: "Không có dữ liệu tài chính."
       }
     };
   }
@@ -1403,37 +1216,20 @@ class DashboardService {
         period: "current",
         calculatedAt: new Date().toISOString(),
         summary: {
-          hasRealData: weeklyConsumption.metadata.source !== "mock" || costStructure.metadata.source !== "mock",
+          hasRealData: weeklyConsumption.metadata.source !== "no_data" || costStructure.metadata.source !== "no_data",
           realDataSources: [
-            ...(weeklyConsumption.metadata.source !== "mock" ? ["log"] : []),
-            ...(costStructure.metadata.source !== "mock" ? ["finance"] : [])
+            ...(weeklyConsumption.metadata.source !== "no_data" ? ["log"] : []),
+            ...(costStructure.metadata.source !== "no_data" ? ["finance"] : [])
           ],
           dataQuality: {
-            weeklyConsumption: weeklyConsumption.metadata.dataQuality || "unknown",
-            costStructure: costStructure.metadata.dataQuality || "unknown"
+            weeklyConsumption: weeklyConsumption.metadata.dataQuality || "no_data",
+            costStructure: costStructure.metadata.dataQuality || "no_data"
           }
         }
       };
     } catch (error) {
       throw new Error("Không thể lấy dữ liệu biểu đồ: " + error.message);
     }
-  }
-
-  // Helper methods cho finance integration
-  _getMonthCountFromPeriod(period) {
-    const monthMap = {
-      "7d": 1,
-      "30d": 1,
-      "90d": 3,
-      "all": 12,
-    };
-    return monthMap[period] || 6;
-  }
-
-  _getFirstDayOfMonth(month) {
-    const currentDate = new Date();
-    const year = currentDate.getFullYear();
-    return new Date(year, month - 1, 1).toISOString();
   }
 
   _getRandomColor() {

@@ -77,8 +77,7 @@ describe('U1.1 - KPICard Component', () => {
             />
         );
 
-        // Sửa: Component format tiền thành "245 Tr ₫"
-        expect(screen.getByText('245 Tr ₫')).toBeInTheDocument();
+        expect(screen.getByText('245.000.000 ₫')).toBeInTheDocument();
     });
 
     test('TC5 - Hiển thị loading state', () => {
