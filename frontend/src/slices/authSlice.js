@@ -29,6 +29,10 @@ const authSlice = createSlice({
       state.user = getUserFromAuthToken(action.payload)
       
     },
+    updateuser(state, action){
+      console.log(action.payload)
+      state.user.userName = action.payload.username
+    },
     clearUser(state) { state.user = null },
 
     updateUsers(state, action) {
@@ -50,7 +54,7 @@ const authSlice = createSlice({
   
 })
 
-export const { setUser, clearUser, updateUsers } = authSlice.actions
+export const { setUser, clearUser, updateUsers,updateuser } = authSlice.actions
 export const getUserState = (state)=> {
   return state.auth.user
 }

@@ -8,6 +8,7 @@ import {
   UserPlus,
   ChevronDown,
   LogOut,
+  Settings,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { RiMenuFold2Line } from "react-icons/ri";
@@ -17,11 +18,11 @@ import { clearUser, getUserState } from "~/slices/authSlice";
 function Header({ onToggleSidebar, isSidebarCollapsed }) {
   const [showAuthMenu, setShowAuthMenu] = useState(false);
   const user = useSelector((state) => getUserState(state));
-  const dispatch = useDispatch()
-  const handleLogOut = ()=>{
-      localStorage.clear("authToken")
-      dispatch(clearUser())
-  }
+  const dispatch = useDispatch();
+  const handleLogOut = () => {
+    localStorage.clear("authToken");
+    dispatch(clearUser());
+  };
   return (
     <>
       <div className="flex flex-row px-6 bg-white border border-gray-200 h-14 fixed top-0 left-0 right-0 z-50">
@@ -83,14 +84,24 @@ function Header({ onToggleSidebar, isSidebarCollapsed }) {
 
                       {/* Menu Items */}
                       <div className="py-2">
+                        {/* Settings */}
+                        <NavLink
+                          to="/settings"
+                          onClick={() => setShowAuthMenu(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-200 transition-all rounded-lg mx-2"
+                        >
+                          <Settings size={18} className="text-indigo-400" />
+                          <span className="text-sm font-medium text-black">
+                            Cài đặt tài khoản
+                          </span>
+                        </NavLink>
                         {user ? (
                           <NavLink
                             to="/login"
                             onClick={handleLogOut}
                             className=" flex items-center gap-3 px-4 py-2.5 hover:bg-gray-200 transition-all duration-100 text-gray-300 hover:text-white rounded-lg mx-2 group"
                           >
-                            
-                            <LogOut size={18} className="text-emerald-400"  />
+                            <LogOut size={18} className="text-emerald-400" />
                             <span className="text-sm font-medium text-black">
                               Đăng xuất
                             </span>

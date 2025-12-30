@@ -38,7 +38,7 @@ const create = async (data) => {
 const findById = async (id) => {
   return await GET_DB()
     .collection(USER_COLLECTION_NAME)
-    .findOne({ _id: new ObjectId(String(id)) });
+    .findOne({ _id: new ObjectId(String(id)) })
 };
 
 const findByEmailOrPhone = async (email, phone) => {
@@ -152,6 +152,29 @@ const deleteEmployee = async (idEmployee) => {
     throw error;
   }
 };
+
+
+
+const updateUser = async (id, updateData) => {
+  try {
+    Object.keys(updateData).forEach((fieldName) => {
+      if (["email"].includes(fieldName)) {
+        delete updateData[fieldName];
+      }
+    });
+
+    const ressult = await GET_DB()
+      .collection("users")
+      .findOneAndUpdate(
+        { _id: new ObjectId(String(id)) },
+        { $set: updateData },
+        { returnDocument: "after", projection: { password: 0 } }
+      );
+    return ressult;
+  } catch (error) {
+    throw new Error(error);
+  }
+};
 export const userModel = {
   create,
   findByEmailOrPhone,
@@ -164,4 +187,5 @@ export const userModel = {
   getAllUser,
   deleteEmployee,
   updateEmployee,
+  updateUser
 };
