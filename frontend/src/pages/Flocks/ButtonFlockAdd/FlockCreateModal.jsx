@@ -69,15 +69,21 @@ export default function FlockCreateModal({ onClose, addFlockData }) {
       areaId: data.areaId,
       note: data.note,
       ownerId: data.ownerId,
+      // Thêm trạng thái mặc định
+      status: "Raising",
+      currentCount: Number(data.initialCount)
     };
 
     try {
-      const res = await axios.post("/flocks", payload);
+      const res = await axios.post(
+        "http://localhost:8071/v1/flocks",
+        payload
+      );
 
       addFlockData?.(res.data.data);
 
-      //  thông báo trong modal
-      setSuccessMsg("Tạo đàn gà thành công!");
+      // thông báo trong modal
+      setSuccessMsg("Tạo đàn gà thành công và đã cập nhật khu nuôi!");
 
       // đóng modal sau 1.5s
       setTimeout(() => {
@@ -85,10 +91,97 @@ export default function FlockCreateModal({ onClose, addFlockData }) {
       }, 1500);
     } catch (err) {
       setErrorMsg(
-        err.response?.data?.message || "Không thể tạo đàn mới, vui lòng thử lại"
+        err.response?.data?.message ||
+        "Không thể tạo đàn mới, vui lòng thử lại"
       );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Trong hàm onSubmitWithAreaUpdate
+  const onSubmitWithAreaUpdate = async (data) => {
+    setSubmitting(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    // Lấy thêm thông tin khu nuôi từ form
+    const areaCurrentCount = data.areaCurrentCount || 0;
+    const areaCapacity = data.areaCapacity || 0;
+
+    // QUAN TRỌNG: Đảm bảo areaStatus có giá trị hợp lệ
+    let areaStatus = data.areaStatus || "ACTIVE";
+    // Nếu không có giá trị hợp lệ trong danh sách, mặc định là ACTIVE
+    const validStatuses = ["ACTIVE", "EMPTY", "MAINTENANCE", "INCIDENT"];
+    if (!validStatuses.includes(areaStatus)) {
+      areaStatus = "ACTIVE";
+    }
+
+    const areaName = data.areaName || "";
+
+    const payload = {
+      speciesId: data.speciesId,
+      initialCount: Number(data.initialCount),
+      avgWeight: Number(data.avgWeight),
+      price: Number(data.price),
+      areaId: data.areaId,
+      note: data.note,
+      ownerId: data.ownerId,
+      importDate: data.importDate,
+      supplierName: data.supplierName,
+      // Thêm thông tin khu nuôi để BE kiểm tra
+      areaCurrentCount: Number(areaCurrentCount),
+      areaCapacity: Number(areaCapacity),
+      areaStatus: areaStatus, // Đảm bảo có giá trị hợp lệ
+      areaName: areaName
+    };
+
+    console.log("📤 Sending payload to /flocks/with-area:", payload);
+
+    try {
+      // Sử dụng API mới có cập nhật khu nuôi
+      const res = await axios.post("/flocks", payload);
+
+      addFlockData?.(res.data.data);
+
+      // Thông báo trong modal
+      setSuccessMsg("Tạo đàn gà thành công! Đã cập nhật số lượng khu nuôi.");
+
+      // Đóng modal sau 1.5s
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } catch (err) {
+      console.error("❌ Error creating flock with area update:", err.response?.data);
+
+      // Xử lý lỗi cụ thể
+      const errorMessage = err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Không thể tạo đàn mới, vui lòng thử lại";
+
+      setErrorMsg(errorMessage);
+
+      // Nếu lỗi do sức chứa, quay lại bước 2 để chọn khu khác
+      if (errorMessage.includes("đã đầy") ||
+        errorMessage.includes("chỗ trống") ||
+        errorMessage.includes("sức chứa")) {
+        // Tự động quay lại bước 2 sau 2 giây
+        setTimeout(() => {
+          setStep(2);
+        }, 2000);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Hàm mới: Xử lý submit dựa trên lựa chọn
+  const handleSubmit = async (data) => {
+    // Kiểm tra nếu có areaId thì dùng hàm mới, không thì dùng hàm cũ
+    if (data.areaId) {
+      await onSubmitWithAreaUpdate(data);
+    } else {
+      await onSubmit(data);
     }
   };
 
@@ -161,13 +254,16 @@ export default function FlockCreateModal({ onClose, addFlockData }) {
               Tiếp tục
             </button>
           ) : (
-            <button
-              className="px-4 py-2 bg-green-500 text-white rounded cursor-pointer disabled:cursor-not-allowed"
-              onClick={methods.handleSubmit(onSubmit)}
-              disabled={submitting}
-            >
-              {submitting ? "Đang tạo..." : "Tạo đàn"}
-            </button>
+            <>
+              <button
+                className="px-4 py-2 bg-green-600 text-white rounded cursor-pointer disabled:cursor-not-allowed"
+                onClick={methods.handleSubmit(handleSubmit)}
+                disabled={submitting}
+                title="Tạo đàn và cập nhật khu nuôi"
+              >
+                {submitting ? "Đang tạo..." : "Tạo & Cập nhật khu"}
+              </button>
+            </>
           )}
         </div>
       </div>
