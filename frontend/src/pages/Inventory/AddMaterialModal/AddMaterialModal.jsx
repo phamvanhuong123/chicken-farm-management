@@ -42,14 +42,6 @@ const UNITS = [
   { value: "viên", label: "viên" },
 ];
 
-const STORAGE_LOCATIONS = [
-  { value: "Kho A1", label: "Kho A1" },
-  { value: "Kho A2", label: "Kho A2" },
-  { value: "Kho B1", label: "Kho B1" },
-  { value: "Tủ thuốc", label: "Tủ thuốc" },
-  { value: "Kho lạnh", label: "Kho lạnh" },
-];
-
 function AddMaterialModal({ isOpen, onClose, onAddSuccess }) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -64,7 +56,7 @@ function AddMaterialModal({ isOpen, onClose, onAddSuccess }) {
     importDate: "",
     expiryDate: "",
     price: "",
-    storageLocation: "",
+
     supplier: "",
   });
 
@@ -79,7 +71,6 @@ function AddMaterialModal({ isOpen, onClose, onAddSuccess }) {
       importDate: "",
       expiryDate: "",
       price: "",
-      storageLocation: "",
       supplier: "",
     });
     setErrors({});
@@ -136,13 +127,8 @@ function AddMaterialModal({ isOpen, onClose, onAddSuccess }) {
       newErrors.price = "Giá phải lớn hơn 0.";
     }
 
-    // Vị trí lưu trữ - bắt buộc
-    if (!formData.storageLocation) {
-      newErrors.storageLocation = "Vui lòng chọn vị trí lưu trữ.";
-    }
-
     setErrors(newErrors);
-    
+
     if (Object.keys(newErrors).length > 0) {
       toast.error("Vui lòng điền đầy đủ và hợp lệ thông tin bắt buộc.");
       return false;
@@ -165,9 +151,10 @@ function AddMaterialModal({ isOpen, onClose, onAddSuccess }) {
         quantity: Number(formData.quantity),
         threshold: Number(formData.threshold),
         expiryDate: formData.expiryDate,
-        storageLocation: formData.storageLocation,
         // Optional fields
-        ...(formData.importDate && { importDate: new Date(formData.importDate) }),
+        ...(formData.importDate && {
+          importDate: new Date(formData.importDate),
+        }),
         ...(formData.price && { price: Number(formData.price) }),
         ...(formData.supplier && { supplier: formData.supplier.trim() }),
       };
@@ -242,7 +229,9 @@ function AddMaterialModal({ isOpen, onClose, onAddSuccess }) {
                     value={formData.type}
                     onValueChange={(value) => handleChange("type", value)}
                   >
-                    <SelectTrigger className={errors.type ? "border-red-500" : ""}>
+                    <SelectTrigger
+                      className={errors.type ? "border-red-500" : ""}
+                    >
                       <SelectValue placeholder="Chọn loại vật tư" />
                     </SelectTrigger>
                     <SelectContent>
@@ -270,7 +259,9 @@ function AddMaterialModal({ isOpen, onClose, onAddSuccess }) {
                     value={formData.unit}
                     onValueChange={(value) => handleChange("unit", value)}
                   >
-                    <SelectTrigger className={errors.unit ? "border-red-500" : ""}>
+                    <SelectTrigger
+                      className={errors.unit ? "border-red-500" : ""}
+                    >
                       <SelectValue placeholder="Chọn đơn vị" />
                     </SelectTrigger>
                     <SelectContent>
@@ -369,34 +360,6 @@ function AddMaterialModal({ isOpen, onClose, onAddSuccess }) {
                   />
                   {errors.price && (
                     <p className="text-red-500 text-sm">{errors.price}</p>
-                  )}
-                </div>
-
-                {/* Vị trí lưu trữ */}
-                <div className="col-span-1 space-y-2">
-                  <Label htmlFor="storageLocation">
-                    Vị trí lưu trữ <span className="text-red-500">*</span>
-                  </Label>
-                  <Select
-                    value={formData.storageLocation}
-                    onValueChange={(value) => handleChange("storageLocation", value)}
-                  >
-                    <SelectTrigger className={errors.storageLocation ? "border-red-500" : ""}>
-                      <SelectValue placeholder="Chọn vị trí lưu trữ" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>Vị trí lưu trữ</SelectLabel>
-                        {STORAGE_LOCATIONS.map((loc) => (
-                          <SelectItem key={loc.value} value={loc.value}>
-                            {loc.label}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  {errors.storageLocation && (
-                    <p className="text-red-500 text-sm">{errors.storageLocation}</p>
                   )}
                 </div>
 
