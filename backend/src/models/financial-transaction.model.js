@@ -11,11 +11,11 @@ export const TRANSACTION_CATEGORIES = {
   MEDICINE: "Thuốc",
   LABOR: "Nhân công",
   UTILITIES: "Điện nước",
-  OTHER_EXPENSE: "Chi phí khác",
+  OTHER_EXPENSE: "Khác",
 
   // Thu nhập
   SALES: "Bán hàng",
-  OTHER_INCOME: "Thu nhập khác",
+  OTHER_INCOME: "Khác",
 };
 
 // Schema validation
