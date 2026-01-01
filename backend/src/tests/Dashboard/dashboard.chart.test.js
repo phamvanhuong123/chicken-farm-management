@@ -80,13 +80,14 @@ vi.mock("../../services/finance.service.js", () => ({
   },
 }));
 
-describe('Dashboard Chart Service (U1.2)', () => {
+describe('Unit Test: Dashboard Chart Service (U1.2)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
+
   describe('Biểu đồ Tiêu thụ hàng tuần', () => {
-    it('nên trả về dữ liệu biểu đồ stacked column', async () => {
+    it('TestCase 1: Thành công - Trả về dữ liệu biểu đồ tiêu thụ hàng tuần (Stacked Column)', async () => {
       const data = await dashboardService.getWeeklyConsumptionChart();
 
       expect(data).toHaveProperty('chartType', 'stacked_column');
@@ -125,8 +126,9 @@ describe('Dashboard Chart Service (U1.2)', () => {
     });
   });
 
+
   describe('Biểu đồ Cơ cấu chi phí', () => {
-    it('nên trả về dữ liệu biểu đồ phân bổ chi phí', async () => {
+    it('TestCase 2: Thành công - Trả về dữ liệu biểu đồ phân bổ chi phí (Cost Structure)', async () => {
       const data = await dashboardService.getCostStructureChart();
 
       expect(data).toHaveProperty('chartType', 'cost_structure');
@@ -154,8 +156,9 @@ describe('Dashboard Chart Service (U1.2)', () => {
     });
   });
 
+
   describe('Lấy tất cả biểu đồ', () => {
-    it('nên trả về cả 2 biểu đồ cùng lúc', async () => {
+    it('TestCase 3: Thành công - Trả về tổng hợp tất cả biểu đồ cho Dashboard', async () => {
       const data = await dashboardService.getDashboardCharts();
 
       expect(data).toHaveProperty('weeklyConsumption');

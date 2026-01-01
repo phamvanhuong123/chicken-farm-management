@@ -10,7 +10,7 @@ import { importService } from '~/services/import.service.js';
 
 vi.mock('~/services/import.service.js');
 
-describe('Import Controller', () => {
+describe('Unit Test: Import Controller', () => {
   let mockReq, mockRes, mockNext;
 
   beforeEach(() => {
@@ -27,8 +27,9 @@ describe('Import Controller', () => {
     vi.clearAllMocks();
   });
 
+
   describe('getImportList', () => {
-    it('1. Trả về danh sách import thành công', async () => {
+    it('TestCase 1: Thành công - Trả về danh sách đơn nhập chuồng', async () => {
       const mockResult = {
         items: [
           {
@@ -58,7 +59,7 @@ describe('Import Controller', () => {
       });
     });
 
-    it('2. Xử lý lỗi và gọi next', async () => {
+    it('TestCase 2: Lỗi (System) - Chuyển tiếp lỗi sang middleware xử lý lỗi (next) khi DB gặp sự cố', async () => {
       const mockError = new Error('Database error');
       importService.getImports.mockRejectedValue(mockError);
 
@@ -67,6 +68,7 @@ describe('Import Controller', () => {
       expect(mockNext).toHaveBeenCalledWith(mockError);
     });
   });
+
 
   describe('createImport', () => {
     const validBody = {
@@ -79,7 +81,7 @@ describe('Import Controller', () => {
       flockId: 'FL001',
     };
 
-    it('3. Tạo import thành công', async () => {
+    it('TestCase 3: Thành công - Tạo mới đơn nhập chuồng', async () => {
       const mockNewImport = {
         _id: '507f1f77bcf86cd799439011',
         ...validBody,
@@ -98,7 +100,7 @@ describe('Import Controller', () => {
       });
     });
 
-    it('4. Trả về 400 khi thiếu trường bắt buộc', async () => {
+    it('TestCase 4: Lỗi (400) - Thiếu trường bắt buộc trong dữ liệu gửi lên', async () => {
       const invalidBody = {
         importDate: '2024-01-15',
         // Thiếu supplier, breed, etc.
@@ -114,7 +116,7 @@ describe('Import Controller', () => {
       });
     });
 
-    it('5. Trả về 400 khi số lượng nhỏ hơn 1', async () => {
+    it('TestCase 5: Lỗi (400) - Số lượng (quantity) không hợp lệ (nhỏ hơn 1)', async () => {
       const invalidBody = {
         importDate: '2024-01-15',
         supplier: 'NCC A',
@@ -131,7 +133,7 @@ describe('Import Controller', () => {
       expect(mockRes.status).toHaveBeenCalledWith(400);
     });
 
-    it('6. Trả về 400 khi trọng lượng TB nhỏ hơn 0.1', async () => {
+    it('TestCase 6: Lỗi (400) - Trọng lượng TB (avgWeight) không hợp lệ (nhỏ hơn 0.1)', async () => {
       const invalidBody = {
         importDate: '2024-01-15',
         supplier: 'NCC A',
@@ -148,7 +150,7 @@ describe('Import Controller', () => {
       expect(mockRes.status).toHaveBeenCalledWith(400);
     });
 
-    it('7. Trả về 400 khi trạng thái không hợp lệ', async () => {
+    it('TestCase 7: Lỗi (400) - Trạng thái (status) không nằm trong danh sách cho phép', async () => {
       const invalidBody = {
         importDate: '2024-01-15',
         supplier: 'NCC A',
@@ -166,7 +168,7 @@ describe('Import Controller', () => {
       expect(mockRes.status).toHaveBeenCalledWith(400);
     });
 
-    it('8. Chấp nhận flockId tùy chọn', async () => {
+    it('TestCase 8: Thành công - Chấp nhận flockId tùy chọn (không bắt buộc)', async () => {
       const bodyWithoutFlockId = { ...validBody };
       delete bodyWithoutFlockId.flockId;
 
@@ -181,7 +183,7 @@ describe('Import Controller', () => {
       expect(mockRes.status).toHaveBeenCalledWith(201);
     });
 
-    it('9. Đặt trạng thái mặc định khi không được cung cấp', async () => {
+    it('TestCase 9: Thành công - Tự động đặt trạng thái mặc định khi thiếu trường status', async () => {
       const bodyWithoutStatus = { ...validBody };
       delete bodyWithoutStatus.status;
 
@@ -202,7 +204,7 @@ describe('Import Controller', () => {
       );
     });
 
-    it('10. Trả về 500 khi service thất bại', async () => {
+    it('TestCase 10: Lỗi (500) - Xử lý lỗi hệ thống khi Service thất bại', async () => {
       mockReq.body = validBody;
       importService.createImport.mockRejectedValue(new Error('DB Error'));
 
@@ -215,8 +217,9 @@ describe('Import Controller', () => {
     });
   });
 
+
   describe('getImportDetail', () => {
-    it('11. Trả về chi tiết import thành công', async () => {
+    it('TestCase 11: Thành công - Trả về chi tiết đơn nhập theo ID', async () => {
       const mockImport = {
         _id: '507f1f77bcf86cd799439011',
         breed: 'Gà ta',
@@ -235,7 +238,7 @@ describe('Import Controller', () => {
       });
     });
 
-    it('12. Trả về 404 khi không tìm thấy import', async () => {
+    it('TestCase 12: Lỗi (404) - Không tìm thấy đơn nhập (ID hợp lệ nhưng không tồn tại)', async () => {
       mockReq.params.id = '507f1f77bcf86cd799439011';
       importService.getImport.mockResolvedValue(null);
 
@@ -247,7 +250,7 @@ describe('Import Controller', () => {
       });
     });
 
-    it('13. Trả về 500 khi service thất bại', async () => {
+    it('TestCase 13: Lỗi (500) - Xử lý lỗi hệ thống khi lấy chi tiết', async () => {
       mockReq.params.id = '1';
       importService.getImport.mockRejectedValue(new Error('Service error'));
 
@@ -260,8 +263,9 @@ describe('Import Controller', () => {
     });
   });
 
+
   describe('updateImport', () => {
-    it('14. Cập nhật import thành công', async () => {
+    it('TestCase 14: Thành công - Cập nhật thông tin đơn nhập', async () => {
       const updateData = { quantity: 200, status: 'Hoàn thành' };
       const updatedImport = {
         _id: '507f1f77bcf86cd799439011',
@@ -281,7 +285,7 @@ describe('Import Controller', () => {
       });
     });
 
-    it('15. Trả về 404 khi không tìm thấy import để cập nhật', async () => {
+    it('TestCase 15: Lỗi (404) - Không tìm thấy đơn nhập cần cập nhật', async () => {
       mockReq.params.id = '507f1f77bcf86cd799439011';
       mockReq.body = { quantity: 200 };
       importService.updateImport.mockResolvedValue(null);
@@ -294,7 +298,7 @@ describe('Import Controller', () => {
       });
     });
 
-    it('16. Trả về 500 khi service thất bại', async () => {
+    it('TestCase 16: Lỗi (500) - Xử lý lỗi hệ thống khi cập nhật', async () => {
       mockReq.params.id = '1';
       mockReq.body = { quantity: 200 };
       importService.updateImport.mockRejectedValue(new Error('DB Error'));
@@ -307,7 +311,7 @@ describe('Import Controller', () => {
       });
     });
 
-    it('17. Cho phép cập nhật một phần', async () => {
+    it('TestCase 17: Thành công - Cập nhật một phần dữ liệu (Partial Update)', async () => {
       const partialUpdate = { quantity: 150 };
       const updatedImport = {
         _id: '1',
@@ -325,8 +329,9 @@ describe('Import Controller', () => {
     });
   });
 
+
   describe('deleteImport', () => {
-    it('18. Xóa import thành công', async () => {
+    it('TestCase 18: Thành công - Xóa đơn nhập', async () => {
       const deletedImport = {
         _id: '507f1f77bcf86cd799439011',
         quantity: 100,
@@ -344,7 +349,7 @@ describe('Import Controller', () => {
       });
     });
 
-    it('19. Trả về 404 khi không tìm thấy import để xóa', async () => {
+    it('TestCase 19: Lỗi (404) - Không tìm thấy đơn nhập cần xóa', async () => {
       mockReq.params.id = '507f1f77bcf86cd799439011';
       importService.deleteImport.mockResolvedValue(null);
 
@@ -356,7 +361,7 @@ describe('Import Controller', () => {
       });
     });
 
-    it('20. Trả về 500 khi service thất bại', async () => {
+    it('TestCase 20: Lỗi (500) - Xử lý lỗi hệ thống khi xóa', async () => {
       mockReq.params.id = '1';
       importService.deleteImport.mockRejectedValue(new Error('DB Error'));
 

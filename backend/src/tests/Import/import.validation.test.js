@@ -4,7 +4,7 @@ import {
   validateImportUpdate,
 } from '~/validators/import.validation.js';
 
-describe('Import Validation', () => {
+describe('Unit Test: Import Validation Middleware', () => {
   let mockReq, mockRes, mockNext;
 
   beforeEach(() => {
@@ -19,6 +19,7 @@ describe('Import Validation', () => {
     vi.clearAllMocks();
   });
 
+
   describe('validateImportCreate', () => {
     const validBody = {
       importDate: '2024-01-15',
@@ -29,7 +30,7 @@ describe('Import Validation', () => {
       barn: 'Khu A',
     };
 
-    it('1. Cho phép validation với dữ liệu hợp lệ', () => {
+    it('TestCase 1: Thành công - Dữ liệu nhập đầy đủ và hợp lệ', () => {
       mockReq.body = validBody;
 
       validateImportCreate(mockReq, mockRes, mockNext);
@@ -38,7 +39,7 @@ describe('Import Validation', () => {
       expect(mockRes.status).not.toHaveBeenCalled();
     });
 
-    it('2. Từ chối khi thiếu ngày nhập', () => {
+    it('TestCase 2: Lỗi (400) - Thiếu trường bắt buộc "importDate"', () => {
       const invalidBody = { ...validBody };
       delete invalidBody.importDate;
 
@@ -53,7 +54,7 @@ describe('Import Validation', () => {
       });
     });
 
-    it('3. Từ chối khi thiếu nhà cung cấp', () => {
+    it('TestCase 3: Lỗi (400) - Thiếu trường bắt buộc "supplier" (Nhà cung cấp)', () => {
       const invalidBody = { ...validBody };
       delete invalidBody.supplier;
 
@@ -64,7 +65,7 @@ describe('Import Validation', () => {
       expect(mockRes.status).toHaveBeenCalledWith(400);
     });
 
-    it('4. Từ chối khi thiếu giống', () => {
+    it('TestCase 4: Lỗi (400) - Thiếu trường bắt buộc "breed" (Giống)', () => {
       const invalidBody = { ...validBody };
       delete invalidBody.breed;
 
@@ -75,7 +76,7 @@ describe('Import Validation', () => {
       expect(mockRes.status).toHaveBeenCalledWith(400);
     });
 
-    it('5. Từ chối khi số lượng nhỏ hơn 1', () => {
+    it('TestCase 5: Lỗi (400) - Số lượng (quantity) không hợp lệ (nhỏ hơn 1)', () => {
       const invalidBody = {
         ...validBody,
         quantity: 0,
@@ -88,7 +89,7 @@ describe('Import Validation', () => {
       expect(mockRes.status).toHaveBeenCalledWith(400);
     });
 
-    it('6. Từ chối khi trọng lượng TB nhỏ hơn 0.1', () => {
+    it('TestCase 6: Lỗi (400) - Trọng lượng TB (avgWeight) không hợp lệ (nhỏ hơn 0.1)', () => {
       const invalidBody = {
         ...validBody,
         avgWeight: 0,
@@ -101,7 +102,7 @@ describe('Import Validation', () => {
       expect(mockRes.status).toHaveBeenCalledWith(400);
     });
 
-    it('7. Từ chối khi thiếu khu nuôi', () => {
+    it('TestCase 7: Lỗi (400) - Thiếu trường bắt buộc "barn" (Khu nuôi)', () => {
       const invalidBody = { ...validBody };
       delete invalidBody.barn;
 
@@ -112,7 +113,7 @@ describe('Import Validation', () => {
       expect(mockRes.status).toHaveBeenCalledWith(400);
     });
 
-    it('8. Chấp nhận flockId rỗng', () => {
+    it('TestCase 8: Thành công - Chấp nhận "flockId" rỗng (Tạo chuồng mới)', () => {
       const bodyWithEmptyFlockId = {
         ...validBody,
         flockId: '',
@@ -125,7 +126,7 @@ describe('Import Validation', () => {
       expect(mockNext).toHaveBeenCalled();
     });
 
-    it('9. Chấp nhận trạng thái "Đang nuôi" hợp lệ', () => {
+    it('TestCase 9: Thành công - Chấp nhận trạng thái "Đang nuôi"', () => {
       const bodyWithStatus = {
         ...validBody,
         status: 'Đang nuôi',
@@ -138,7 +139,7 @@ describe('Import Validation', () => {
       expect(mockNext).toHaveBeenCalled();
     });
 
-    it('10. Chấp nhận trạng thái "Hoàn thành" hợp lệ', () => {
+    it('TestCase 10: Thành công - Chấp nhận trạng thái "Hoàn thành"', () => {
       const bodyWithStatus = {
         ...validBody,
         status: 'Hoàn thành',
@@ -151,7 +152,7 @@ describe('Import Validation', () => {
       expect(mockNext).toHaveBeenCalled();
     });
 
-    it('11. Từ chối trạng thái không hợp lệ', () => {
+    it('TestCase 11: Lỗi (400) - Trạng thái (status) không nằm trong danh sách cho phép', () => {
       const bodyWithInvalidStatus = {
         ...validBody,
         status: 'Trạng thái không hợp lệ',
@@ -164,7 +165,7 @@ describe('Import Validation', () => {
       expect(mockRes.status).toHaveBeenCalledWith(400);
     });
 
-    it('12. Chấp nhận không có trạng thái (tùy chọn)', () => {
+    it('TestCase 12: Thành công - Không gửi trường "status" (Dùng mặc định)', () => {
       const bodyWithoutStatus = { ...validBody };
       delete bodyWithoutStatus.status;
 
@@ -176,8 +177,9 @@ describe('Import Validation', () => {
     });
   });
 
+
   describe('validateImportUpdate', () => {
-    it('13. Cho phép validation cho cập nhật một phần hợp lệ', () => {
+    it('TestCase 13: Thành công - Cập nhật một phần (Partial Update) hợp lệ', () => {
       mockReq.body = { quantity: 200 };
 
       validateImportUpdate(mockReq, mockRes, mockNext);
@@ -185,7 +187,7 @@ describe('Import Validation', () => {
       expect(mockNext).toHaveBeenCalled();
     });
 
-    it('14. Từ chối request body rỗng', () => {
+    it('TestCase 14: Lỗi (400) - Request Body rỗng (Empty Object)', () => {
       mockReq.body = {};
 
       validateImportUpdate(mockReq, mockRes, mockNext);
@@ -197,7 +199,7 @@ describe('Import Validation', () => {
       });
     });
 
-    it('15. Từ chối request body null', () => {
+    it('TestCase 15: Lỗi (400) - Request Body là null', () => {
       mockReq.body = null;
 
       validateImportUpdate(mockReq, mockRes, mockNext);
@@ -205,7 +207,7 @@ describe('Import Validation', () => {
       expect(mockRes.status).toHaveBeenCalledWith(400);
     });
 
-    it('16. Chấp nhận cập nhật một phần với trạng thái hợp lệ', () => {
+    it('TestCase 16: Thành công - Cập nhật trạng thái hợp lệ', () => {
       mockReq.body = { status: 'Hoàn thành' };
 
       validateImportUpdate(mockReq, mockRes, mockNext);
@@ -213,7 +215,7 @@ describe('Import Validation', () => {
       expect(mockNext).toHaveBeenCalled();
     });
 
-    it('17. Từ chối trạng thái không hợp lệ trong cập nhật', () => {
+    it('TestCase 17: Lỗi (400) - Cập nhật trạng thái không hợp lệ', () => {
       mockReq.body = { status: 'Trạng thái không hợp lệ' };
 
       validateImportUpdate(mockReq, mockRes, mockNext);
@@ -221,7 +223,7 @@ describe('Import Validation', () => {
       expect(mockRes.status).toHaveBeenCalledWith(400);
     });
 
-    it('18. Từ chối số lượng nhỏ hơn 1 trong cập nhật', () => {
+    it('TestCase 18: Lỗi (400) - Cập nhật số lượng nhỏ hơn 1', () => {
       mockReq.body = { quantity: 0 };
 
       validateImportUpdate(mockReq, mockRes, mockNext);
@@ -229,7 +231,7 @@ describe('Import Validation', () => {
       expect(mockRes.status).toHaveBeenCalledWith(400);
     });
 
-    it('19. Từ chối trọng lượng TB nhỏ hơn 0.1 trong cập nhật', () => {
+    it('TestCase 19: Lỗi (400) - Cập nhật trọng lượng TB nhỏ hơn 0.1', () => {
       mockReq.body = { avgWeight: 0 };
 
       validateImportUpdate(mockReq, mockRes, mockNext);
@@ -237,7 +239,7 @@ describe('Import Validation', () => {
       expect(mockRes.status).toHaveBeenCalledWith(400);
     });
 
-    it('20. Chấp nhận flockId rỗng trong cập nhật', () => {
+    it('TestCase 20: Thành công - Cập nhật "flockId" rỗng', () => {
       mockReq.body = { flockId: '' };
 
       validateImportUpdate(mockReq, mockRes, mockNext);

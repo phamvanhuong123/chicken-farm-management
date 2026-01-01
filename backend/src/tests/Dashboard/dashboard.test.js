@@ -1,6 +1,7 @@
 import { dashboardService } from "../../services/dashboard.service.js";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
+
 vi.mock("../../services/flock.service.js", () => ({
   flockService: {
     getAllFlocks: vi.fn().mockResolvedValue([
@@ -119,14 +120,16 @@ vi.mock("../../services/finance.service.js", () => ({
   },
 }));
 
-describe("Dashboard Service", () => {
+// --- TEST SUITE ---
+describe("Unit Test: Dashboard Service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NODE_ENV = "test";
   });
 
+
   describe("getDashboardKPIs", () => {
-    it("nên xử lý các khoảng thời gian hợp lệ", async () => {
+    it("TestCase 1: Thành công - Xử lý và trả về KPIs cho các khoảng thời gian hợp lệ (7d, 30d, 90d, all)", async () => {
       const periods = ["7d", "30d", "90d", "all"];
 
       for (const period of periods) {
@@ -143,8 +146,9 @@ describe("Dashboard Service", () => {
     });
   });
 
+
   describe("_filterFlocksByPeriod", () => {
-    it("nên filter flocks theo period dựa trên updatedAt nếu có", () => {
+    it("TestCase 2: Thành công - Lọc danh sách đàn theo thời gian (dựa trên updatedAt hoặc createdAt)", () => {
       const flocks = [
         {
           _id: "1",
@@ -176,7 +180,7 @@ describe("Dashboard Service", () => {
   });
 
   describe("Feed Data từ Log Service", () => {
-    it("nên lấy dữ liệu thức ăn từ log service", async () => {
+    it("TestCase 3: Thành công - Lấy dữ liệu tiêu thụ thức ăn từ Log Service", async () => {
       const { logService } = await import("../../services/log.service.js");
 
       // Tính toán thời gian hôm nay theo UTC+7 (giống logic trong code)
@@ -212,7 +216,7 @@ describe("Dashboard Service", () => {
       expect(kpis.todayFeed.period).toBe("today");
     });
 
-    it("nên xử lý khi không có dữ liệu log thức ăn", async () => {
+    it("TestCase 4: Thành công - Trả về mặc định (0) khi không có dữ liệu log thức ăn", async () => {
       const { logService } = await import("../../services/log.service.js");
 
       // Mock trả về mảng rỗng
@@ -226,7 +230,7 @@ describe("Dashboard Service", () => {
       expect(kpis.todayFeed.label).toBe("Không có dữ liệu");
     });
 
-    it("nên xử lý lỗi từ log service trong _getFeedData", async () => {
+    it("TestCase 5: Lỗi (Handled) - Xử lý ngoại lệ từ Log Service và trả về giá trị an toàn", async () => {
       const { logService } = await import("../../services/log.service.js");
 
       // Lưu lại mock gốc
@@ -256,8 +260,9 @@ describe("Dashboard Service", () => {
     });
   });
 
+
   describe("Logic Tỷ Lệ Chết", () => {
-    it("nên tính tỷ lệ chết dựa trên initialCount thay vì currentCount", async () => {
+    it("TestCase 6: Thành công - Tính tỷ lệ chết chính xác dựa trên số lượng ban đầu (initialCount)", async () => {
       const { logService } = await import("../../services/log.service.js");
 
       // Mock logs cho kỳ hiện tại
@@ -316,7 +321,7 @@ describe("Dashboard Service", () => {
       expect(result.unit).toBe("%");
     });
 
-    it("nên hiển thị màu xanh khi tỷ lệ chết giảm", async () => {
+    it("TestCase 7: Thành công - Hiển thị trạng thái tốt (màu xanh) khi tỷ lệ chết thấp hoặc bằng 0", async () => {
       const { logService } = await import("../../services/log.service.js");
 
       // Mock logs với ít gà chết hơn
@@ -359,8 +364,11 @@ describe("Dashboard Service", () => {
     });
   });
 
+  // ==========================================
+  // LOG SERVICE INTEGRATION
+  // ==========================================
   describe("Log Service Integration cho dữ liệu thức ăn", () => {
-    it("nên gọi log service để lấy dữ liệu thức ăn", async () => {
+    it("TestCase 8: Thành công - Gọi Log Service để lấy dữ liệu thức ăn trong ngày", async () => {
       const { logService } = await import("../../services/log.service.js");
 
       // Tính toán thời gian hôm nay theo UTC+7
@@ -393,7 +401,7 @@ describe("Dashboard Service", () => {
       expect(feedData.value).toBe(200);
     });
 
-    it("nên fallback về getAllLogs khi getLogsByTypeAndTimeRange lỗi", async () => {
+    it("TestCase 9: Thành công (Fallback) - Sử dụng phương án dự phòng (getAllLogs) khi API chính bị lỗi", async () => {
       const { logService } = await import("../../services/log.service.js");
 
       // Lưu lại mock gốc
@@ -429,8 +437,11 @@ describe("Dashboard Service", () => {
     });
   });
 
+  // ==========================================
+  // ENVIRONMENT TEST
+  // ==========================================
   describe("Test Môi Trường", () => {
-    it("nên trả về mock KPIs khi có lỗi trong getDashboardKPIs", async () => {
+    it("TestCase 10: Thành công (Mock Fallback) - Trả về dữ liệu giả lập khi Service gặp lỗi nghiêm trọng", async () => {
       const originalGetFlocksData = dashboardService._getFlocksData;
 
       dashboardService._getFlocksData = vi.fn().mockRejectedValue(new Error("Database error"));
