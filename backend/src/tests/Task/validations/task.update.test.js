@@ -31,10 +31,7 @@ describe('Unit Test: Task Validation - update', () => {
     expect(mockNext.mock.calls[0][0]).toBeUndefined();
   });
 
-  it('TestCase 3: PASS - Body rỗng vẫn hợp lệ (Do Joi không bắt buộc field nào)', async () => {
-    // Lưu ý: Nếu logic nghiệp vụ của bạn bắt buộc update phải có ít nhất 1 trường,
-    // bạn cần thêm rule .min(1) vào Joi.object() bên file validation.
-    // Với code hiện tại thì rỗng vẫn pass.
+  it('TestCase 3: PASS - Body rỗng vẫn hợp lệ', async () => {
     mockReq.body = {}; 
 
     await taskValidate.update(mockReq, mockRes, mockNext);
@@ -44,7 +41,7 @@ describe('Unit Test: Task Validation - update', () => {
   });
 
   it('TestCase 4: FAIL - Title quá ngắn khi update', async () => {
-    mockReq.body = { title: 'Ngan' }; // < 10 chars
+    mockReq.body = { title: 'Ngan' };
 
     await taskValidate.update(mockReq, mockRes, mockNext);
 

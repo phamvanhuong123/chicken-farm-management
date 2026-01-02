@@ -100,12 +100,13 @@ const updateUser = async (req, res, next) => {
         StatusCodes.FORBIDDEN,
         "Bạn không có quyền sửa thông tin người dùng của người khác"
       );
+      
     }
     next();
   } catch (error) {
     const errorMessage = new Error(error).message;
     const customError = new ApiError(
-      StatusCodes.UNPROCESSABLE_ENTITY,
+      error.statusCode|| StatusCodes.UNPROCESSABLE_ENTITY,
       errorMessage
     );
     next(customError);
