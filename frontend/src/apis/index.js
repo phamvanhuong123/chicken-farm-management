@@ -1,7 +1,8 @@
 import axios from "axios";
+import { API_ROOT } from "~/utils/constants";
 
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:8071/v1", 
+  baseURL: API_ROOT, 
   timeout: 10000,
 });
 
