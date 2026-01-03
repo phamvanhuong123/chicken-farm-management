@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => {
       'process.env': env
     },
 
-    base: "/", // Giữ nguyên cái này là đúng
+    base: "/", 
     plugins: [react(), tailwindcss()],
     resolve :{
       alias : [
