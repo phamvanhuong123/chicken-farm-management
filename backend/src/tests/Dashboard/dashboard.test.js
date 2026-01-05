@@ -183,27 +183,25 @@ describe("Unit Test: Dashboard Service", () => {
     it("TestCase 3: Thành công - Lấy dữ liệu tiêu thụ thức ăn từ Log Service", async () => {
       const { logService } = await import("../../services/log.service.js");
 
-      // Tính toán thời gian hôm nay theo UTC+7 (giống logic trong code)
+      // Tạo log time theo định dạng UTC như implementation thực tế
       const now = new Date();
-      const vnOffset = 7 * 60 * 60 * 1000; // GMT+7
-      const todayVN = new Date(now.getTime() + vnOffset);
-      todayVN.setHours(0, 0, 0, 0);
-      const todayStart = new Date(todayVN);
-      const todayEnd = new Date(todayVN);
-      todayEnd.setHours(23, 59, 59, 999);
-      const todayStartUTC = new Date(todayStart.getTime() - vnOffset);
-      const todayEndUTC = new Date(todayEnd.getTime() - vnOffset);
+      const todayUTC = new Date(Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        0, 0, 0, 0
+      ));
 
-      // Tạo log nằm trong khoảng thời gian hôm nay
-      const logTime = new Date(todayStartUTC.getTime() + 60 * 60 * 1000); // 1 giờ sau
+      // Tạo log trong ngày hôm nay theo UTC
+      const logTime = new Date(todayUTC.getTime() + 2 * 60 * 60 * 1000); // 2 giờ sau nửa đêm UTC
 
       logService.getLogsByTypeAndTimeRange.mockResolvedValueOnce([
         {
           _id: "1",
           type: "FOOD",
           quantity: 150,
-          createdAt: logTime,
-          updatedAt: logTime,
+          createdAt: logTime.toISOString(), // Sử dụng ISO string
+          updatedAt: logTime.toISOString(),
         }
       ]);
 
@@ -371,26 +369,25 @@ describe("Unit Test: Dashboard Service", () => {
     it("TestCase 8: Thành công - Gọi Log Service để lấy dữ liệu thức ăn trong ngày", async () => {
       const { logService } = await import("../../services/log.service.js");
 
-      // Tính toán thời gian hôm nay theo UTC+7
+      // Tạo log time theo định dạng UTC như implementation thực tế
       const now = new Date();
-      const vnOffset = 7 * 60 * 60 * 1000;
-      const todayVN = new Date(now.getTime() + vnOffset);
-      todayVN.setHours(0, 0, 0, 0);
-      const todayStart = new Date(todayVN);
-      const todayEnd = new Date(todayVN);
-      todayEnd.setHours(23, 59, 59, 999);
-      const todayStartUTC = new Date(todayStart.getTime() - vnOffset);
+      const todayUTC = new Date(Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        0, 0, 0, 0
+      ));
 
-      // Tạo log nằm trong khoảng thời gian hôm nay
-      const logTime = new Date(todayStartUTC.getTime() + 2 * 60 * 60 * 1000); // 2 giờ sau
+      // Tạo log trong ngày hôm nay theo UTC
+      const logTime = new Date(todayUTC.getTime() + 3 * 60 * 60 * 1000); // 3 giờ sau nửa đêm UTC
 
       logService.getLogsByTypeAndTimeRange.mockResolvedValueOnce([
         {
           _id: "1",
           type: "FOOD",
           quantity: 200,
-          createdAt: logTime,
-          updatedAt: logTime,
+          createdAt: logTime.toISOString(), // Sử dụng ISO string
+          updatedAt: logTime.toISOString(),
         }
       ]);
 
@@ -413,14 +410,25 @@ describe("Unit Test: Dashboard Service", () => {
         logService.getLogsByTypeAndTimeRange.mockRejectedValueOnce(
           new Error("Service error")
         );
+
+        // Tạo log trong ngày hôm nay theo UTC
+        const now = new Date();
+        const todayUTC = new Date(Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth(),
+          now.getUTCDate(),
+          0, 0, 0, 0
+        ));
+        const logTime = new Date(todayUTC.getTime() + 2 * 60 * 60 * 1000);
+
         // Mock getAllLogs trả về dữ liệu hôm nay
         logService.getAllLogs.mockResolvedValueOnce([
           {
             _id: "1",
             type: "FOOD",
             quantity: 100,
-            createdAt: new Date(), // Thời gian hiện tại (hôm nay)
-            updatedAt: new Date(),
+            createdAt: logTime.toISOString(), // Sử dụng ISO string
+            updatedAt: logTime.toISOString(),
           }
         ]);
 

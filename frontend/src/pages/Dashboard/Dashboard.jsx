@@ -36,13 +36,8 @@ const Dashboard = () => {
     const processed = { ...data };
 
     if (processed.todayFeed) {
-      const thresholds = processed.todayFeed.threshold || { LOW: 500, NORMAL: 800, HIGH: 1200 };
-      const value = processed.todayFeed.value;
+      const value = processed.todayFeed.value || 0;
       const unit = processed.todayFeed.unit || 'kg';
-
-      let status = 'normal';
-      let label = 'Bình thường';
-      let color = 'green';
 
       let displayValue = value;
       let displayUnit = unit;
@@ -52,28 +47,12 @@ const Dashboard = () => {
         displayUnit = 'kg';
       }
 
-      // Xử lý trạng thái thức ăn
-      if (value === 0 && processed.todayFeed.materialCount === 0) {
-        status = 'normal';
-        label = 'Không có dữ liệu';
-        color = 'gray';
-      } else if (displayValue <= thresholds.LOW) {
-        status = 'low';
-        label = 'Thiếu';
-        color = 'red';
-      } else if (displayValue >= thresholds.HIGH) {
-        status = 'high';
-        label = 'Dư thừa';
-        color = 'orange';
-      }
-
+      // CHỈ GIỮ LẠI DỮ LIỆU CƠ BẢN, KHÔNG CÒN CẢNH BÁO
       processed.todayFeed = {
         ...processed.todayFeed,
         value: displayValue,
         unit: displayUnit,
-        status: status,
-        label: label,
-        color: color
+        color: 'gray'
       };
     }
 
@@ -131,8 +110,6 @@ const Dashboard = () => {
     } catch (err) {
       console.error('Lỗi khi tải dữ liệu KPI:', err);
       setError('Không thể tải dữ liệu dashboard. Vui lòng kiểm tra kết nối và thử lại.');
-
-      // Không sử dụng mock data
       setKpiData(null);
     } finally {
       setLoading(false);
@@ -327,12 +304,12 @@ const Dashboard = () => {
                 title="Thức ăn hôm nay"
                 value={kpiData?.todayFeed?.value || 0}
                 unit={kpiData?.todayFeed?.unit || 'kg'}
-                status={kpiData?.todayFeed?.status || 'normal'}
-                label={kpiData?.todayFeed?.label || 'Không có dữ liệu'}
                 color={kpiData?.todayFeed?.color || 'gray'}
                 loading={loading}
-                icon={<FaShoppingCart className="text-lg text-orange-600" />}
-                iconBgColor="bg-orange-50"
+                icon={<FaShoppingCart className="text-lg text-gray-600" />}
+                iconBgColor="bg-gray-50"
+                description="Lượng thức ăn tiêu thụ hôm nay"
+                note={kpiData?.todayFeed?.note}
               />
 
               {/* Tỷ lệ chết */}

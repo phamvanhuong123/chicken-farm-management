@@ -82,7 +82,7 @@ class DashboardService {
       }
 
       const totalCurrent = filteredFlocks.reduce(
-        (sum, flock) => sum + (flock.currentCount || flock.initialCount || 0),
+        (sum, flock) => sum + (flock.currentCount || 0),
         0
       );
 
@@ -349,20 +349,11 @@ class DashboardService {
 
   async _getFeedData(period) {
     try {
-      // Xác định ngày hôm nay theo múi giờ Việt Nam (UTC+7)
       const now = new Date();
-      const vnOffset = 7 * 60 * 60 * 1000; // GMT+7
-      const todayVN = new Date(now.getTime() + vnOffset);
-
-      // Đặt thời gian bắt đầu và kết thúc của ngày hôm nay
-      todayVN.setHours(0, 0, 0, 0);
-      const todayStart = new Date(todayVN);
-      const todayEnd = new Date(todayVN);
+      const todayStart = new Date(now);
+      todayStart.setHours(0, 0, 0, 0);
+      const todayEnd = new Date(now);
       todayEnd.setHours(23, 59, 59, 999);
-
-      // Chuyển về UTC để so sánh với dữ liệu trong DB
-      const todayStartUTC = new Date(todayStart.getTime() - vnOffset);
-      const todayEndUTC = new Date(todayEnd.getTime() - vnOffset);
 
       // Lấy tất cả logs FOOD
       let foodLogs = [];
@@ -378,7 +369,7 @@ class DashboardService {
         foodLogs = allLogs.filter(log => log.type === 'FOOD');
       }
 
-      // Lọc logs có trong ngày hôm nay (ưu tiên updatedAt, nếu không có thì createdAt)
+      // Lọc logs có trong ngày hôm nay
       const todayFoodLogs = foodLogs.filter(log => {
         if (!log.createdAt) return false;
 
@@ -386,7 +377,7 @@ class DashboardService {
         const logTime = log.updatedAt ? new Date(log.updatedAt) : new Date(log.createdAt);
 
         // Kiểm tra xem logTime có nằm trong hôm nay không
-        return logTime >= todayStartUTC && logTime <= todayEndUTC;
+        return logTime >= todayStart && logTime <= todayEnd;
       });
 
       // Tính tổng quantity thức ăn tiêu thụ hôm nay
@@ -422,7 +413,7 @@ class DashboardService {
         color: color,
         threshold: this.config.FEED_THRESHOLD,
         source: "log_service",
-        date: todayVN.toISOString().split("T")[0],
+        date: now.toISOString().split("T")[0],
         period: "today",
         logCount: todayFoodLogs.length,
         note: todayFoodLogs.length > 0
@@ -677,18 +668,6 @@ class DashboardService {
         // Bỏ qua lỗi
       }
 
-      const feedData = await this._getFeedData("today");
-      if (feedData.status === "low") {
-        alerts.push({
-          type: "feed_low",
-          title: "Thức ăn sắp hết",
-          message: `Chỉ còn ${feedData.value}${feedData.unit} thức ăn. Cần bổ sung thêm.`,
-          severity: "high",
-          timestamp: new Date().toISOString(),
-          source: "feed",
-        });
-      }
-
       const deathData = await this._getDeathRateData("7d");
       if (deathData.value > 5) {
         alerts.push({
@@ -893,114 +872,94 @@ class DashboardService {
 
   async getWeeklyConsumptionChart() {
     try {
-      const now = new Date();
-      const vnOffset = 7 * 60 * 60 * 1000;
-      const todayVN = new Date(now.getTime() + vnOffset);
-      todayVN.setHours(0, 0, 0, 0);
-      const startDate = new Date(todayVN);
-      startDate.setDate(startDate.getDate() - 6);
-
-      const days = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-      const weeklyData = [];
-
-      for (let i = 0; i < 7; i++) {
-        const currentDate = new Date(startDate);
-        currentDate.setDate(startDate.getDate() + i);
-
-        const dayIndex = currentDate.getDay();
-        const dayName = days[dayIndex];
-
-        const displayDate = currentDate.toLocaleDateString('vi-VN', {
-          day: '2-digit',
-          month: '2-digit'
-        });
-
-        const year = currentDate.getFullYear();
-        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-        const day = String(currentDate.getDate()).padStart(2, '0');
-        const dateKey = `${year}-${month}-${day}`;
-
-        weeklyData.push({
-          day: dayName,
-          dayIndex: dayIndex === 0 ? 7 : dayIndex,
-          food: 0,
-          medicine: 0,
-          total: 0,
-          date: currentDate.toISOString(),
-          dateKey: dateKey,
-          displayDate: displayDate
-        });
+      // Lấy tất cả logs
+      let allLogs = [];
+      try {
+        allLogs = await logService.getAllLogs();
+      } catch (error) {
+        console.error("Lỗi khi lấy logs:", error);
+        return this._getEmptyWeeklyConsumptionData();
       }
 
-      const dayOrder = { 'T1': 1, 'T2': 2, 'T3': 3, 'T4': 4, 'T5': 5, 'T6': 6, 'T7': 7 };
-      weeklyData.sort((a, b) => dayOrder[a.day] - dayOrder[b.day]);
+      const weeklyData = [];
 
-      let logsLast7Days = [];
+      // Lấy thời điểm hiện tại
+      const now = new Date();
+      const todayStart = new Date(now);
+      todayStart.setHours(0, 0, 0, 0);
+      const todayEnd = new Date(now);
+      todayEnd.setHours(23, 59, 59, 999);
 
-      try {
-        const allLogs = await logService.getAllLogs();
-        logsLast7Days = allLogs.filter(log => {
+      for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
+        const targetDateStart = new Date(todayStart);
+        targetDateStart.setDate(todayStart.getDate() - dayOffset);
+
+        const targetDateEnd = new Date(targetDateStart);
+        targetDateEnd.setHours(23, 59, 59, 999);
+
+        // Lọc logs trong khoảng thời gian này - sử dụng cùng logic với KPI thức ăn
+        const dayLogs = allLogs.filter(log => {
           if (!log.createdAt) return false;
-          const logDate = new Date(log.createdAt);
-          const logDateVN = new Date(logDate.getTime() + vnOffset);
-          const year = logDateVN.getFullYear();
-          const month = String(logDateVN.getMonth() + 1).padStart(2, '0');
-          const day = String(logDateVN.getDate()).padStart(2, '0');
-          const logDateKey = `${year}-${month}-${day}`;
-          return weeklyData.some(day => day.dateKey === logDateKey);
+
+          // Ưu tiên sử dụng updatedAt, nếu không có thì dùng createdAt
+          const logTime = log.updatedAt ? new Date(log.updatedAt) : new Date(log.createdAt);
+
+          // Kiểm tra xem logTime có nằm trong ngày không
+          return logTime >= targetDateStart && logTime <= targetDateEnd;
         });
 
-        logsLast7Days.forEach((log) => {
-          const logDate = new Date(log.createdAt);
-          const logDateVN = new Date(logDate.getTime() + vnOffset);
-          const year = logDateVN.getFullYear();
-          const month = String(logDateVN.getMonth() + 1).padStart(2, '0');
-          const day = String(logDateVN.getDate()).padStart(2, '0');
-          const logDateKey = `${year}-${month}-${day}`;
-          const dayData = weeklyData.find(day => day.dateKey === logDateKey);
+        let food = 0;
+        let medicine = 0;
 
-          if (dayData) {
-            if (log.type === 'FOOD') {
-              dayData.food += log.quantity || 0;
-            } else if (log.type === 'MEDICINE' || log.type === 'VACCINE') {
-              dayData.medicine += log.quantity || 0;
-            }
-            dayData.total = dayData.food + dayData.medicine;
+        dayLogs.forEach(log => {
+          if (log.type === "FOOD") {
+            food += log.quantity || 0;
+          } else if (log.type === "MEDICINE" || log.type === "VACCINE") {
+            medicine += log.quantity || 0;
           }
         });
 
-      } catch (logError) {
-        // Bỏ qua lỗi
+        // Định dạng hiển thị ngày
+        const dayNumber = dayOffset + 1;
+        const displayDate = `${targetDateStart.getDate().toString().padStart(2, '0')}-${(targetDateStart.getMonth() + 1).toString().padStart(2, '0')}`;
+
+        // Thêm vào mảng: ngày 1 (hôm nay) sẽ ở đầu mảng
+        weeklyData.unshift({
+          dayNumber: dayNumber,
+          dayLabel: `Ngày ${dayNumber}`,
+          food,
+          medicine,
+          total: food + medicine,
+          date: targetDateStart.toISOString(),
+          displayDate,
+          dateKey: `${targetDateStart.getFullYear()}-${(targetDateStart.getMonth() + 1).toString().padStart(2, '0')}-${targetDateStart.getDate().toString().padStart(2, '0')}`,
+          startTime: targetDateStart.toISOString(),
+          endTime: targetDateEnd.toISOString(),
+          logCount: dayLogs.length,
+          actualDate: targetDateStart.toDateString(),
+          dayOffset: dayOffset
+        });
       }
 
-      const formattedData = weeklyData.map(day => {
-        const [year, month, date] = day.dateKey.split('-');
-        const utcDate = new Date(Date.UTC(
-          parseInt(year),
-          parseInt(month) - 1,
-          parseInt(date),
-          0, 0, 0, 0
-        ));
+      const orderedData = [];
 
-        return {
-          day: day.day,
-          dayIndex: day.dayIndex,
-          food: day.food,
-          medicine: day.medicine,
-          total: day.total,
-          date: utcDate.toISOString(),
-          displayDate: day.displayDate
-        };
-      });
+      // Bắt đầu từ ngày hôm nay (dayNumber = 1) đến ngày 7
+      for (let i = 0; i < 7; i++) {
+        // Tìm dữ liệu cho ngày i+1 (ngày 1 đến 7)
+        const dayData = weeklyData.find(item => item.dayNumber === (i + 1));
+        if (dayData) {
+          orderedData.push(dayData);
+        }
+      }
 
-      const totalFood = formattedData.reduce((sum, day) => sum + day.food, 0);
-      const totalMedicine = formattedData.reduce((sum, day) => sum + day.medicine, 0);
+      const totalFood = orderedData.reduce((s, d) => s + d.food, 0);
+      const totalMedicine = orderedData.reduce((s, d) => s + d.medicine, 0);
 
       return {
         chartType: "stacked_column",
-        title: "Tiêu thụ hàng tuần",
+        title: "Tiêu thụ 7 ngày gần nhất",
         description: "Thống kê tiêu thụ thức ăn và thuốc 7 ngày gần nhất",
-        data: formattedData,
+        data: orderedData,
         series: [
           {
             name: "Thức ăn",
@@ -1025,88 +984,77 @@ class DashboardService {
           overall: totalFood + totalMedicine
         },
         metadata: {
-          source: logsLast7Days.length > 0 ? "log" : "no_data",
-          dataQuality: logsLast7Days.length > 0 ? "real" : "no_data",
+          source: allLogs.length ? "log" : "no_data",
+          dataQuality: allLogs.length ? "real" : "no_data",
           dataPoints: {
-            logs: logsLast7Days.length,
-            foodLogs: logsLast7Days.filter(l => l.type === 'FOOD').length,
-            medicineLogs: logsLast7Days.filter(l => l.type === 'MEDICINE' || l.type === 'VACCINE').length
+            logs: allLogs.length,
+            foodLogs: allLogs.filter(l => l.type === "FOOD").length,
+            medicineLogs: allLogs.filter(
+              l => l.type === "MEDICINE" || l.type === "VACCINE"
+            ).length,
+            // Thêm thông tin về khoảng thời gian
+            timeRange: {
+              from: orderedData[orderedData.length - 1]?.date || null, // Ngày 7 (xa nhất)
+              to: orderedData[0]?.date || null, // Ngày 1 (hôm nay)
+              calculationMethod: "local_time_same_as_feed_kpi"
+            }
           },
           timestamp: new Date().toISOString(),
-          note: logsLast7Days.length > 0
-            ? `Dữ liệu từ ${logsLast7Days.length} logs trong 7 ngày`
-            : "Không có dữ liệu logs trong 7 ngày"
+          note: allLogs.length
+            ? `Dữ liệu từ ${allLogs.length} logs, sử dụng cùng logic lọc thời gian với KPI thức ăn. Ngày 1 là hôm nay, Ngày 7 là 6 ngày trước.`
+            : "Không có dữ liệu logs"
         }
       };
-
     } catch (error) {
-      console.error("Lỗi khi lấy dữ liệu tiêu thụ hàng tuần:", error);
+      console.error("Lỗi weekly consumption:", error);
       return this._getEmptyWeeklyConsumptionData();
     }
   }
 
+
   _getEmptyWeeklyConsumptionData() {
-    const today = new Date();
-    const days = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-    const weeklyData = [];
+    const orderedData = [];
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
 
+    // Tạo dữ liệu rỗng theo thứ tự từ hôm nay đến 6 ngày trước
     for (let i = 0; i < 7; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - (6 - i));
+      const targetDateStart = new Date(todayStart);
+      targetDateStart.setDate(todayStart.getDate() - i);
 
-      const dayIndex = date.getDay();
-      const dayName = days[dayIndex];
+      const displayDate = `${targetDateStart.getDate().toString().padStart(2, '0')}-${(targetDateStart.getMonth() + 1).toString().padStart(2, '0')}`;
+      const dateKey = `${targetDateStart.getFullYear()}-${(targetDateStart.getMonth() + 1).toString().padStart(2, '0')}-${targetDateStart.getDate().toString().padStart(2, '0')}`;
 
-      const displayDate = date.toLocaleDateString('vi-VN', {
-        day: '2-digit',
-        month: '2-digit'
-      });
-
-      weeklyData.push({
-        day: dayName,
-        dayIndex: dayIndex === 0 ? 7 : dayIndex,
+      // Thêm vào đầu mảng để có thứ tự từ hôm nay đến xa nhất
+      orderedData.unshift({
+        dayNumber: i + 1,
+        dayLabel: `Ngày ${i + 1}`,
         food: 0,
         medicine: 0,
         total: 0,
-        date: date.toISOString(),
-        displayDate: displayDate
+        date: targetDateStart.toISOString(),
+        displayDate,
+        dateKey,
+        dayOffset: i,
+        actualDate: targetDateStart.toDateString()
       });
     }
 
-    const totalFood = 0;
-    const totalMedicine = 0;
+    // Sắp xếp lại để đảm bảo thứ tự từ hôm nay (ngày 1) đến xa nhất (ngày 7)
+    orderedData.sort((a, b) => a.dayNumber - b.dayNumber);
 
     return {
       chartType: "stacked_column",
-      title: "Tiêu thụ hàng tuần",
+      title: "Tiêu thụ 7 ngày gần nhất",
       description: "Thống kê tiêu thụ thức ăn và thuốc 7 ngày gần nhất",
-      data: weeklyData,
-      series: [
-        {
-          name: "Thức ăn",
-          key: "food",
-          color: "#4CAF50",
-          unit: "kg",
-          description: "Khối lượng thức ăn tiêu thụ"
-        },
-        {
-          name: "Thuốc & Vaccine",
-          key: "medicine",
-          color: "#FF9800",
-          unit: "kg",
-          description: "Khối lượng thuốc và vaccine sử dụng"
-        }
-      ],
+      data: orderedData,
       period: "7d",
       calculatedAt: new Date().toISOString(),
-      total: {
-        food: totalFood,
-        medicine: totalMedicine,
-        overall: totalFood + totalMedicine
-      },
+      total: { food: 0, medicine: 0, overall: 0 },
       metadata: {
         source: "no_data",
-        note: "Không có dữ liệu logs"
+        note: "Không có dữ liệu logs, sử dụng cùng logic lọc thời gian với KPI thức ăn. Ngày 1 là hôm nay, Ngày 7 là 6 ngày trước."
       }
     };
   }
