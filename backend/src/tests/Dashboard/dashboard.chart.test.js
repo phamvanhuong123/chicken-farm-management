@@ -91,7 +91,7 @@ describe('Unit Test: Dashboard Chart Service (U1.2)', () => {
       const data = await dashboardService.getWeeklyConsumptionChart();
 
       expect(data).toHaveProperty('chartType', 'stacked_column');
-      expect(data).toHaveProperty('title', 'Tiêu thụ hàng tuần');
+      expect(data).toHaveProperty('title', 'Tiêu thụ 7 ngày gần nhất'); // Đã sửa tiêu đề
       expect(data).toHaveProperty('period', '7d');
 
       // Kiểm tra có đủ 7 ngày
@@ -99,7 +99,7 @@ describe('Unit Test: Dashboard Chart Service (U1.2)', () => {
 
       // Kiểm tra mỗi ngày có đủ các trường cần thiết
       data.data.forEach(item => {
-        expect(item).toHaveProperty('day');
+        expect(item).toHaveProperty('dayNumber');
         expect(item).toHaveProperty('food');
         expect(item).toHaveProperty('medicine');
         expect(item).toHaveProperty('total');
