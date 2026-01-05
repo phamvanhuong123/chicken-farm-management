@@ -6,6 +6,7 @@ import { useSelector } from "react-redux";
 import StepBasicInfo from "./StepBasicInfo";
 import StepCostArea from "./StepCostArea";
 import StepConfirm from "./StepConfirm";
+import { financeApi } from "~/apis/financeApi";
 
 export default function FlockCreateModal({ onClose, addFlockData }) {
   const user = useSelector((state) => state.auth.user);
@@ -146,7 +147,16 @@ export default function FlockCreateModal({ onClose, addFlockData }) {
 
       // Thông báo trong modal
       setSuccessMsg("Tạo đàn gà thành công! Đã cập nhật số lượng khu nuôi.");
-
+      //Thêm giao dịch
+      const result = await financeApi.createTransaction({
+        date : new Date(),
+        type : "expense",
+        category : "Khác",
+        amount: Number(res?.data?.data?.currentCount) *Number(res?.data?.data?.price) ,
+        flockId: res?.data?.data?._id || null,
+        description: "Nhập giống gà mới",
+      })
+      console.log(result.data)
       // Đóng modal sau 1.5s
       setTimeout(() => {
         onClose();
@@ -178,8 +188,11 @@ export default function FlockCreateModal({ onClose, addFlockData }) {
   // Hàm mới: Xử lý submit dựa trên lựa chọn
   const handleSubmit = async (data) => {
     // Kiểm tra nếu có areaId thì dùng hàm mới, không thì dùng hàm cũ
+    
     if (data.areaId) {
-      await onSubmitWithAreaUpdate(data);
+       await onSubmitWithAreaUpdate(data);
+       
+      
     } else {
       await onSubmit(data);
     }
