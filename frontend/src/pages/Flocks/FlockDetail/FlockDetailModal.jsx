@@ -14,14 +14,9 @@ export default function FlockDetailModal({ flockId, onClose }) {
         setLoading(true);
 
         const res = await axios(`/flocks/${flockId}`);
-        const json = await res.json();
-
-        if (!json?.data) throw new Error();
-
-        setFlock(json.data.flock);
-        setLogs(json.data.logs || []);
+        setFlock(res.data?.data?.flock);
       } catch (err) {
-        setError("Không thể tải thông tin đàn, vui lòng thử lại.");
+        setError("Không thể tải thông tin đàn, vui lòng thử lại." + err);
       } finally {
         setLoading(false);
       }
@@ -29,19 +24,17 @@ export default function FlockDetailModal({ flockId, onClose }) {
 
     loadData();
   }, [flockId]);
-
+  console.log(flock);
   return (
-    <div className='fixed inset-0 bg-black/30 backdrop-blur-[2px] flex justify-center items-center z-50 transition-all duration-300'>
-        <div className='bg-white rounded-2xl shadow-lg p-8 w-[650px] relative animate-fadeIn'>
-
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-[2px] flex justify-center items-center z-50 transition-all duration-300">
+      <div className="bg-white rounded-2xl shadow-lg p-8 w-[650px] relative animate-fadeIn">
         {/* Nút đóng */}
         <button
-        onClick={onClose}
-        className="absolute right-4 top-4 text-gray-600 hover:text-black text-lg cursor-pointer"
+          onClick={onClose}
+          className="absolute right-4 top-4 text-gray-600 hover:text-black text-lg cursor-pointer"
         >
-        ✕
+          ✕
         </button>
-
 
         {loading ? (
           <p className="text-center py-10">Đang tải...</p>
@@ -54,15 +47,21 @@ export default function FlockDetailModal({ flockId, onClose }) {
 
             {/* Thông tin đàn */}
             <div className="grid grid-cols-2 gap-4 mb-6">
-              <Info label="Mã lứa" value={flock.code} />
-              <Info label="Giống gà" value={flock.speciesId} />
+              <Info label="Giống gà" value={flock?.speciesId} />
               <Info label="Ngày nhập" value={formatDate(flock.createdAt)} />
               <Info label="Số lượng ban đầu" value={flock.initialCount} />
               <Info label="Số lượng hiện tại" value={flock.currentCount} />
               <Info label="Trọng lượng TB" value={`${flock.avgWeight} kg`} />
-              <Info label="Nhà cung cấp" value={flock.supplier || "-"} />
+
               <Info label="Khu nuôi" value={flock.areaId || "-"} />
-              <Info label="Chi phí nhập" value={flock.importCost || "-"} />
+              <Info
+                label="Chi phí nhập"
+                value={
+                  Number(flock?.currentCount) *
+                    Number(flock?.price) 
+                     || "-"
+                }
+              />
               <Info
                 label="Trạng thái"
                 value={
@@ -113,9 +112,8 @@ export default function FlockDetailModal({ flockId, onClose }) {
                 onClick={onClose}
                 className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded cursor-pointer"
               >
-              Đóng
+                Đóng
               </button>
-
             </div>
           </>
         )}

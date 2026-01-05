@@ -24,7 +24,6 @@ const FlockRow = ({
 }) => {
   return (
     <tr key={flock._id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-      <td className="px-4 py-2">{flock.code || "-"}</td>
       <td className="px-4 py-2">
         {flock.createdAt ? formatDate(flock.createdAt) : "-"}
       </td>
@@ -100,40 +99,32 @@ function Flocks() {
     fetchFlocks();
   }, []);
 
-  // === CẬP NHẬT LOGIC LỌC ===
   const filteredFlocks = useMemo(() => {
-    // Chuyển đổi searchTerm sang chữ thường một lần
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    const handleAddFlock = (newFlock) => {
-      setFlocks((prev) => [newFlock, ...prev]);  // đưa đàn mới lên đầu bảng
-    };
-
     return flocks.filter(flock => {
-      // Logic lọc trạng thái
+      
       const statusMatch =
         filterStatus === "all" ||
         (filterStatus === "Raising" && (flock.status === "Raising" || flock.status === "Đang nuôi")) ||
         (filterStatus === "Sold" && (flock.status === "Sold" || flock.status === "Đã bán")) ||
         flock.status === filterStatus;
 
-      // Logic lọc giống gà
+  
       const speciesMatch = filterSpecies === "all" || flock.speciesId === filterSpecies;
       
-      // Logic tìm kiếm theo mã lứa (flock.code)
-      const searchMatch = (flock.code || '') // Xử lý nếu code là null/undefined
+     
+      const searchMatch = (flock.code || '') 
         .toLowerCase()
         .includes(lowerCaseSearchTerm);
 
-      return statusMatch && speciesMatch && searchMatch; // Thêm điều kiện searchMatch
+      return statusMatch && speciesMatch && searchMatch; 
     });
-  }, [flocks, filterStatus, filterSpecies, searchTerm]); // Thêm searchTerm vào dependency
+  }, [flocks, filterStatus, filterSpecies, searchTerm]);
   
-  // Lấy danh sách giống gà động (Không thay đổi)
   const allSpecies = useMemo(() => 
     [...new Set(flocks.map(flock => flock.speciesId).filter(Boolean))]
   , [flocks]);
 
-  //Lấy dữ liệu để thêm đàn gà
   const addFlockData =  (data) => {
     console.log(data)
     const newFlockList = [...flocks];
@@ -141,13 +132,10 @@ function Flocks() {
     setFlocks(newFlockList);
   }
   
-  // === CẬP NHẬT RESET TRANG ===
   useEffect(() => {
-    setCurrentPage(1); // Quay về trang 1 mỗi khi bộ lọc HOẶC tìm kiếm thay đổi
-  }, [filterStatus, filterSpecies, searchTerm]); // Thêm searchTerm vào dependency
-  // ===========================
+    setCurrentPage(1);
+  }, [filterStatus, filterSpecies, searchTerm]);
 
-  // Format ngày (Không thay đổi)
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const day = String(date.getDate()).padStart(2, "0");
@@ -249,7 +237,7 @@ function Flocks() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="px-4 py-2 text-sm font-semibold">Mã lứa</th>
+            
                   <th className="px-4 py-2 text-sm font-semibold">Ngày nhập</th>
                   <th className="px-4 py-2 text-sm font-semibold">Giống</th>
                   <th className="px-4 py-2 text-sm font-semibold text-center">SL ban đầu</th>

@@ -25,9 +25,11 @@ import {
 
 // Danh sách mẫu (có thể lấy từ API sau)
 const SUPPLIERS = [
-  { value: "trang-trai-abc", label: "Trang trại ABC" },
-  { value: "cong-ty-xyz", label: "Công ty XYZ" },
-  { value: "nong-trai-123", label: "Nông trại 123" },
+  { value: "Trung tâm Gia cầm Thụy Phương", label: "Trung tâm Gia cầm Thụy Phương" },
+  { value: "Trại gà Bình Định", label: "Trại gà Bình Định" },
+  { value: "HTX Gà Hòa Bình", label: "HTX Gà Hòa Bình" },
+  { value: "Trại Giống Thu Hà", label: "Trại Giống Thu Hà" },
+  { value: "Trung tâm Nghiên cứu Gia cầm Tam Đảo", label: "Trung tâm Nghiên cứu Gia cầm Tam Đảo" },
 ];
 
 const BREEDS = [
@@ -104,7 +106,7 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
       setSuccessMessage("");
     }
   }, [flockData, isOpen]);
-
+console.log(flockData)
   // Handle input change
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
