@@ -23,7 +23,7 @@ function Statistical({ flocks }) {
       setLogsTypeDeathNumber(Number(countLogDeath / totalNumberFlock * 100).toFixed(2))
     }
     fetchLogApis()
-  },[])
+  },[logsTypeDeathNumber])
   return (
     <>
       <div className="grid grid-cols-4 gap-4 mb-9 ">

@@ -23,7 +23,6 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 
-// Danh sách mẫu (có thể lấy từ API sau)
 const SUPPLIERS = [
   { value: "Trung tâm Gia cầm Thụy Phương", label: "Trung tâm Gia cầm Thụy Phương" },
   { value: "Trại gà Bình Định", label: "Trại gà Bình Định" },
@@ -33,9 +32,9 @@ const SUPPLIERS = [
 ];
 
 const BREEDS = [
-  { value: "ga-ta", label: "Gà ta" },
-  { value: "ga-cong-nghiep", label: "Gà công nghiệp" },
-  { value: "ga-ri", label: "Gà thả vườn" },
+  { value: "Gà ta", label: "Gà ta" },
+  { value: "Gà công nghiệp", label: "Gà công nghiệp" },
+  { value: "Gà thả vườn", label: "Gà thả vườn" },
 ];
 
 // ================= FIX STATUS MAP =================
@@ -96,6 +95,7 @@ function EditFlockModal({ isOpen, onClose, flockData, onUpdateSuccess }) {
         supplierId: flockData.supplierId || "",
         speciesId: flockData.speciesId || "",
         initialCount: flockData.initialCount?.toString() || "",
+        currentCount : flockData.currentCount?.toString() || "",
         avgWeight: flockData.avgWeight?.toString() || "",
         areaId: flockData.areaId?._id || "",
         status: STATUS_REVERSE_MAP[flockData.status] || "active",
@@ -165,6 +165,7 @@ console.log(flockData)
         supplierId: formData.supplierId,
         speciesId: formData.speciesId,
         initialCount: Number(formData.initialCount),
+        currentCount : Number(formData.currentCount),
         avgWeight: Number(formData.avgWeight),
         areaId: formData.areaId,
         status: STATUS_MAP[formData.status],
@@ -206,7 +207,8 @@ console.log(flockData)
   };
 
   if (!isOpen) return null;
-
+  console.log(flockData)
+  console.log(areas)
   return (
     <AlertDialog
       open={isOpen}
@@ -309,6 +311,19 @@ console.log(flockData)
                   />
                   {errors.initialCount && (
                     <p className="text-red-500 text-sm">{errors.initialCount}</p>
+                  )}
+                </div>
+                <div className="col-span-1 space-y-2">
+                  <Label>Số lượng hiện tại <span className="text-red-500">*</span></Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={formData.currentCount}
+                    onChange={(e) => handleChange("currentCount", e.target.value)}
+                    className={errors.currentCount ? "border-red-500" : ""}
+                  />
+                  {errors.currentCount && (
+                    <p className="text-red-500 text-sm">{errors.currentCount}</p>
                   )}
                 </div>
 

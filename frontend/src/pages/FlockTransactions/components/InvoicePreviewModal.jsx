@@ -2,7 +2,9 @@ import { useRef, useState } from "react";
 import { X, Printer, Download, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { transactionAPI } from "~/apis/transaction.api";
-import toast from "react-hot-toast";
+import { toast } from "react-toastify";
+
+import { financeApi } from "~/apis/financeApi";
 
 function InvoicePreviewModal({ isOpen, onClose, transaction, onStatusChange }) {
   const invoiceRef = useRef(null);
@@ -134,10 +136,25 @@ function InvoicePreviewModal({ isOpen, onClose, transaction, onStatusChange }) {
 
   // Update status
   const handleComplete = async () => {
-    if (onStatusChange) {
-      await onStatusChange(transaction._id, "Hoàn thành");
+    try{
+
+      await onStatusChange(transaction._id, "Hoàn thành");  
+      const payload = {
+          date: new Date(),
+          type: "income",
+          category: "Bán hàng",
+          amount: Number(transaction?.totalRevenue),
+          flockId: transaction?.flockId || null,
+          description: "Xuất đàn",
+        };
+        toast.success("Xuất đàn thành công")
+        await financeApi.createTransaction(payload);
       onClose();
     }
+    catch(error){
+      toast.error("Xuất đàn thất bại : " + error)
+    }
+    
   };
 
   const handleCancel = async () => {
