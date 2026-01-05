@@ -2,9 +2,7 @@ import Joi from "joi";
 import { GET_DB } from "../config/mongodb.js";
 import { ObjectId } from "mongodb";
 
-// Định nghĩa schema Joi
-// TEAM-93: Cung cấp API chi tiết đàn và nhật ký liên quan
-import { logService } from "../services/log.service.js";
+
 
 const FLOCK_COLLECTION_NAME = "flocks";
 
@@ -57,19 +55,27 @@ const validateBeforeUpdate = async (data) => {
 //  Hàm tạo đàn mới
 const create = async (data) => {
   try {
+
+    console.log("[Model] Data validate trước khi tạo:", data); // THÊM LOG
+
     if (data._id) delete data._id;
 
     const validData = await validateBeforeCreate(data);
 
+    console.log("[Model] Data sau khi validate:", validData); // THÊM LOG
+
     const result = await GET_DB()
       .collection(FLOCK_COLLECTION_NAME)
       .insertOne(validData);
+      
+      console.log("[Model] Kết quả insert:", result); // THÊM LOG
 
     return {
       _id: result.insertedId,
       ...validData,
     };
   } catch (error) {
+     console.error("🔥 [Model] Lỗi khi tạo:", error.message); // THÊM LOG
     if (error.isJoi) {
       const err = new Error("Dữ liệu không hợp lệ: " + error.message);
       err.statusCode = 400;
@@ -150,10 +156,9 @@ const findDetailById = async (id) => {
       throw err;
     }
 
-    // Lấy danh sách nhật ký liên quan
-    const logs = await logService.getLogsByFlockId(id);
+    
 
-    return { flock, logs };
+    return { flock };
   } catch (error) {
     if (!error.statusCode) error.statusCode = 500;
     error.message = "Không thể tải thông tin đàn: " + error.message;

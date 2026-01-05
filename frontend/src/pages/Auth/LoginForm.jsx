@@ -30,7 +30,7 @@ function LoginForm() {
         dispatch(setUser(token))
         setStatusMessage({ type: "success", text: "Đăng nhập thành công" });
         // navigate to home or dashboard
-        setTimeout(() => navigate("/dashboard/flocks"), 800);
+        setTimeout(() => navigate("/dashboard"), 800);
       } else {
         setStatusMessage({ type: "error", text: res.message || "Không nhận được token" });
       }
@@ -74,12 +74,7 @@ function LoginForm() {
             <FieldErrorAlert errors={errors} fieldName={'password'} />
           </div>
 
-          <div className="mb-4">
-            <label className="inline-flex items-center">
-              <input type="checkbox" className="w-4 h-4 border-2 border-gray-400 rounded mr-2.5" />
-              Ghi nhớ mật khẩu
-            </label>
-          </div>
+          
           
           <div className="flex gap-3">
             <button disabled={loading} className="disabled:cursor-not-allowed disabled:opacity-30  block mb-3.5 py-1.5 px-4 bg-[#019788] text-[#fff] font-bold text-[1rem] rounded-[6px] cursor-pointer hover:bg-[#027d72] transition-all" type="submit">
@@ -95,7 +90,7 @@ function LoginForm() {
           )}
 
           <div className="grid grid-cols-2 gap-2.5 mt-4">
-            <Link className="text-[#019788] underline text-[14px]">Bạn đã quên mật khẩu</Link>
+            <Link to={'/forgot-password'} className="text-[#019788] underline text-[14px]">Bạn đã quên mật khẩu</Link>
             <Link to={'/register'} className="text-[#019788] underline text-[14px]">Tạo mới tài khoản</Link>
           </div>
         </form>

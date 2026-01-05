@@ -23,7 +23,7 @@ console.log(form);
       staff:
         area.staff
           ?.map((s) => {
-            const emp = staffList.find((e) => e.id === s.id);
+            const emp = staffList.find((e) => e.id === s.staffId);
             return emp?.id
           })
           .filter(Boolean) || [],
@@ -75,7 +75,7 @@ console.log(form);
       toast.error(err.response?.data?.message || "Cập nhật thất bại!");
     }
   };
-
+  
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-[420px] animate-fadeIn">

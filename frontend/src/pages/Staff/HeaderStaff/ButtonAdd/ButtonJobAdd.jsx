@@ -33,14 +33,17 @@ import { getAreaList } from "~/services/areaService";
 import FieldErrorAlert from "~/components/FieldErrorAlert";
 import { useDispatch, useSelector } from "react-redux";
 import { getUserState } from "~/slices/authSlice";
-import { fetchAddTaskApi, getLoadingState } from "~/slices/taskSlice";
+import { fetchAddTaskApi, fetchGetAllTaskApi, getLoadingState } from "~/slices/taskSlice";
 import { toast } from "react-toastify";
 import { ClipLoader } from "react-spinners";
+import { useIsEmployer } from "~/hooks/useIsEmployer";
 
 function ButtonJobAdd() {
   const [open, setOpen] = useState(false);
   const user = useSelector(state => getUserState(state))
   const loading = useSelector(state => getLoadingState(state))
+  const isEmpoyer = useIsEmployer()
+  
   const dispatch = useDispatch()
   const {
     register,
@@ -73,6 +76,8 @@ function ButtonJobAdd() {
     console.log(data);
     try{
       await dispatch(fetchAddTaskApi(data)).unwrap()
+      await dispatch(fetchGetAllTaskApi(user.id)).unwrap();
+      
       toast.success("Thêm công việc thành công");
       setOpen(false);
       reset();
@@ -82,6 +87,7 @@ function ButtonJobAdd() {
       toast.error("Thêm công việc thất bại" + e.message);
 
     }
+    
 
   };
 
@@ -92,6 +98,7 @@ function ButtonJobAdd() {
     };
     fetchAreas();
   }, [open]);
+  if (!isEmpoyer) return null
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>

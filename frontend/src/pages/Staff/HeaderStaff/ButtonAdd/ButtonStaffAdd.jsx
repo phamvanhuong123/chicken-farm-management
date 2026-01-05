@@ -31,8 +31,10 @@ import { getUserState, updateUsers } from "~/slices/authSlice";
 import { toast } from "react-toastify";
 import { ClipLoader } from "react-spinners";
 import { useState } from "react";
+import { useIsEmployer } from "~/hooks/useIsEmployer";
 
 function ButtonStaffAdd() {
+  const isEmployer = useIsEmployer()
   const dispatch = useDispatch();
   const user = useSelector((state) => getUserState(state));
   const loading = useSelector((state) => getLoadingState(state));
@@ -75,7 +77,7 @@ function ButtonStaffAdd() {
     resetField("salary");
     resetField("roleId");
   };
-
+  if(!isEmployer) return null
   return (
     <>
       <AlertDialog>

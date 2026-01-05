@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import axios from '~/apis/index'
 const API_ROOT = "http://localhost:8071";
 // Khởi tạo giá trị ban đầu
 
@@ -12,16 +12,15 @@ const initialState = {
 export const fetchEmployeeApi = createAsyncThunk(
   "employees/fetchEmployeeApi",
   async (parentId) => {
-    const response = await axios.get(`${API_ROOT}/v1/auth/${parentId}`);
+    const response = await axios.get(`/auth/${parentId}`);
     return response.data;
   }
 );
 export const fetchAddEmployeeApi = createAsyncThunk(
   "employees/fetchAddEmployeeApi",
   async ({ parentId, body }) => {
-    console.log(parentId, body);
     const response = await axios.post(
-      `${API_ROOT}/v1/auth/addEmployee/${parentId}`,
+      `/auth/addEmployee/${parentId}`,
       body
     );
     return response.data;
@@ -31,7 +30,7 @@ export const fetchAddEmployeeApi = createAsyncThunk(
 export const fetchUpdateEmployeeApi = createAsyncThunk(
   "employees/fetchUpdateEmployeeApi",
   async ({ id, updateData }) => {
-    const response = await axios.put(`${API_ROOT}/v1/auth/${id}`, updateData);
+    const response = await axios.put(`/auth/${id}`, updateData);
     return response.data;
   }
 );
@@ -39,9 +38,8 @@ export const fetchUpdateEmployeeApi = createAsyncThunk(
 export const fetchDeleteEmployeeApi = createAsyncThunk(
   "employees/fetchDeleteEmployeeApi",
   async (id) => {
-    const response = await axios.delete(`${API_ROOT}/v1/auth/${id}`)
+    const response = await axios.delete(`/auth/${id}`);
     return response.data;
-
   }
 );
 //

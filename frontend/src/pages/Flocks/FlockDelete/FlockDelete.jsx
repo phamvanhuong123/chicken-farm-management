@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import axios from "axios";
+import axios from "~/apis/index";
 import { Trash2, X } from "lucide-react";
 import swal from "sweetalert";
-const API_BASE = "http://localhost:8071/v1";
 
 /** Modal xác nhận xóa */
 function ConfirmModal({ open, title, message, onConfirm, onCancel }) {
@@ -63,7 +62,7 @@ export default function FlockDelete({ flock, onDeleted, onError }) {
 
     try {
       setLoading(true);
-      await axios.delete(`${API_BASE}/flocks/${flock._id}`);
+      await axios.delete(`/flocks/${flock._id}`);
       swal("Xoá đàn thành công.", "", "success");
 
       if (onDeleted) onDeleted(flock._id);

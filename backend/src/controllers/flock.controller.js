@@ -1,13 +1,22 @@
 import { flockService } from "../services/flock.service.js";
 
 export const createFlock = async (req, res, next) => {
+  console.log("📨 API /flocks POST được gọi"); // THÊM LOG
+  console.log("📨 Body:", req.body); // THÊM LOG
+  console.log("📨 Headers:", req.headers); // THÊM LOG
   try {
     const newFlock = await flockService.createFlock(req.body);
+     console.log("✅ Tạo đàn thành công:", newFlock); // THÊM LOG
     res.status(201).json({
       message: "Tạo đàn mới thành công",
       data: newFlock,
+      metadata: {
+        areaUpdated: newFlock.areaUpdated || null
+      }
     });
   } catch (error) {
+    console.error("🔥 Lỗi trong controller:", error.message); // THÊM LOG
+    console.error("🔥 Stack trace:", error.stack); // THÊM LOG
     next(error);
   }
 };
@@ -36,13 +45,12 @@ export const updateFlock = async (req, res, next) => {
 export const getFlockDetail = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { flock, logs } = await flockService.getFlockDetail(id);
+    const { flock } = await flockService.getFlockDetail(id);
 
     res.status(200).json({
       message: "Tải thông tin đàn thành công",
       data: {
-        flock,
-        logs: Array.isArray(logs) ? logs : [],
+        flock
       },
     });
   } catch (error) {

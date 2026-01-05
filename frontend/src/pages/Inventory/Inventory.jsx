@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { materialAPI } from "~/apis/material.api";
 import { toast } from "react-hot-toast";
-import MaterialDetail from "./MaterialDetail"; // 🆕 thêm import
-import MaterialWarningAlert from "./MaterialWarningAlert/MaterialWarningAlert"; // 🆕 Cảnh báo vật tư
-import AddMaterialModal from "./AddMaterialModal/AddMaterialModal"; // 🆕 Form thêm vật tư
+import MaterialDetail from "./MaterialDetail"; // thêm import
+import MaterialWarningAlert from "./MaterialWarningAlert/MaterialWarningAlert"; //  Cảnh báo vật tư
+import AddMaterialModal from "./AddMaterialModal/AddMaterialModal"; //  Form thêm vật tư
+import EditMaterialModal from "./EditMaterialModal/EditMaterialModal";
+import DeleteMaterialModal from "./DeleteMaterialModal/DeleteMaterialModal";
 import {
   FaBox,
   FaExclamationTriangle,
@@ -11,8 +13,16 @@ import {
   FaMoneyBillWave,
   FaSearch,
 } from "react-icons/fa";
-import { ArrowDownFromLine, ArrowDownToLine, Edit, Eye, PlusIcon, Trash2 } from "lucide-react";
+import {
+  ArrowDownFromLine,
+  ArrowDownToLine,
+  Edit,
+  Eye,
+  PlusIcon,
+  Trash2,
+} from "lucide-react";
 import { Button } from "~/components/ui/button";
+import { useIsEmployer } from "~/hooks/useIsEmployer";
 
 // 🎨 Badge màu động (nếu có)
 const TypeBadge = ({ type, color }) => {
@@ -29,9 +39,10 @@ const TypeBadge = ({ type, color }) => {
 };
 
 export default function Inventory() {
-  // 🧠 Toàn bộ state
+  const isEmployer = useIsEmployer();
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(false);
+
   const [keyword, setKeyword] = useState("");
   const [debouncedKeyword, setDebouncedKeyword] = useState("");
   const [typeFilter, setTypeFilter] = useState("Tất cả");
@@ -39,16 +50,16 @@ export default function Inventory() {
   const [file, setFile] = useState(null);
   const [types, setTypes] = useState([]);
   const [typeColors, setTypeColors] = useState({});
-  const [selectedMaterial, setSelectedMaterial] = useState(null); // 🆕 thêm đúng vị trí
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false); // 🆕 State cho modal thêm vật tư
+  const [selectedMaterial, setSelectedMaterial] = useState(null); //  thêm đúng vị trí
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false); // State cho modal thêm vật tư
+  const [editingMaterialId, setEditingMaterialId] = useState(null);
+  const [deletingMaterial, setDeletingMaterial] = useState(null);
 
-  // ⏱ Debounce tìm kiếm
   useEffect(() => {
     const t = setTimeout(() => setDebouncedKeyword(keyword.trim()), 500);
     return () => clearTimeout(t);
   }, [keyword]);
 
-  // 📦 Lấy dữ liệu
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -59,7 +70,6 @@ export default function Inventory() {
       const items = res.data.data.items || [];
       setMaterials(items);
 
-      // Map loại và màu
       const colorMap = {};
       const typeList = new Set();
       for (const i of items) {
@@ -82,7 +92,6 @@ export default function Inventory() {
     fetchData();
   }, [typeFilter, statusFilter, debouncedKeyword]);
 
-  // 📤 Xuất Excel
   const handleExport = async () => {
     try {
       const params = {};
@@ -100,7 +109,6 @@ export default function Inventory() {
     }
   };
 
-  // 📥 Nhập Excel
   const handleImport = async () => {
     if (!file) return toast.error("Vui lòng chọn file Excel!");
     try {
@@ -117,7 +125,6 @@ export default function Inventory() {
     }
   };
 
-  // 💡 Thống kê
   const total = materials.length;
   const almostEmpty = materials.filter(
     (m) => m.statusInfo.label === "Sắp hết"
@@ -154,9 +161,6 @@ export default function Inventory() {
     );
   };
 
-  // ==============================
-  // 📋 Giao diện chính
-  // ==============================
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen text-[14px]">
       {/* Header */}
@@ -168,21 +172,23 @@ export default function Inventory() {
           </p>
         </div>
         <div className="flex gap-2 items-center">
-          <label className="px-2 py-2 border rounded-md bg-white hover:bg-gray-100 text-sm cursor-pointer flex items-center gap-1.5">
-            <ArrowDownToLine size={15} /> Nhập Excel
-            <input
-              type="file"
-              accept=".xlsx"
-              onChange={(e) => setFile(e.target.files[0])}
-              className="hidden"
-            />
-          </label>
+          {isEmployer && (
+            <label className="px-2 py-2 border rounded-md bg-white hover:bg-gray-100 text-sm cursor-pointer flex items-center gap-1.5">
+              <ArrowDownToLine size={15} /> Nhập Excel
+              <input
+                type="file"
+                accept=".xlsx"
+                onChange={(e) => setFile(e.target.files[0])}
+                className="hidden"
+              />
+            </label>
+          )}
 
           <button
             onClick={handleExport}
             className="px-2 py-2 border rounded-md bg-white hover:bg-gray-100 text-sm cursor-pointer flex items-center gap-1.5"
           >
-            <ArrowDownFromLine size={15} className="rotate-180"  /> Xuất Excel
+            <ArrowDownFromLine size={15} className="rotate-180" /> Xuất Excel
           </button>
 
           {file && (
@@ -190,12 +196,19 @@ export default function Inventory() {
               onClick={handleImport}
               className="px-3 py-2 bg-green-500 text-white rounded-md text-sm hover:bg-green-600"
             >
-             Xác nhận
+              Xác nhận
             </button>
           )}
-
-          <Button onClick={() => setIsAddModalOpen(true)}  className={'bg-green-400 hover:bg-green-500 cursor-pointer'}> <PlusIcon/>Thêm vật tư</Button>
-
+          {isEmployer && (
+            <Button
+              onClick={() => setIsAddModalOpen(true)}
+              className={"bg-green-400 hover:bg-green-500 cursor-pointer"}
+            >
+              {" "}
+              <PlusIcon />
+              Thêm vật tư
+            </Button>
+          )}
         </div>
       </div>
 
@@ -293,7 +306,7 @@ export default function Inventory() {
               <th className="p-3 text-center">Đơn vị</th>
               <th className="p-3 text-center">HSD</th>
               <th className="p-3 text-center">Ngưỡng</th>
-              <th className="p-3 text-center">Vị trí</th>
+
               <th className="p-3 text-center">Trạng thái</th>
               <th className="p-3 text-center">Hành động</th>
             </tr>
@@ -301,14 +314,14 @@ export default function Inventory() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="9" className="text-center py-4 text-gray-500">
+                <td colSpan="8" className="text-center py-4 text-gray-500">
                   Đang tải dữ liệu...
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan="9"
+                  colSpan="8"
                   className="text-center py-4 italic text-gray-500"
                 >
                   Không có vật tư phù hợp.
@@ -335,19 +348,33 @@ export default function Inventory() {
                     {new Date(m.expiryDate).toLocaleDateString("vi-VN")}
                   </td>
                   <td className="p-3 text-center">{m.threshold}</td>
-                  <td className="p-3 text-center">{m.storageLocation}</td>
+
                   <td className="p-3 text-center">
                     <StatusBadge label={m.statusInfo.label} />
                   </td>
                   <td className="p-3 text-center">
                     <button
                       className="p-2 rounded cursor-pointer hover:bg-gray-200"
-                      onClick={() => setSelectedMaterial(m._id)} // 🆕 mở popup
+                      onClick={() => setSelectedMaterial(m._id)} // mở popup
                     >
-                        <Eye size={16} className="w-4 h-4 text-gray-600 " />
+                      <Eye size={16} className="w-4 h-4 text-gray-600 " />
                     </button>
-                    <button className="p-2 rounded cursor-pointer hover:bg-blue-200"> <Edit size={16} className="w-4 h-4 text-blue-500" /></button>
-                    <button className="p-2 rounded hover:bg-red-50 text-red-600 disabled:opacity-50 cursor-pointer"> <Trash2 size={16} /></button>
+                    {isEmployer && (
+                      <button
+                        className="p-2 rounded cursor-pointer hover:bg-blue-200"
+                        onClick={() => setEditingMaterialId(m._id)} //mở modal sửa
+                      >
+                        <Edit size={16} className="w-4 h-4 text-blue-500" />
+                      </button>
+                    )}
+                    {isEmployer && (
+                      <button
+                        className="p-2 rounded hover:bg-red-50 text-red-600 disabled:opacity-50 cursor-pointer"
+                        onClick={() => setDeletingMaterial(m)}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))
@@ -356,7 +383,7 @@ export default function Inventory() {
         </table>
       </div>
 
-      {/* 🆕 Popup chi tiết vật tư */}
+      {/*  Popup chi tiết vật tư */}
       {selectedMaterial && (
         <MaterialDetail
           materialId={selectedMaterial}
@@ -364,14 +391,28 @@ export default function Inventory() {
         />
       )}
 
-      {/* 🆕 Modal thêm vật tư */}
+      {/* Modal thêm vật tư */}
       <AddMaterialModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAddSuccess={() => {
-        fetchData(); // 👉 load từ DB để có statusInfo đầy đủ
-    }}
+          fetchData(); // 👉 load từ DB để có statusInfo đầy đủ
+        }}
       />
+      {editingMaterialId && (
+        <EditMaterialModal
+          materialId={editingMaterialId}
+          onClose={() => setEditingMaterialId(null)}
+          onSuccess={fetchData} // refresh list
+        />
+      )}
+      {deletingMaterial && (
+        <DeleteMaterialModal
+          material={deletingMaterial}
+          onClose={() => setDeletingMaterial(null)}
+          onSuccess={fetchData}
+        />
+      )}
     </div>
   );
 }

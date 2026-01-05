@@ -9,6 +9,8 @@ const USER_COLLECTION_NAME = "users";
 const USER_COLLECTION_SCHEMA = Joi.object({
   username: Joi.string().min(2).max(50).required(),
   phone: Joi.string().allow(null).default(null),
+  imgUrl : Joi.string().allow(null).default(null),
+  imgPublicId : Joi.string().allow(null).default(null),
   email: Joi.string().email().required(),
   password: Joi.string().required(),
   verified: Joi.boolean().default(false),
@@ -38,7 +40,7 @@ const create = async (data) => {
 const findById = async (id) => {
   return await GET_DB()
     .collection(USER_COLLECTION_NAME)
-    .findOne({ _id: new ObjectId(String(id)) });
+    .findOne({ _id: new ObjectId(String(id)) })
 };
 
 const findByEmailOrPhone = async (email, phone) => {
@@ -108,10 +110,10 @@ const getAllUser = async () => {
     .collection(USER_COLLECTION_NAME)
     .find({ verified: true })
     .project({
-      //password: 0,
-      _id: 1,
-      username: 1,
-      avatarUrl: 1,
+      password: 0,
+      // _id: 1,
+      // username: 1,
+      // avatarUrl: 1,
     })
     .toArray();
 };
@@ -143,13 +145,36 @@ const deleteEmployee = async (idEmployee) => {
       .collection(USER_COLLECTION_NAME)
       .findOneAndUpdate(
         { _id: new ObjectId(String(idEmployee)) },
-        { $set: { parentId: null } },
+        { $set: { parentId: null, status: null, salary: null } },
         { returnDocument: "after", projection: { password: 0 } }
       );
     if (!res) throw new ApiError(StatusCodes.NOT_FOUND, "KHông tìm thấy");
     return res;
   } catch (error) {
     throw error;
+  }
+};
+
+
+
+const updateUser = async (id, updateData) => {
+  try {
+    Object.keys(updateData).forEach((fieldName) => {
+      if (["email"].includes(fieldName)) {
+        delete updateData[fieldName];
+      }
+    });
+
+    const ressult = await GET_DB()
+      .collection("users")
+      .findOneAndUpdate(
+        { _id: new ObjectId(String(id)) },
+        { $set: updateData },
+        { returnDocument: "after", projection: { password: 0 } }
+      );
+    return ressult;
+  } catch (error) {
+    throw new Error(error);
   }
 };
 export const userModel = {
@@ -164,4 +189,5 @@ export const userModel = {
   getAllUser,
   deleteEmployee,
   updateEmployee,
+  updateUser
 };

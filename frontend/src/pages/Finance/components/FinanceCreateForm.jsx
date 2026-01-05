@@ -10,7 +10,6 @@ function FinanceCreateForm({ onClose, onSuccess }) {
     amount: "",
     flockId: "",
     description: "",
-    invoiceCode: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -21,7 +20,7 @@ function FinanceCreateForm({ onClose, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const { date, type, category, amount, description } = form;
 
     // Validation
@@ -50,7 +49,6 @@ function FinanceCreateForm({ onClose, onSuccess }) {
         amount: Number(amount),
         flockId: form.flockId || null,
         description: description.trim(),
-        invoiceCode: form.invoiceCode || null,
       });
 
       toast.success("Thêm giao dịch thành công!");
@@ -72,7 +70,9 @@ function FinanceCreateForm({ onClose, onSuccess }) {
       <div className="bg-white rounded-xl w-[760px] max-h-[90vh] overflow-y-auto p-6 shadow-lg">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-800">Thêm giao dịch</h2>
+          <h2 className="text-xl font-semibold text-gray-800">
+            Thêm giao dịch
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
@@ -178,11 +178,15 @@ function FinanceCreateForm({ onClose, onSuccess }) {
                 Số hóa đơn
               </label>
               <input
-                name="invoiceCode"
-                value={form.invoiceCode}
-                placeholder="Ví dụ: HD-001"
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                onChange={handleChange}
+                disabled
+                placeholder="Tự động sinh"
+                className="px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500"
+
+                // name="invoiceCode"
+                // value={form.invoiceCode}
+                // placeholder="Ví dụ: HD-001"
+                // className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                // onChange={handleChange}
               />
             </div>
 

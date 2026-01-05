@@ -27,7 +27,7 @@ export const getAllMaterials = async (req, res, next) => {
         { header: "Đơn vị", key: "unit", width: 12 },
         { header: "Hạn sử dụng", key: "expiryDate", width: 18 },
         { header: "Ngưỡng cảnh báo", key: "threshold", width: 18 },
-        { header: "Vị trí lưu trữ", key: "storageLocation", width: 20 },
+
         { header: "Trạng thái", key: "status", width: 18 },
       ];
 
@@ -41,7 +41,7 @@ export const getAllMaterials = async (req, res, next) => {
           unit: m.unit,
           expiryDate: new Date(m.expiryDate).toLocaleDateString("vi-VN"),
           threshold: m.threshold,
-          storageLocation: m.storageLocation,
+
           status: label,
         });
         if (color === "red")
@@ -133,7 +133,7 @@ export const getMaterialById = async (req, res, next) => {
 export const createMaterial = async (req, res, next) => {
   try {
     const newMaterial = await materialService.createMaterial(req.body);
-    
+
     res.status(201).json({
       statusCode: 201,
       message: "Thêm vật tư thành công.",
@@ -141,5 +141,39 @@ export const createMaterial = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+};
+//cap nhat vat tu
+export const updateMaterial = async (req, res, next) => {
+  try {
+    const id = req.params.id;
+
+    const updated = await materialService.updateMaterial(id, req.body);
+
+    res.status(200).json({
+      statusCode: 200,
+      message: "Cập nhật vật tư thành công.",
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+//Xóa vật tư
+export const deleteMaterial = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await materialService.deleteMaterial(id);
+
+    return res.status(200).json({
+      status: "success",
+      message: "Xóa vật tư thành công.",
+    });
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({
+      status: "error",
+      message: error.message || "Không thể xóa vật tư.",
+    });
   }
 };

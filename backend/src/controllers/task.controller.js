@@ -46,8 +46,25 @@ const getTaskByEmployeer = async (req, res, next) => {
     next(error);
   }
 };
+
+
+const deleteTask = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await taskService.deleteTask(id);
+
+    res.status(StatusCodes.OK).json({
+      statusCode: StatusCodes.OK,
+      message: "Xoá thành công",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 export const taskController = {
   create,
   update,
   getTaskByEmployeer,
+  deleteTask
 };

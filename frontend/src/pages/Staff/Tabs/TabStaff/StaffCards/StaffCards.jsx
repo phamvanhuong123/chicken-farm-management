@@ -13,8 +13,10 @@ import {
 import { formatDate, formatVND, getLastUpperChar } from "~/utils/formatter";
 import EditButton from "./EditButton";
 import DeleteButton from "./DeleteButton";
+import { useIsEmployer } from "~/hooks/useIsEmployer";
 function StaffCard() {
   const employees = useSelector(state => state.employeeReducer?.employees)
+  const isEmpoyer = useIsEmployer()
   const colorStatus = {
     working : "bg-green-200 text-green-700",
     onLeave : "bg-red-200 text-red-700"
@@ -65,8 +67,10 @@ function StaffCard() {
           <CardFooter className="flex gap-2 justify-between">
             <p>{formatDate(employee?.createdAt)}</p>
             <div className="flex gap-1">
-              <EditButton employee={employee}/>
-              <DeleteButton id={employee?._id}/>
+              {isEmpoyer && <EditButton employee={employee}/>}
+              {isEmpoyer && <DeleteButton id={employee?._id}/>}
+              
+              
             </div>
           </CardFooter>
         </Card>

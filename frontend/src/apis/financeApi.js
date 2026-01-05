@@ -1,6 +1,6 @@
-import axios from "axios";
+import axios from "~/apis/index";
 
-const FINANCE_API = "http://localhost:8071/v1/finance";
+
 
 export const financeApi = {
   // Lấy tổng quan tài chính (4 KPI)
@@ -8,7 +8,7 @@ export const financeApi = {
     const params = {};
     if (month) params.month = month;
     if (year) params.year = year;
-    return axios.get(`${FINANCE_API}/overview`, { params });
+    return axios.get(`/finance/overview`, { params });
   },
 
   // Lấy cơ cấu chi phí
@@ -16,42 +16,55 @@ export const financeApi = {
     const params = {};
     if (month) params.month = month;
     if (year) params.year = year;
-    return axios.get(`${FINANCE_API}/expense-breakdown`, { params });
+    return axios.get(`/finance/expense-breakdown`, { params });
   },
 
   // Lấy xu hướng tài chính
   getTrend: (months = 6, year) => {
     const params = { months };
     if (year) params.year = year;
-    return axios.get(`${FINANCE_API}/trend`, { params });
+    return axios.get(`/finance/trend`, { params });
   },
 
   // Lấy giao dịch gần đây
   getRecentTransactions: (limit = 10) => {
-    return axios.get(`${FINANCE_API}/recent-transactions`, {
-      params: { limit }
+    return axios.get(`/finance/recent-transactions`, {
+      params: { limit },
     });
   },
 
   // Tạo giao dịch mới
   createTransaction: (data) => {
-      return axios.post(`${FINANCE_API}/transactions`, data);
+    return axios.post(`/finance/transactions`, data);
   },
 
   // Xóa giao dịch
   deleteTransaction: (id) => {
-    return axios.delete(`${FINANCE_API}/transactions/${id}`);
+    return axios.delete(`/finance/transactions/${id}`);
   },
 
   // Lấy chi tiết giao dịch
   getTransactionById: (id) => {
-    return axios.get(`${FINANCE_API}/transactions/${id}`);
+    return axios.get(`/finance/transactions/${id}`);
   },
 
   // Lấy danh sách giao dịch (PHÂN TRANG)
-getTransactions: ({ page = 1, limit = 10 }) => {
-  return axios.get(`${FINANCE_API}/transactions`, {
-    params: { page, limit }
-  });
-},
+  getTransactions: ({ page = 1, limit = 10 }) => {
+    return axios.get(`/finance/transactions`, {
+      params: { page, limit },
+    });
+  },
+
+  // Tìm kiếm & lọc giao dịch
+  searchTransactions: (filters = {}) => {
+    const params = {};
+    if (filters.type && filters.type !== "all") params.type = filters.type;
+    if (filters.category && filters.category !== "all")
+      params.category = filters.category;
+    if (filters.search) params.search = filters.search;
+    if (filters.page) params.page = filters.page;
+    if (filters.limit) params.limit = filters.limit;
+
+    return axios.get(`/finance/transactions/search`, { params });
+  },
 };

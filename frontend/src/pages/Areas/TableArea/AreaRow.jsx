@@ -1,8 +1,10 @@
 import React from "react";
 import { Edit, Trash } from "lucide-react";
 import DeleteArea from "../../../components/Areas/DeleteArea";
+import { useIsEmployer } from "~/hooks/useIsEmployer";
 
 function AreaRow({ item, onEdit, refreshAll }) {
+    const isEmployer = useIsEmployer();
   const statusColor = {
     ACTIVE: "bg-green-100 text-green-700",
     EMPTY: "bg-blue-100 text-blue-700",
@@ -47,18 +49,19 @@ function AreaRow({ item, onEdit, refreshAll }) {
       <td className="p-2">{item.note || "—"}</td>
 
       <td className="p-2 flex gap-3">
-        <button
+        {isEmployer&&  <button
           className="p-2 rounded cursor-pointer hover:bg-blue-200"
           title="Chỉnh sửa"
           onClick={() => onEdit(item)} //Chinh sửa khu nuôi
         >
           <Edit size={16} className="w-4 h-4 text-blue-500" />
-        </button>
-
-        <DeleteArea
+        </button>}
+       
+        {isEmployer && <DeleteArea
           area={item}
           onDeleted={() => refreshAll?.()} // reload danh sách + KPI
-        />
+        />}
+        
       </td>
     </tr>
   );

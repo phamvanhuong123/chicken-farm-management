@@ -9,7 +9,8 @@ import {
   Eye,
   Trash2,
   Plus,
-  Filter
+  Search,
+  RotateCcw,
 } from "lucide-react";
 import Chart from "react-apexcharts";
 import FinanceCreateForm from "./components/FinanceCreateForm";
@@ -23,20 +24,24 @@ export default function Finance() {
   const [totalTransactions, setTotalTransactions] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  
+
   // Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
-  
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+
   // Filter tháng
   const currentDate = new Date();
-  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
+  const [selectedMonth, setSelectedMonth] = useState(
+    currentDate.getMonth() + 1
+  );
   const [selectedYear] = useState(currentDate.getFullYear());
 
-   // Filters cho bảng giao dịch
-  const [filters] = useState({
+  // Filters cho bảng giao dịch
+  const [filters, setFilters] = useState({
     type: "all",
     category: "all",
-    search: ""
+    search: "",
   });
 
   // Load dữ liệu tổng quan
@@ -45,18 +50,17 @@ export default function Finance() {
   }, [selectedMonth]);
 
   // Load transactions khi page thay đổi
- useEffect(() => {
+  useEffect(() => {
     loadRecentTransactions();
   }, [filters, currentPage]);
 
-  // Load dữ liệu tổng quan
   const loadOverviewData = async () => {
     setLoading(true);
     try {
       const [overviewRes, breakdownRes, trendRes] = await Promise.all([
         financeApi.getOverview(selectedMonth, selectedYear),
         financeApi.getExpenseBreakdown(selectedMonth, selectedYear),
-        financeApi.getTrend(6, selectedYear)
+        financeApi.getTrend(6, selectedYear),
       ]);
 
       setOverview(overviewRes.data.data);
@@ -71,49 +75,72 @@ export default function Finance() {
   };
 
   // Load giao dịch gần đây
- const ITEMS_PER_PAGE = 10;
+  const ITEMS_PER_PAGE = 10;
 
   const loadRecentTransactions = async () => {
-  try {
-    const response = await financeApi.getRecentTransactions(1000);
-    let data = response.data.data || [];
+    try {
+      const response = await financeApi.getRecentTransactions(1000);
+      let data = response.data.data || [];
 
-    // FILTER
-    if (filters.type !== "all") {
-      data = data.filter(t => t.type === filters.type);
+      // FILTER
+      if (filters.type !== "all") {
+        data = data.filter((t) => t.type === filters.type);
+      }
+
+      if (filters.category !== "all") {
+        data = data.filter((t) => t.category === filters.category);
+      }
+
+      if (filters.search) {
+        const keyword = filters.search.toLowerCase();
+        data = data.filter((t) =>
+          t.description?.toLowerCase().includes(keyword)
+        );
+      }
+
+      setTotalTransactions(data.length);
+
+      const pages = Math.ceil(data.length / ITEMS_PER_PAGE);
+      setTotalPages(pages || 1);
+
+      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+      setTransactions(data.slice(startIndex, startIndex + ITEMS_PER_PAGE));
+    } catch (error) {
+      console.error("Lỗi tải giao dịch:", error);
+      toast.error("Không thể tải danh sách giao dịch");
     }
+  };
 
-    if (filters.category !== "all") {
-      data = data.filter(t => t.category === filters.category);
-    }
+  // Debounce search
+  const [searchDebounce, setSearchDebounce] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters((prev) => ({ ...prev, search: searchDebounce }));
+      setCurrentPage(1);
+    }, 500);
 
-    if (filters.search) {
-      const keyword = filters.search.toLowerCase();
-      data = data.filter(t =>
-        t.description?.toLowerCase().includes(keyword)
-      );
-    }
+    return () => clearTimeout(timer);
+  }, [searchDebounce]);
 
-    setTotalTransactions(data.length);
+  // Reset filters
+  const handleResetFilters = () => {
+    setFilters({ type: "all", category: "all", search: "" });
+    setSearchDebounce("");
+    setCurrentPage(1);
+  };
 
-    const pages = Math.ceil(data.length / ITEMS_PER_PAGE);
-    setTotalPages(pages || 1);
+  // Change filter
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+    setCurrentPage(1);
+  };
 
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    setTransactions(
-      data.slice(startIndex, startIndex + ITEMS_PER_PAGE)
-    );
-  } catch (error) {
-    console.error("Lỗi tải giao dịch:", error);
-    toast.error("Không thể tải danh sách giao dịch");
-  }
-};
   // Format tiền VND
   const formatCurrency = (value) => {
     if (!value) return "0 VND";
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
-      currency: "VND"
+      currency: "VND",
     }).format(value);
   };
 
@@ -137,52 +164,58 @@ export default function Finance() {
     }
   };
 
+  // Xem chi tiết giao dịch
+  const handleViewTransaction = (transaction) => {
+    setSelectedTransaction(transaction);
+    setShowViewModal(true);
+  };
+
   // Config biểu đồ xu hướng (Line Chart)
   const trendChartOptions = {
     chart: {
       type: "line",
       height: 350,
       toolbar: { show: false },
-      zoom: { enabled: false }
+      zoom: { enabled: false },
     },
     colors: ["#10b981", "#ef4444"],
     dataLabels: { enabled: false },
     stroke: {
       curve: "smooth",
-      width: 3
+      width: 3,
     },
     xaxis: {
-      categories: trend.map(t => t.monthLabel),
-      title: { text: "Tháng" }
+      categories: trend.map((t) => t.monthLabel),
+      title: { text: "Tháng" },
     },
     yaxis: {
       title: { text: "Số tiền (VND)" },
       labels: {
         formatter: (value) => {
           return (value / 1000000).toFixed(0) + "M";
-        }
-      }
+        },
+      },
     },
     legend: {
       position: "bottom",
-      horizontalAlign: "center"
+      horizontalAlign: "center",
     },
     tooltip: {
       y: {
-        formatter: (value) => formatCurrency(value)
-      }
-    }
+        formatter: (value) => formatCurrency(value),
+      },
+    },
   };
 
   const trendChartSeries = [
     {
       name: "Thu nhập",
-      data: trend.map(t => t.income)
+      data: trend.map((t) => t.income),
     },
     {
       name: "Chi phí",
-      data: trend.map(t => t.expense)
-    }
+      data: trend.map((t) => t.expense),
+    },
   ];
 
   if (loading) {
@@ -208,10 +241,14 @@ export default function Finance() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Chi phí & Tài chính</h1>
-          <p className="text-gray-600">Tổng quan tài chính và giao dịch gần đây</p>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Chi phí & Tài chính
+          </h1>
+          <p className="text-gray-600">
+            Tổng quan tài chính và giao dịch gần đây
+          </p>
         </div>
-        
+
         {/* Nút thêm giao dịch */}
         <button
           onClick={() => setShowCreateModal(true)}
@@ -290,7 +327,9 @@ export default function Finance() {
         {/* Cơ cấu chi phí */}
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Cơ cấu chi phí (Tháng này)</h2>
+            <h2 className="text-lg font-semibold">
+              Cơ cấu chi phí (Tháng này)
+            </h2>
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
@@ -311,17 +350,21 @@ export default function Finance() {
               {expenseBreakdown.map((item, index) => {
                 const colors = {
                   "Thức ăn": "bg-blue-500",
-                  "Thuốc": "bg-purple-500",
+                  Thuốc: "bg-purple-500",
                   "Nhân công": "bg-orange-500",
-                  "Điện nước": "bg-yellow-500"
+                  "Điện nước": "bg-yellow-500",
                 };
                 const color = colors[item.category] || "bg-gray-500";
 
                 return (
                   <div key={index}>
                     <div className="flex justify-between mb-1">
-                      <span className="text-sm font-medium">{item.category}</span>
-                      <span className="text-sm font-medium">{item.percentage}%</span>
+                      <span className="text-sm font-medium">
+                        {item.category}
+                      </span>
+                      <span className="text-sm font-medium">
+                        {item.percentage}%
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
@@ -364,6 +407,73 @@ export default function Finance() {
               Tổng: {totalTransactions} giao dịch
             </div>
           </div>
+
+          {/* Filter Bar */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Filter Loại */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Loại
+              </label>
+              <select
+                value={filters.type}
+                onChange={(e) => handleFilterChange("type", e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">Tất cả loại</option>
+                <option value="income">Thu</option>
+                <option value="expense">Chi</option>
+              </select>
+            </div>
+
+            {/* Filter Danh mục */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Danh mục
+              </label>
+              <select
+                value={filters.category}
+                onChange={(e) => handleFilterChange("category", e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">Tất cả danh mục</option>
+                <option value="Thức ăn">Thức ăn</option>
+                <option value="Thuốc">Thuốc</option>
+                <option value="Nhân công">Nhân công</option>
+                <option value="Điện nước">Điện nước</option>
+                <option value="Bán hàng">Bán hàng</option>
+                <option value="Khác">Khác</option>
+              </select>
+            </div>
+
+            {/* Search */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tìm kiếm
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Mô tả hoặc hóa đơn..."
+                  value={searchDebounce}
+                  onChange={(e) => setSearchDebounce(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Reset Button */}
+            <div className="flex items-end">
+              <button
+                onClick={handleResetFilters}
+                className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Làm mới
+              </button>
+            </div>
+          </div>
         </div>
 
         {transactions.length === 0 ? (
@@ -375,14 +485,30 @@ export default function Finance() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ngày</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Loại</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Danh mục</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Số tiền</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Đàn</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mô tả</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hóa đơn</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Hành động</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Ngày
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Loại
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Danh mục
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    Số tiền
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Đàn
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Mô tả
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Hóa đơn
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                    Hành động
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -406,7 +532,13 @@ export default function Finance() {
                       {transaction.category}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">
-                      <span className={transaction.type === "income" ? "text-green-600" : "text-red-600"}>
+                      <span
+                        className={
+                          transaction.type === "income"
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }
+                      >
                         {transaction.type === "income" ? "+" : "-"}
                         {formatCurrency(transaction.amount)}
                       </span>
@@ -423,13 +555,16 @@ export default function Finance() {
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
+                          onClick={() => handleViewTransaction(transaction)}
                           className="p-2 hover:bg-gray-100 rounded"
                           title="Xem chi tiết"
                         >
                           <Eye className="w-4 h-4 text-gray-600" />
                         </button>
                         <button
-                          onClick={() => handleDeleteTransaction(transaction._id)}
+                          onClick={() =>
+                            handleDeleteTransaction(transaction._id)
+                          }
                           className="p-2 hover:bg-red-50 rounded"
                           title="Xóa"
                         >
@@ -452,14 +587,16 @@ export default function Finance() {
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
                 className="px-4 py-2 border rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
                 Trước
               </button>
               <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 border rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
@@ -471,7 +608,7 @@ export default function Finance() {
       </div>
 
       {/* Modal thêm giao dịch */}
-       {showCreateModal && (
+      {showCreateModal && (
         <FinanceCreateForm
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => {
@@ -481,6 +618,119 @@ export default function Finance() {
             setShowCreateModal(false);
           }}
         />
+      )}
+      {/* Modal xem chi tiết giao dịch */}
+      {showViewModal && selectedTransaction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl w-[600px] max-h-[90vh] overflow-y-auto p-6 shadow-lg">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-800">
+                Chi tiết giao dịch
+              </h2>
+              <button
+                onClick={() => {
+                  setShowViewModal(false);
+                  setSelectedTransaction(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Transaction Details */}
+            <div className="space-y-4">
+              {/* Thông tin cơ bản */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Ngày giao dịch</p>
+                  <p className="font-medium">
+                    {formatDate(selectedTransaction.date)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Loại giao dịch</p>
+                  <p className="font-medium">
+                    {selectedTransaction.type === "income" ? (
+                      <span className="text-green-600">Thu</span>
+                    ) : (
+                      <span className="text-red-600">Chi</span>
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Danh mục</p>
+                  <p className="font-medium">{selectedTransaction.category}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Số tiền</p>
+                  <p className="font-medium text-lg">
+                    <span
+                      className={
+                        selectedTransaction.type === "income"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }
+                    >
+                      {selectedTransaction.type === "income" ? "+" : "-"}
+                      {formatCurrency(selectedTransaction.amount)}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Thông tin đàn liên quan */}
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Đàn liên quan</p>
+                <p className="font-medium">
+                  {selectedTransaction.flockCode || "Không có"}
+                </p>
+              </div>
+
+              {/* Số hóa đơn */}
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Số hóa đơn</p>
+                <p className="font-medium">
+                  {selectedTransaction.invoiceCode || "Không có"}
+                </p>
+              </div>
+
+              {/* Mô tả chi tiết */}
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Mô tả chi tiết</p>
+                <div className="p-4 bg-gray-50 rounded-lg border">
+                  <p className="whitespace-pre-wrap">
+                    {selectedTransaction.description || "Không có mô tả"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Thông tin thêm */}
+              <div className="text-xs text-gray-500 pt-4 border-t">
+                <p>
+                  ID: {selectedTransaction._id} • Tạo lúc:{" "}
+                  {new Date(selectedTransaction.createdAt).toLocaleString(
+                    "vi-VN"
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3 mt-8">
+              <button
+                onClick={() => {
+                  setShowViewModal(false);
+                  setSelectedTransaction(null);
+                }}
+                className="px-5 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

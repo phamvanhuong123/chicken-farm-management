@@ -18,7 +18,7 @@ export const MATERIAL_SCHEMA = Joi.object({
   unit: Joi.string().required(),
   expiryDate: Joi.date().required(),
   threshold: Joi.number().integer().min(0).default(0),
-  storageLocation: Joi.string().required(),
+  storageLocation: Joi.string().allow("", null),
   createdAt: Joi.date().default(() => new Date()),
   updatedAt: Joi.date().default(null),
 });
@@ -31,7 +31,7 @@ export const validateBeforeCreateMaterial = async (data) => {
 };
 
 /**
- * 🔠 Chuẩn hóa tiếng Việt (bỏ dấu, chuyển thường)
+ *  Chuẩn hóa tiếng Việt (bỏ dấu, chuyển thường)
  */
 const normalizeVietnamese = (str = "") => {
   return str
@@ -44,7 +44,7 @@ const normalizeVietnamese = (str = "") => {
 };
 
 /**
- * 📋 Lấy danh sách vật tư (lọc, phân trang, tính trạng thái)
+ *  Lấy danh sách vật tư (lọc, phân trang, tính trạng thái)
  */
 const findAll = async (
   filter = {},
@@ -99,7 +99,7 @@ const findAll = async (
 };
 
 /**
- * 🧮 Đếm tổng số vật tư theo filter
+ *  Đếm tổng số vật tư theo filter
  */
 const count = async (filter = {}) => {
   const db = GET_DB();
@@ -107,7 +107,7 @@ const count = async (filter = {}) => {
 };
 
 /**
- * ➕ Tạo vật tư mới (tự thêm normalizedName / normalizedType)
+ *  Tạo vật tư mới (tự thêm normalizedName / normalizedType)
  */
 const create = async (data) => {
   const db = GET_DB();
@@ -121,7 +121,7 @@ const create = async (data) => {
     .insertOne(normalizedData);
 };
 /**
- * TEAM-104: 🔍 Lấy chi tiết vật tư theo ID
+ * TEAM-104:  Lấy chi tiết vật tư theo ID
  */
 const findById = async (id) => {
   try {
@@ -151,7 +151,29 @@ const findById = async (id) => {
     throw err;
   }
 };
+//Chỉnh sửa vật tư
+const updateById = async (id, data) => {
+  const db = GET_DB();
+  const updateData = {
+    ...data,
+    normalizedName: normalizeVietnamese(data.name),
+    normalizedType: normalizeVietnamese(data.type),
+    updatedAt: new Date(),
+  };
 
+  const result = await db
+    .collection(MATERIAL_COLLECTION_NAME)
+    .updateOne({ _id: new ObjectId(id) }, { $set: updateData });
+
+  return result;
+};
+//Xóa vật tư
+
+const deleteById = async (id) => {
+  return await GET_DB()
+    .collection(MATERIAL_COLLECTION_NAME)
+    .deleteOne({ _id: new ObjectId(id) });
+};
 export const materialModel = {
   MATERIAL_COLLECTION_NAME,
   MATERIAL_SCHEMA,
@@ -160,4 +182,6 @@ export const materialModel = {
   count,
   create,
   findById,
+  updateById,
+  deleteById,
 };
