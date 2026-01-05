@@ -341,15 +341,10 @@ export default function StepCostArea() {
       <div className="col-span-2">
         <label>Ghi chú</label>
         <textarea
-          {...register("note", {
-            minLength: { value: 10, message: "Tối thiểu 10 ký tự" },
-            maxLength: { value: 255, message: "Tối đa 255 ký tự" },
-          })}
+          {...register("note")}
           className="w-full border rounded px-3 py-2"
         />
-        <p className="text-red-500 text-sm">
-          {errors.note?.message}
-        </p>
+        
       </div>
     </div>
   );
