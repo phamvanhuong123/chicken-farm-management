@@ -346,22 +346,7 @@ function AddMaterialModal({ isOpen, onClose, onAddSuccess }) {
                   )}
                 </div>
 
-                {/* Giá */}
-                <div className="col-span-1 space-y-2">
-                  <Label htmlFor="price">Giá (VNĐ)</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    min="0"
-                    placeholder="Nhập giá"
-                    value={formData.price}
-                    onChange={(e) => handleChange("price", e.target.value)}
-                    className={errors.price ? "border-red-500" : ""}
-                  />
-                  {errors.price && (
-                    <p className="text-red-500 text-sm">{errors.price}</p>
-                  )}
-                </div>
+               
 
                 {/* Nhà cung cấp */}
                 <div className="col-span-2 space-y-2">

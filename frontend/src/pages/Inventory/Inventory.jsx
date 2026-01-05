@@ -238,15 +238,7 @@ export default function Inventory() {
             <p className="text-2xl font-bold text-orange-500">{expiring}</p>
           </div>
         </div>
-        <div className="bg-white shadow rounded-lg p-4 flex items-center gap-3">
-          <FaMoneyBillWave className="text-green-500 text-2xl" />
-          <div>
-            <p className="text-gray-500 text-sm">Giá trị kho</p>
-            <p className="text-2xl font-bold text-green-600">
-              {warehouseValue.toLocaleString()}₫
-            </p>
-          </div>
-        </div>
+      
       </div>
 
       {/* Bộ lọc */}
