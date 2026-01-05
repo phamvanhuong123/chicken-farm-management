@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { financeApi } from "../../../apis/financeApi";
+import { flockApi } from "../../../apis/flockApi";
 import toast from "react-hot-toast";
 
 function FinanceCreateForm({ onClose, onSuccess }) {
@@ -13,16 +14,44 @@ function FinanceCreateForm({ onClose, onSuccess }) {
   });
 
   const [loading, setLoading] = useState(false);
+  const [flocks, setFlocks] = useState([]);
   const [errors, setErrors] = useState({});
-  const [formError, setFormError] = useState(""); // Thêm state cho lỗi tổng quát
+  const [formError, setFormError] = useState("");
+
+  useEffect(() => {
+    fetchFlocks();
+  }, []);
+
+  const fetchFlocks = async () => {
+    try {
+      const response = await flockApi.getList();
+
+      // Xử lý dữ liệu từ API
+      let flocksData = [];
+
+      if (Array.isArray(response.data)) {
+        flocksData = response.data;
+      } else if (response.data && Array.isArray(response.data.data)) {
+        flocksData = response.data.data;
+      } else if (response.data && Array.isArray(response.data.items)) {
+        flocksData = response.data.items;
+      } else if (response.data && Array.isArray(response.data.results)) {
+        flocksData = response.data.results;
+      }
+
+      setFlocks(flocksData);
+
+    } catch (err) {
+      console.error("Lỗi khi lấy danh sách đàn:", err);
+      toast.error("Không thể tải danh sách đàn");
+    }
+  };
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    // Xóa lỗi của trường đang thay đổi
     if (errors[e.target.name]) {
       setErrors({ ...errors, [e.target.name]: null });
     }
-    // Xóa lỗi tổng quát khi người dùng chỉnh sửa
     if (formError) {
       setFormError("");
     }
@@ -31,11 +60,10 @@ function FinanceCreateForm({ onClose, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
-    setFormError(""); // Reset lỗi tổng quát
+    setFormError("");
 
     const { date, type, category, amount, description } = form;
 
-    // Validation client-side cơ bản
     if (!date || !type || !category || !amount || !description) {
       setFormError("Vui lòng điền đầy đủ các trường bắt buộc");
       toast.error("Vui lòng điền đầy đủ các trường bắt buộc");
@@ -51,38 +79,31 @@ function FinanceCreateForm({ onClose, onSuccess }) {
     setLoading(true);
 
     try {
-      const testPayload = {
+      const payload = {
         date,
         type,
-        category: category,
+        category,
         amount: Number(amount),
         flockId: form.flockId || null,
         description: description.trim(),
       };
 
-      await financeApi.createTransaction(testPayload);
+      await financeApi.createTransaction(payload);
 
       toast.success("Thêm giao dịch thành công!");
       onSuccess();
       onClose();
     } catch (err) {
-      console.error("DEBUG ERROR RESPONSE:", {
-        status: err.response?.status,
-        data: err.response?.data,
-        message: err.message
-      });
+      console.error("Lỗi:", err);
 
       let errorMessage = "Thêm giao dịch thất bại. Vui lòng thử lại.";
 
-      // Xử lý lỗi từ server
       if (err.response?.data) {
         const errorData = err.response.data;
 
-        // Nếu server trả về lỗi validation dạng object
         if (typeof errorData === 'object' && errorData.errors) {
           setErrors(errorData.errors);
-          
-          // Tạo thông báo lỗi tổng quát từ các lỗi validation
+
           const errorMessages = [];
           Object.entries(errorData.errors).forEach(([field, messages]) => {
             if (Array.isArray(messages)) {
@@ -91,15 +112,12 @@ function FinanceCreateForm({ onClose, onSuccess }) {
               errorMessages.push(messages);
             }
           });
-          
+
           if (errorMessages.length > 0) {
             errorMessage = errorMessages.join(', ');
             setFormError(`Có lỗi xảy ra: ${errorMessages.slice(0, 3).join(', ')}${errorMessages.length > 3 ? '...' : ''}`);
-          } else {
-            setFormError("Có lỗi xảy ra. Vui lòng kiểm tra lại thông tin.");
           }
         }
-        // Nếu server trả về thông báo lỗi dạng string/array
         else if (errorData.message) {
           const message = Array.isArray(errorData.message)
             ? errorData.message.join(', ')
@@ -107,24 +125,14 @@ function FinanceCreateForm({ onClose, onSuccess }) {
           errorMessage = message;
           setFormError(message);
         }
-        // Nếu server trả về lỗi không xác định
-        else {
-          errorMessage = `Lỗi ${err.response?.status}: Thêm giao dịch thất bại`;
-          setFormError(`Lỗi ${err.response?.status}: Thêm giao dịch thất bại`);
-        }
-      } else {
-        // Lỗi không có response (network, timeout, etc.)
-        errorMessage = "Không thể kết nối đến server. Vui lòng thử lại.";
-        setFormError("Không thể kết nối đến server. Vui lòng thử lại.");
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // Helper để hiển thị lỗi cho từng trường
   const renderFieldError = (fieldName) => {
     if (errors[fieldName]) {
       return (
@@ -141,7 +149,6 @@ function FinanceCreateForm({ onClose, onSuccess }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-xl w-[760px] max-h-[90vh] overflow-y-auto p-6 shadow-lg">
-        {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-800">
             Thêm giao dịch
@@ -155,7 +162,6 @@ function FinanceCreateForm({ onClose, onSuccess }) {
           </button>
         </div>
 
-        {/* Hiển thị lỗi tổng quát nếu có */}
         {formError && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-start">
@@ -170,10 +176,8 @@ function FinanceCreateForm({ onClose, onSuccess }) {
           </div>
         )}
 
-        {/* Form */}
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-2 gap-x-6 gap-y-5">
-            {/* Ngày giao dịch */}
             <div className="flex flex-col">
               <label className="text-sm font-medium text-gray-700 mb-2">
                 Ngày giao dịch <span className="text-red-500">*</span>
@@ -182,15 +186,13 @@ function FinanceCreateForm({ onClose, onSuccess }) {
                 type="date"
                 name="date"
                 value={form.date}
-                className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.date ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.date ? 'border-red-500' : 'border-gray-300'}`}
                 onChange={handleChange}
                 required
               />
               {renderFieldError('date')}
             </div>
 
-            {/* Loại giao dịch */}
             <div className="flex flex-col">
               <label className="text-sm font-medium text-gray-700 mb-2">
                 Loại giao dịch <span className="text-red-500">*</span>
@@ -198,8 +200,7 @@ function FinanceCreateForm({ onClose, onSuccess }) {
               <select
                 name="type"
                 value={form.type}
-                className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.type ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.type ? 'border-red-500' : 'border-gray-300'}`}
                 onChange={handleChange}
                 required
               >
@@ -210,7 +211,6 @@ function FinanceCreateForm({ onClose, onSuccess }) {
               {renderFieldError('type')}
             </div>
 
-            {/* Danh mục */}
             <div className="flex flex-col">
               <label className="text-sm font-medium text-gray-700 mb-2">
                 Danh mục <span className="text-red-500">*</span>
@@ -218,8 +218,7 @@ function FinanceCreateForm({ onClose, onSuccess }) {
               <select
                 name="category"
                 value={form.category}
-                className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category ? 'border-red-500' : 'border-gray-300'}`}
                 onChange={handleChange}
                 required
               >
@@ -234,7 +233,6 @@ function FinanceCreateForm({ onClose, onSuccess }) {
               {renderFieldError('category')}
             </div>
 
-            {/* Số tiền */}
             <div className="flex flex-col">
               <label className="text-sm font-medium text-gray-700 mb-2">
                 Số tiền (VNĐ) <span className="text-red-500">*</span>
@@ -244,8 +242,7 @@ function FinanceCreateForm({ onClose, onSuccess }) {
                 name="amount"
                 value={form.amount}
                 placeholder="Ví dụ: 1500000"
-                className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.amount ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.amount ? 'border-red-500' : 'border-gray-300'}`}
                 onChange={handleChange}
                 min="1"
                 required
@@ -253,24 +250,37 @@ function FinanceCreateForm({ onClose, onSuccess }) {
               {renderFieldError('amount')}
             </div>
 
-            {/* Đàn liên quan */}
             <div className="flex flex-col">
               <label className="text-sm font-medium text-gray-700 mb-1">
                 Đàn liên quan
               </label>
               <span className="text-xs text-gray-400 mb-2">Không bắt buộc</span>
-              <input
+              <select
                 name="flockId"
                 value={form.flockId}
-                placeholder="Chọn hoặc để trống"
-                className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.flockId ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.flockId ? 'border-red-500' : 'border-gray-300'}`}
                 onChange={handleChange}
-              />
+              >
+                <option value="">-- Không chọn --</option>
+                {flocks.length > 0 ? (
+                  flocks.map((flock) => {
+                    const id = flock.id || flock._id;
+                    const name = flock.name || flock.flockName || `Đàn #${id}`;
+                    const breed = flock.breed ? ` - ${flock.breed}` : '';
+
+                    return (
+                      <option key={id} value={id}>
+                        {name}{breed}
+                      </option>
+                    );
+                  })
+                ) : (
+                  <option value="" disabled>Không có đàn nào</option>
+                )}
+              </select>
               {renderFieldError('flockId')}
             </div>
 
-            {/* Số hóa đơn */}
             <div className="flex flex-col">
               <label className="text-sm font-medium text-gray-700 mb-2">
                 Số hóa đơn
@@ -282,7 +292,6 @@ function FinanceCreateForm({ onClose, onSuccess }) {
               />
             </div>
 
-            {/* Mô tả */}
             <div className="flex flex-col col-span-2">
               <label className="text-sm font-medium text-gray-700 mb-2">
                 Mô tả <span className="text-red-500">*</span>
@@ -293,8 +302,7 @@ function FinanceCreateForm({ onClose, onSuccess }) {
                 rows={4}
                 maxLength={500}
                 placeholder="Nhập mô tả giao dịch"
-                className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${errors.description ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
                 onChange={handleChange}
                 required
               />
@@ -307,7 +315,6 @@ function FinanceCreateForm({ onClose, onSuccess }) {
             </div>
           </div>
 
-          {/* Actions */}
           <div className="flex justify-end gap-3 mt-8">
             <button
               type="button"

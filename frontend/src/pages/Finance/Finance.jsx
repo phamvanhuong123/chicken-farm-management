@@ -640,31 +640,31 @@ export default function Finance() {
             </div>
 
             {/* Transaction Details */}
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* Thông tin cơ bản */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Ngày giao dịch</p>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-600">Ngày giao dịch</p>
                   <p className="font-medium">
                     {formatDate(selectedTransaction.date)}
                   </p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Loại giao dịch</p>
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-600">Loại giao dịch</p>
                   <p className="font-medium">
                     {selectedTransaction.type === "income" ? (
-                      <span className="text-green-600">Thu</span>
+                      <span className="text-green-600">Thu nhập</span>
                     ) : (
-                      <span className="text-red-600">Chi</span>
+                      <span className="text-red-600">Chi phí</span>
                     )}
                   </p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Danh mục</p>
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-600">Danh mục</p>
                   <p className="font-medium">{selectedTransaction.category}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Số tiền</p>
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-600">Số tiền</p>
                   <p className="font-medium text-lg">
                     <span
                       className={
@@ -681,25 +681,25 @@ export default function Finance() {
               </div>
 
               {/* Thông tin đàn liên quan */}
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Đàn liên quan</p>
+              <div className="space-y-1">
+                <p className="text-sm text-gray-600">Đàn liên quan</p>
                 <p className="font-medium">
                   {selectedTransaction.flockCode || "Không có"}
                 </p>
               </div>
 
               {/* Số hóa đơn */}
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Số hóa đơn</p>
+              <div className="space-y-1">
+                <p className="text-sm text-gray-600">Số hóa đơn / Mã giao dịch</p>
                 <p className="font-medium">
                   {selectedTransaction.invoiceCode || "Không có"}
                 </p>
               </div>
 
               {/* Mô tả chi tiết */}
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Mô tả chi tiết</p>
-                <div className="p-4 bg-gray-50 rounded-lg border">
+              <div className="space-y-1">
+                <p className="text-sm text-gray-600">Mô tả chi tiết</p>
+                <div className="p-4 bg-gray-50 rounded-lg border min-h-[80px]">
                   <p className="whitespace-pre-wrap">
                     {selectedTransaction.description || "Không có mô tả"}
                   </p>
@@ -707,13 +707,20 @@ export default function Finance() {
               </div>
 
               {/* Thông tin thêm */}
-              <div className="text-xs text-gray-500 pt-4 border-t">
-                <p>
-                  ID: {selectedTransaction._id} • Tạo lúc:{" "}
-                  {new Date(selectedTransaction.createdAt).toLocaleString(
-                    "vi-VN"
+              <div className="pt-4 border-t">
+                <div className="text-xs text-gray-500 space-y-1">
+                  <p>ID: {selectedTransaction._id}</p>
+                  <p>
+                    Ngày tạo:{" "}
+                    {new Date(selectedTransaction.createdAt).toLocaleString("vi-VN")}
+                  </p>
+                  {selectedTransaction.updatedAt && (
+                    <p>
+                      Cập nhật lần cuối:{" "}
+                      {new Date(selectedTransaction.updatedAt).toLocaleString("vi-VN")}
+                    </p>
                   )}
-                </p>
+                </div>
               </div>
             </div>
 
@@ -724,7 +731,7 @@ export default function Finance() {
                   setShowViewModal(false);
                   setSelectedTransaction(null);
                 }}
-                className="px-5 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                className="px-5 py-2.5 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors font-medium"
               >
                 Đóng
               </button>
