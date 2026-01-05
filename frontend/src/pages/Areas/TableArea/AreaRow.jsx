@@ -3,8 +3,8 @@ import { Edit, Trash } from "lucide-react";
 import DeleteArea from "../../../components/Areas/DeleteArea";
 import { useIsEmployer } from "~/hooks/useIsEmployer";
 
-function AreaRow({ item, onEdit, refreshAll }) {
-    const isEmployer = useIsEmployer();
+function AreaRow({ item, onEdit, refreshAll, employees }) {
+  const isEmployer = useIsEmployer();
   const statusColor = {
     ACTIVE: "bg-green-100 text-green-700",
     EMPTY: "bg-blue-100 text-blue-700",
@@ -18,7 +18,10 @@ function AreaRow({ item, onEdit, refreshAll }) {
     MAINTENANCE: "Bảo trì",
     INCIDENT: "Sự cố",
   };
-
+  console.log(employees)
+  const filterNameEmployees = ()=> {
+    return employees?.map(employee => employee.username)
+  }
   return (
     <tr className="border-b hover:bg-gray-50">
       <td className="p-2">{item.name}</td>
@@ -30,6 +33,7 @@ function AreaRow({ item, onEdit, refreshAll }) {
       <td className="p-2">
         <div className="flex flex-col">
           {item.staff.map((s) => (
+            filterNameEmployees().includes(s.name) &&
             <div key={s.name} className="flex items-center gap-2 mb-1">
               <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
                 {s.name.charAt(0).toUpperCase()}

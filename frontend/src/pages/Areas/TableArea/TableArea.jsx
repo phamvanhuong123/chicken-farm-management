@@ -60,6 +60,7 @@ function TableArea({
           ) : (
             data.map((area) => (
               <AreaRow
+                employees={employees}
                 key={area._id}
                 item={area}
                 onEdit={handleEdit} //Chinh sửa khu nuôi

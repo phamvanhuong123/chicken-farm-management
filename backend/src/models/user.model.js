@@ -86,7 +86,7 @@ const addEmployee = async (parentId, data) => {
   try {
     const id = data?.idEmployee;
     Object.keys(data).forEach((fieldName) => {
-      if (!["roleID", "salary"].includes(fieldName)) {
+      if (!["roleID", "salary","status"].includes(fieldName)) {
         delete data[fieldName];
       }
     });
