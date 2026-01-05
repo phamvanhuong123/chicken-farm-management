@@ -371,11 +371,17 @@ describe('Dashboard Component Tests', () => {
 
         await waitFor(() => {
             expect(screen.getByText('Thức ăn hôm nay')).toBeInTheDocument();
-            const statusLabels = ['Bình thường', 'Thiếu', 'Dư thừa'];
-            const found = statusLabels.some(label =>
-                screen.queryByText(label) !== null
-            );
-            expect(found).toBe(true);
+
+            // Kiểm tra giá trị thức ăn (850 kg)
+            const foodElements = screen.getAllByText('850');
+            expect(foodElements.length).toBeGreaterThan(0);
+
+            // Kiểm tra đơn vị kg
+            const kgElements = screen.getAllByText('kg');
+            expect(kgElements.length).toBeGreaterThan(0);
+
+            // Kiểm tra mô tả
+            expect(screen.getByText('Lượng thức ăn tiêu thụ hôm nay')).toBeInTheDocument();
         });
     });
 

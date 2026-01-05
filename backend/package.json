@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "npm start",
     "test": "vitest",
+    "test:ui": "vitest --ui",
     "clean": "rimraf build && mkdir build",
     "lint": "eslint src --ext js --report-unused-disable-directives --max-warnings 0",
     "build-babel": "babel ./src -d ./build/src",
@@ -45,6 +46,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@types/node": "^25.0.3",
+    "@vitest/ui": "^4.0.15",
     "babel-plugin-module-resolver": "^5.0.2",
     "baseline-browser-mapping": "^2.9.11",
     "cross-env": "^10.1.0",

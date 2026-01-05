@@ -26,9 +26,11 @@ export default function StepBasicInfo() {
                     className="w-full border rounded px-3 py-2"
                 >
                     <option value="">Chọn nhà cung cấp</option>
-                    <option value="Trang trại ABC">Trang trại ABC</option>
-                    <option value="Nhà cung cấp XYZ">Nhà cung cấp XYZ</option>
-                    <option value="Công ty 123">Công ty 123</option>
+                    <option value="Trung tâm Gia cầm Thụy Phương">Trung tâm Gia cầm Thụy Phương</option>
+                    <option value="Trại gà Bình Định">Trại gà Bình Định</option>
+                    <option value="HTX Gà Hòa Bình">HTX Gà Hòa Bình</option>
+                    <option value="Trại Giống Thu Hà">Trại Giống Thu Hà</option>
+                    <option value="Trung tâm Nghiên cứu Gia cầm Tam Đảo">Trung tâm Nghiên cứu Gia cầm Tam Đảo</option>
                 </select>
                 <p className="text-red-500 text-sm">{errors.supplierName?.message}</p>
             </div>

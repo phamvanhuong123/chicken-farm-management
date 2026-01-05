@@ -50,7 +50,7 @@ vi.mock('~/config/mongodb.js', () => ({
   GET_DB: vi.fn(),
 }));
 
-describe('Import Model', () => {
+describe('Unit Test: Import Model', () => {
   const mockCollection = {
     insertOne: vi.fn(),
     find: vi.fn().mockReturnThis(),
@@ -83,8 +83,11 @@ describe('Import Model', () => {
     mockCollection.find.mockReturnValue(mockChain);
   });
 
+  // ==========================================
+  // CREATE FUNCTION
+  // ==========================================
   describe('create', () => {
-    it('1. Tạo nhập chuồng mới thành công', async () => {
+    it('TestCase 1: Thành công - Tạo đơn nhập chuồng mới', async () => {
       const mockData = {
         importDate: new Date('2024-01-15'),
         supplier: 'NCC A',
@@ -115,7 +118,7 @@ describe('Import Model', () => {
       );
     });
 
-    it('2. Ném lỗi validation khi dữ liệu không hợp lệ', async () => {
+    it('TestCase 2: Lỗi (Validation) - Ném lỗi khi dữ liệu không hợp lệ', async () => {
       const invalidData = {
         importDate: 'invalid-date',
         supplier: '',
@@ -128,7 +131,7 @@ describe('Import Model', () => {
       await expect(importModel.create(invalidData)).rejects.toThrow();
     });
 
-    it('3. Đặt trạng thái mặc định là "Đang nuôi" khi không được cung cấp', async () => {
+    it('TestCase 3: Thành công - Tự động đặt trạng thái mặc định là "Đang nuôi"', async () => {
       const dataWithoutStatus = {
         importDate: new Date(),
         supplier: 'NCC B',
@@ -147,7 +150,7 @@ describe('Import Model', () => {
       expect(result.status).toBe('Đang nuôi');
     });
 
-    it('4. Chấp nhận flockId là tùy chọn', async () => {
+    it('TestCase 4: Thành công - Chấp nhận flockId là tùy chọn (undefined)', async () => {
       const dataWithoutFlockId = {
         importDate: new Date(),
         supplier: 'NCC C',
@@ -166,7 +169,7 @@ describe('Import Model', () => {
       expect(result.flockId).toBeUndefined();
     });
 
-    it('5. Tự động đặt createdAt và updatedAt', async () => {
+    it('TestCase 5: Thành công - Tự động khởi tạo createdAt và updatedAt', async () => {
       const mockData = {
         importDate: new Date(),
         supplier: 'NCC D',
@@ -187,8 +190,11 @@ describe('Import Model', () => {
     });
   });
 
+  // ==========================================
+  // GET LIST FUNCTION
+  // ==========================================
   describe('getList', () => {
-    it('6. Trả về danh sách phân trang với giá trị mặc định', async () => {
+    it('TestCase 6: Thành công - Trả về danh sách phân trang với tham số mặc định', async () => {
       const mockItems = [
         { _id: '507f1f77bcf86cd799439011', breed: 'Gà ta', quantity: 100 },
         { _id: '507f1f77bcf86cd799439012', breed: 'Vịt', quantity: 150 },
@@ -218,7 +224,7 @@ describe('Import Model', () => {
       expect(mockCollection.find().limit).toHaveBeenCalledWith(10);
     });
 
-    it('7. Lọc theo giống khi query có chứa breed', async () => {
+    it('TestCase 7: Thành công - Lọc theo giống (breed) chính xác', async () => {
       const query = { breed: 'Gà', page: 1, limit: 10 };
       const mockItems = [{ _id: '507f1f77bcf86cd799439011', breed: 'Gà ta' }];
 
@@ -239,7 +245,7 @@ describe('Import Model', () => {
       });
     });
 
-    it('8. Sắp xếp theo ngày nhập giảm dần', async () => {
+    it('TestCase 8: Thành công - Sắp xếp theo ngày nhập giảm dần', async () => {
       const mockChain = {
         sort: vi.fn().mockReturnThis(),
         skip: vi.fn().mockReturnThis(),
@@ -255,7 +261,7 @@ describe('Import Model', () => {
       expect(mockChain.sort).toHaveBeenCalledWith({ importDate: -1 });
     });
 
-    it('9. Tính toán phân trang chính xác', async () => {
+    it('TestCase 9: Thành công - Tính toán Skip/Limit phân trang chính xác', async () => {
       const query = { page: 2, limit: 5 };
       
       const mockChain = {
@@ -276,7 +282,7 @@ describe('Import Model', () => {
       expect(mockChain.limit).toHaveBeenCalledWith(5);
     });
 
-    it('10. Xử lý kết quả rỗng', async () => {
+    it('TestCase 10: Thành công - Xử lý trường hợp danh sách rỗng', async () => {
       const mockChain = {
         sort: vi.fn().mockReturnThis(),
         skip: vi.fn().mockReturnThis(),
@@ -295,8 +301,11 @@ describe('Import Model', () => {
     });
   });
 
+  // ==========================================
+  // FIND BY ID FUNCTION
+  // ==========================================
   describe('findById', () => {
-    it('11. Trả về import khi ID hợp lệ', async () => {
+    it('TestCase 11: Thành công - Tìm thấy Import khi ID hợp lệ', async () => {
       const mockId = '507f1f77bcf86cd799439011';
       const mockImport = {
         _id: mockId,
@@ -313,14 +322,14 @@ describe('Import Model', () => {
       });
     });
 
-    it('12. Trả về null khi ID không hợp lệ', async () => {
+    it('TestCase 12: Lỗi - Trả về null khi ID không đúng định dạng', async () => {
       const result = await importModel.findById('invalid-id');
 
       expect(result).toBeNull();
       expect(mockCollection.findOne).not.toHaveBeenCalled();
     });
 
-    it('13. Trả về null khi không tìm thấy import', async () => {
+    it('TestCase 13: Lỗi (Not Found) - Trả về null khi ID hợp lệ nhưng không tìm thấy', async () => {
       const mockId = '507f1f77bcf86cd799439011';
       mockCollection.findOne.mockResolvedValue(null);
 
@@ -330,8 +339,11 @@ describe('Import Model', () => {
     });
   });
 
+  // ==========================================
+  // UPDATE FUNCTION
+  // ==========================================
   describe('update', () => {
-    it('14. Cập nhật import thành công', async () => {
+    it('TestCase 14: Thành công - Cập nhật thông tin Import', async () => {
       const mockId = '507f1f77bcf86cd799439011';
       const updateData = { quantity: 200, status: 'Hoàn thành' };
       const updatedImport = {
@@ -352,14 +364,14 @@ describe('Import Model', () => {
       );
     });
 
-    it('15. Trả về null khi ID không hợp lệ', async () => {
+    it('TestCase 15: Lỗi - Trả về null khi ID cập nhật không đúng định dạng', async () => {
       const result = await importModel.update('invalid-id', { quantity: 200 });
 
       expect(result).toBeNull();
       expect(mockCollection.updateOne).not.toHaveBeenCalled();
     });
 
-    it('16. Trả về null khi không có tài liệu nào khớp', async () => {
+    it('TestCase 16: Lỗi (Not Found) - Trả về null khi không tìm thấy bản ghi để cập nhật', async () => {
       const mockId = '507f1f77bcf86cd799439011';
       mockCollection.updateOne.mockResolvedValue({ matchedCount: 0 });
 
@@ -369,7 +381,7 @@ describe('Import Model', () => {
       expect(mockCollection.findOne).not.toHaveBeenCalled();
     });
 
-    it('17. Cắt khoảng trắng ID trước khi chuyển đổi thành ObjectId', async () => {
+    it('TestCase 17: Thành công - Tự động cắt khoảng trắng (Trim) ID đầu vào', async () => {
       const mockId = '  507f1f77bcf86cd799439011  ';
       
       // Mock trả về kết quả thành công
@@ -393,8 +405,11 @@ describe('Import Model', () => {
     });
   });
 
+  // ==========================================
+  // DELETE FUNCTION
+  // ==========================================
   describe('delete', () => {
-    it('18. Xóa import thành công', async () => {
+    it('TestCase 18: Thành công - Xóa Import', async () => {
       const mockId = '507f1f77bcf86cd799439011';
       const deletedImport = {
         _id: mockId,
@@ -413,14 +428,14 @@ describe('Import Model', () => {
       });
     });
 
-    it('19. Ném lỗi khi ID không hợp lệ', async () => {
+    it('TestCase 19: Lỗi - Ném ngoại lệ khi ID xóa không đúng định dạng', async () => {
       await expect(importModel.delete('invalid-id')).rejects.toThrow(
         'Invalid ID'
       );
       expect(mockCollection.findOneAndDelete).not.toHaveBeenCalled();
     });
 
-    it('20. Trả về null khi không tìm thấy import để xóa', async () => {
+    it('TestCase 20: Lỗi (Not Found) - Trả về null khi không tìm thấy bản ghi để xóa', async () => {
       const mockId = '507f1f77bcf86cd799439011';
       mockCollection.findOneAndDelete.mockResolvedValue({ value: null });
 

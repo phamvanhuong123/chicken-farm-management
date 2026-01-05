@@ -1,6 +1,6 @@
 import { jwtDecode } from "jwt-decode";
 import { useSelector } from "react-redux";
-import { Navigate, Outlet, Route, Routes, useLocation } from "react-router";
+import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import LayoutDefault from "~/layout/LayoutDefault";
 import Areas from "~/pages/Areas/Areas";
 import Auth from "~/pages/Auth/Auth";

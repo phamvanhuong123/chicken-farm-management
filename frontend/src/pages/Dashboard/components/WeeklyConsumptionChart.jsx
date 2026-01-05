@@ -16,82 +16,37 @@ const WeeklyConsumptionChart = ({ data, loading = false }) => {
 
     useEffect(() => {
         if (data && data.data && data.data.length > 0) {
-            // Define day order mapping (T1 = Monday, T2 = Tuesday, etc.)
-            const dayOrder = {
-                'T1': 1, 'T2': 2, 'T3': 3, 'T4': 4,
-                'T5': 5, 'T6': 6, 'T7': 7, 'CN': 8
-            };
-
-            const formattedData = data.data.map(item => {
-                // Get day order, default to 0 if not found
-                const order = dayOrder[item.day] || 0;
-                const dayName = `Ngày ${order}`; // Change T1, T2... to Ngày 1, Ngày 2...
-
-                return {
-                    name: dayName,
-                    'Thức ăn': item.food,
-                    'Thuốc & Vaccine': item.medicine,
-                    total: item.total,
-                    date: item.displayDate,
-                    dayOrder: order,
-                    originalDay: item.day
-                };
-            });
-
-            // Sort by day order (Monday to Sunday)
-            formattedData.sort((a, b) => a.dayOrder - b.dayOrder);
-
-            // If we have 7 days, rename to Ngày 1 -> Ngày 7
-            if (formattedData.length === 7) {
-                formattedData.forEach((item, index) => {
-                    item.name = `Ngày ${index + 1}`;
-                });
-            }
+            // Dữ liệu từ BE đã có thứ tự đúng: Ngày 1 (hôm nay) đến Ngày 7 (6 ngày trước)
+            const formattedData = data.data.map(item => ({
+                name: item.dayLabel, // "Ngày 1", "Ngày 2", ...
+                'Thức ăn': item.food,
+                'Thuốc & Vaccine': item.medicine,
+                total: item.total,
+                date: item.displayDate, // "dd-mm"
+                dayNumber: item.dayNumber, // 1-7
+                originalDay: item.dayLabel
+            }));
 
             setChartData(formattedData);
         }
     }, [data]);
 
-    if (loading) {
-        return (
-            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100 h-80 flex items-center justify-center animate-pulse">
-                <div className="text-center">
-                    <div className="h-4 bg-gray-200 rounded w-32 mb-2 mx-auto"></div>
-                    <div className="h-3 bg-gray-200 rounded w-48 mx-auto"></div>
-                    <div className="h-48 bg-gray-200 rounded mt-4"></div>
-                </div>
-            </div>
-        );
-    }
-
-    if (!data || !data.data || data.data.length === 0) {
-        return (
-            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100 h-80 flex flex-col items-center justify-center">
-                <div className="text-gray-400 mb-2">📊</div>
-                <div className="text-gray-500 text-center">
-                    <p className="font-medium">Không có dữ liệu tiêu thụ</p>
-                    <p className="text-sm mt-1">Chưa có dữ liệu logs trong 7 ngày qua</p>
-                </div>
-            </div>
-        );
-    }
-
+    // CustomTooltip component giữ nguyên
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
             const foodValue = payload.find(p => p.dataKey === 'Thức ăn')?.value || 0;
             const medicineValue = payload.find(p => p.dataKey === 'Thuốc & Vaccine')?.value || 0;
             const totalValue = foodValue + medicineValue;
             const date = payload[0]?.payload?.date || '';
-
-            // Get original day name if available
-            const originalDay = payload[0]?.payload?.originalDay || '';
-            const displayLabel = originalDay ? `${label} (${originalDay})` : label;
+            const dayNumber = payload[0]?.payload?.dayNumber || '';
 
             return (
                 <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
                     <div className="mb-2">
-                        <p className="font-semibold text-gray-900">{displayLabel}</p>
-                        {date && <p className="text-xs text-gray-500">({date})</p>}
+                        <p className="font-semibold text-gray-900">{label}</p>
+                        <p className="text-xs text-gray-500">
+                            {date} {dayNumber === 1 ? '(Hôm nay)' : `(Ngày ${dayNumber})`}
+                        </p>
                     </div>
 
                     <div className="space-y-2">
@@ -150,14 +105,16 @@ const WeeklyConsumptionChart = ({ data, loading = false }) => {
             <div className="mb-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h3 className="text-lg font-semibold text-gray-800">{data.title || 'Tiêu thụ hàng tuần'}</h3>
+                        <h3 className="text-lg font-semibold text-gray-800">
+                            {data?.title || 'Tiêu thụ 7 ngày gần nhất'}
+                        </h3>
                         <p className="text-sm text-gray-600 mt-1">
-                            {data.description || 'Thống kê tiêu thụ thức ăn và thuốc 7 ngày gần nhất'}
+                            {data?.description || 'Thống kê tiêu thụ thức ăn và thuốc 7 ngày gần nhất'}
                         </p>
                     </div>
                     <div className="flex items-center gap-1 text-sm text-gray-500">
                         <span className="px-2 py-1 bg-gray-100 rounded">
-                            {data.period === '7d' ? '7 ngày gần nhất' : data.period}
+                            {data?.period === '7d' ? '7 ngày gần nhất' : data?.period}
                         </span>
                     </div>
                 </div>
@@ -196,6 +153,7 @@ const WeeklyConsumptionChart = ({ data, loading = false }) => {
                         <Legend
                             content={<CustomLegend />}
                             verticalAlign="top"
+                            height={36}
                         />
                         <Bar
                             dataKey="Thức ăn"
@@ -205,16 +163,7 @@ const WeeklyConsumptionChart = ({ data, loading = false }) => {
                             radius={[4, 4, 0, 0]}
                             animationDuration={1500}
                             animationBegin={200}
-                        >
-                            {chartData.map((entry, index) => (
-                                <Cell
-                                    key={`cell-food-${index}`}
-                                    fill="#4CAF50"
-                                    stroke="#4CAF50"
-                                    strokeWidth={1}
-                                />
-                            ))}
-                        </Bar>
+                        />
                         <Bar
                             dataKey="Thuốc & Vaccine"
                             stackId="a"
@@ -223,16 +172,7 @@ const WeeklyConsumptionChart = ({ data, loading = false }) => {
                             radius={[4, 4, 0, 0]}
                             animationDuration={1500}
                             animationBegin={400}
-                        >
-                            {chartData.map((entry, index) => (
-                                <Cell
-                                    key={`cell-medicine-${index}`}
-                                    fill="#FF9800"
-                                    stroke="#FF9800"
-                                    strokeWidth={1}
-                                />
-                            ))}
-                        </Bar>
+                        />
                     </BarChart>
                 </ResponsiveContainer>
             </div>
@@ -241,21 +181,21 @@ const WeeklyConsumptionChart = ({ data, loading = false }) => {
                 <div className="grid grid-cols-3 gap-4">
                     <div className="text-center">
                         <div className="text-2xl font-bold text-green-600">
-                            {data.total?.food?.toLocaleString('vi-VN') || 0}
+                            {data?.total?.food?.toLocaleString('vi-VN') || 0}
                         </div>
                         <div className="text-sm text-gray-600">Thức ăn (kg)</div>
                     </div>
 
                     <div className="text-center">
                         <div className="text-2xl font-bold text-orange-600">
-                            {data.total?.medicine?.toLocaleString('vi-VN') || 0}
+                            {data?.total?.medicine?.toLocaleString('vi-VN') || 0}
                         </div>
                         <div className="text-sm text-gray-600">Thuốc & Vaccine (kg)</div>
                     </div>
 
                     <div className="text-center">
                         <div className="text-2xl font-bold text-blue-600">
-                            {data.total?.overall?.toLocaleString('vi-VN') || 0}
+                            {data?.total?.overall?.toLocaleString('vi-VN') || 0}
                         </div>
                         <div className="text-sm text-gray-600">Tổng tiêu thụ (kg)</div>
                     </div>

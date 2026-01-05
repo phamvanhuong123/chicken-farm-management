@@ -116,7 +116,6 @@ const login = async ({ idName, password }) => {
   const phone = idName.trim();
 
   const user = await userModel.findByEmailOrPhone(email, phone);
-  console.log(user.roleId);
   if (!user) {
     const err = new Error("Không tìm thấy tài khoản");
     err.statusCode = 404;
@@ -131,7 +130,7 @@ const login = async ({ idName, password }) => {
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    const err = new Error("Sai mật khẩu");
+    const err = new Error("Sai tài khoản hoặc mật khẩu");
     err.statusCode = 401;
     throw err;
   }
@@ -269,7 +268,7 @@ const updateUser = async (id, updateData, userAvataFile) => {
 };
 const sendOtp = async (email) => {
   try {
-    ``;
+    
     const existUser = await userModel.findByEmail(email);
     if (!existUser) {
       throw new ApiError(StatusCodes.NOT_FOUND, "Tài khoản không tồn tại");

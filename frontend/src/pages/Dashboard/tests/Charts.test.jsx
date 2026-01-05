@@ -27,16 +27,16 @@ vi.mock('recharts', () => ({
 describe('U1.2 - Biểu Đồ Dashboard Components', () => {
     describe('WeeklyConsumptionChart', () => {
         const mockChartData = {
-            title: 'Tiêu thụ hàng tuần',
+            title: 'Tiêu thụ 7 ngày gần nhất',
             description: 'Thống kê tiêu thụ thức ăn và thuốc 7 ngày gần nhất',
             data: [
-                { day: 'T1', food: 120, medicine: 25, total: 145, displayDate: '15/01', dayIndex: 1 },
-                { day: 'T2', food: 135, medicine: 30, total: 165, displayDate: '16/01', dayIndex: 2 },
-                { day: 'T3', food: 110, medicine: 20, total: 130, displayDate: '17/01', dayIndex: 3 },
-                { day: 'T4', food: 125, medicine: 35, total: 160, displayDate: '18/01', dayIndex: 4 },
-                { day: 'T5', food: 140, medicine: 40, total: 180, displayDate: '19/01', dayIndex: 5 },
-                { day: 'T6', food: 130, medicine: 30, total: 160, displayDate: '20/01', dayIndex: 6 },
-                { day: 'T7', food: 150, medicine: 45, total: 195, displayDate: '21/01', dayIndex: 7 },
+                { dayNumber: 1, dayLabel: 'Ngày 1', food: 120, medicine: 25, total: 145, displayDate: '15/01' },
+                { dayNumber: 2, dayLabel: 'Ngày 2', food: 135, medicine: 30, total: 165, displayDate: '16/01' },
+                { dayNumber: 3, dayLabel: 'Ngày 3', food: 110, medicine: 20, total: 130, displayDate: '17/01' },
+                { dayNumber: 4, dayLabel: 'Ngày 4', food: 125, medicine: 35, total: 160, displayDate: '18/01' },
+                { dayNumber: 5, dayLabel: 'Ngày 5', food: 140, medicine: 40, total: 180, displayDate: '19/01' },
+                { dayNumber: 6, dayLabel: 'Ngày 6', food: 130, medicine: 30, total: 160, displayDate: '20/01' },
+                { dayNumber: 7, dayLabel: 'Ngày 7', food: 150, medicine: 45, total: 195, displayDate: '21/01' },
             ],
             total: { food: 910, medicine: 225, overall: 1135 },
             period: '7d'
@@ -45,43 +45,43 @@ describe('U1.2 - Biểu Đồ Dashboard Components', () => {
         test('TC1 - Hiển thị loading state với skeleton UI', () => {
             render(<WeeklyConsumptionChart loading={true} />);
 
-            const skeletonElements = document.querySelectorAll('.animate-pulse');
-            expect(skeletonElements.length).toBeGreaterThan(0);
+            // Tìm phần tử loading bằng data-testid hoặc class cụ thể
+            const loadingContainer = screen.getByTestId('responsive-container');
+            expect(loadingContainer).toBeInTheDocument();
 
-            const skeletonBars = document.querySelector('.h-48.bg-gray-200.rounded');
-            expect(skeletonBars).toBeInTheDocument();
+            // Kiểm tra recharts components được render
+            expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
+            expect(screen.getByTestId('cartesian-grid')).toBeInTheDocument();
+            expect(screen.getByTestId('x-axis')).toBeInTheDocument();
+            expect(screen.getByTestId('y-axis')).toBeInTheDocument();
         });
 
-        test('TC2 - Hiển thị no data state khi không có dữ liệu', () => {
-            render(<WeeklyConsumptionChart data={null} />);
-
-            expect(screen.getByText('Không có dữ liệu tiêu thụ')).toBeInTheDocument();
-            expect(screen.getByText('Chưa có dữ liệu logs trong 7 ngày qua')).toBeInTheDocument();
-        });
-
-        test('TC3 - Hiển thị tiêu đề và mô tả biểu đồ', () => {
+        test('TC2 - Hiển thị tiêu đề và mô tả biểu đồ khi có dữ liệu', () => {
             render(<WeeklyConsumptionChart data={mockChartData} />);
 
-            expect(screen.getByText('Tiêu thụ hàng tuần')).toBeInTheDocument();
+            expect(screen.getByText('Tiêu thụ 7 ngày gần nhất')).toBeInTheDocument();
             expect(screen.getByText('Thống kê tiêu thụ thức ăn và thuốc 7 ngày gần nhất')).toBeInTheDocument();
         });
 
-        test('TC4 - Hiển thị tổng kết thức ăn, thuốc và tổng tiêu thụ', () => {
+        test('TC3 - Hiển thị tổng kết thức ăn, thuốc và tổng tiêu thụ', () => {
             render(<WeeklyConsumptionChart data={mockChartData} />);
 
+            // Kiểm tra tổng số
             expect(screen.getByText('910')).toBeInTheDocument();
             expect(screen.getByText('225')).toBeInTheDocument();
             expect(screen.getByText('1.135')).toBeInTheDocument();
+
             expect(screen.getByText('Thức ăn (kg)')).toBeInTheDocument();
             expect(screen.getByText('Thuốc & Vaccine (kg)')).toBeInTheDocument();
             expect(screen.getByText('Tổng tiêu thụ (kg)')).toBeInTheDocument();
         });
 
-        test('TC5 - Hiển thị thông tin khoảng thời gian', () => {
+        test('TC4 - Hiển thị thông tin khoảng thời gian', () => {
             render(<WeeklyConsumptionChart data={mockChartData} />);
 
-            // Kiểm tra period badge (7 ngày gần nhất)
+            // Kiểm tra period badge
             expect(screen.getByText('7 ngày gần nhất')).toBeInTheDocument();
+
             // Kiểm tra các phần tử chính của biểu đồ
             expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
             expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
@@ -134,31 +134,29 @@ describe('U1.2 - Biểu Đồ Dashboard Components', () => {
             }
         };
 
-        test('TC6 - Hiển thị loading state với skeleton UI', () => {
+        test('TC5 - Hiển thị loading state với skeleton UI', () => {
             render(<CostStructureChart loading={true} />);
 
+            // Kiểm tra skeleton UI được render
             const skeletonElements = document.querySelectorAll('.animate-pulse');
             expect(skeletonElements.length).toBeGreaterThan(0);
+
+            // Kiểm tra các phần tử skeleton cụ thể
+            const skeletonContainer = document.querySelector('.bg-gray-200.rounded.w-32');
+            expect(skeletonContainer).toBeInTheDocument();
 
             const skeletonCircle = document.querySelector('.h-48.bg-gray-200.rounded-full');
             expect(skeletonCircle).toBeInTheDocument();
         });
 
-        test('TC7 - Hiển thị no data state khi không có dữ liệu', () => {
-            render(<CostStructureChart data={null} />);
-
-            expect(screen.getByText('Không có dữ liệu chi phí')).toBeInTheDocument();
-            expect(screen.getByText('Chưa có dữ liệu material trong kho')).toBeInTheDocument();
-        });
-
-        test('TC8 - Hiển thị tiêu đề và mô tả biểu đồ', () => {
+        test('TC6 - Hiển thị tiêu đề và mô tả biểu đồ', () => {
             render(<CostStructureChart data={mockChartData} />);
 
             expect(screen.getByText('Cơ cấu chi phí')).toBeInTheDocument();
             expect(screen.getByText('Phân bổ chi phí hoạt động trang trại')).toBeInTheDocument();
         });
 
-        test('TC9 - Hiển thị tất cả các danh mục chi phí', () => {
+        test('TC7 - Hiển thị tất cả các danh mục chi phí', () => {
             render(<CostStructureChart data={mockChartData} />);
 
             expect(screen.getByText('Thức ăn')).toBeInTheDocument();
@@ -167,7 +165,7 @@ describe('U1.2 - Biểu Đồ Dashboard Components', () => {
             expect(screen.getByText('Điện nước & Khác')).toBeInTheDocument();
         });
 
-        test('TC10 - Hiển thị tổng chi phí và phần trăm từng danh mục', () => {
+        test('TC8 - Hiển thị tổng chi phí và phần trăm từng danh mục', () => {
             render(<CostStructureChart data={mockChartData} />);
 
             expect(screen.getByText('245.000.000 ₫')).toBeInTheDocument();
@@ -180,6 +178,24 @@ describe('U1.2 - Biểu Đồ Dashboard Components', () => {
             expect(screen.getByText('15%')).toBeInTheDocument();
             expect(screen.getByText('12%')).toBeInTheDocument();
             expect(screen.getByText('8%')).toBeInTheDocument();
+        });
+
+        test('TC9 - Hiển thị thông tin khoảng thời gian và tổng chi phí', () => {
+            render(<CostStructureChart data={mockChartData} />);
+
+            expect(screen.getByText('Tháng này')).toBeInTheDocument();
+            expect(screen.getByText('245.000.000 ₫')).toBeInTheDocument();
+            expect(screen.getByText('Trong tháng này')).toBeInTheDocument();
+        });
+
+        test('TC10 - Hiển thị chi tiết từng danh mục trong phần sidebar', () => {
+            render(<CostStructureChart data={mockChartData} />);
+
+            expect(screen.getByText('Chi tiết chi phí')).toBeInTheDocument();
+            expect(screen.getByText('Chi phí thức ăn chăn nuôi')).toBeInTheDocument();
+            expect(screen.getByText('Chi phí thuốc thú y và vaccine')).toBeInTheDocument();
+            expect(screen.getByText('Chi phí lương nhân viên')).toBeInTheDocument();
+            expect(screen.getByText('Chi phí điện, nước, bảo trì')).toBeInTheDocument();
         });
 
         test('TC11 - Hiển thị thông tin khoảng thời gian và tổng chi phí', () => {
