@@ -1,7 +1,57 @@
 import { flockModel } from "../models/flock.model.js";
+import { areaModel, AREA_STATUS } from "../models/area.model.js"; // THÊM DÒNG NÀY
+import { ObjectId } from "mongodb";
 
 const createFlock = async (data) => {
+  console.log("Data nhận được:", data);
   try {
+    // THÊM PHẦN NÀY: Cập nhật khu nuôi trước khi tạo đàn
+    const { areaId, initialCount } = data;
+    
+    if (areaId && initialCount) {
+      console.log("Bắt đầu cập nhật khu nuôi:", { areaId, initialCount });
+      
+      // Kiểm tra ID hợp lệ
+      if (ObjectId.isValid(areaId)) {
+        const area = await areaModel.findById(areaId);
+        
+        if (area) {
+          const currentCapacity = area.currentCapacity || 0;
+          const newCurrentCapacity = currentCapacity + Number(initialCount);
+          
+          console.log("Thông tin khu nuôi:", {
+            currentCapacity,
+            maxCapacity: area.maxCapacity,
+            newCurrentCapacity
+          });
+          
+          // Kiểm tra sức chứa
+          if (newCurrentCapacity <= area.maxCapacity) {
+            // Chuẩn bị dữ liệu cập nhật
+            const updateData = {
+              currentCapacity: newCurrentCapacity,
+              updatedAt: new Date()
+            };
+            
+            // Chuyển trạng thái nếu đang trống
+            if (area.status === AREA_STATUS.EMPTY) {
+              updateData.status = AREA_STATUS.ACTIVE;
+            }
+            
+            // Cập nhật khu nuôi
+            await areaModel.update(areaId, updateData);
+            console.log("Đã cập nhật khu nuôi thành công");
+          } else {
+            console.warn("Khu nuôi không đủ sức chứa, vẫn tạo đàn nhưng không cập nhật khu");
+          }
+        } else {
+          console.warn("Không tìm thấy khu nuôi, vẫn tạo đàn bình thường");
+        }
+      } else {
+        console.warn("ID khu nuôi không hợp lệ, vẫn tạo đàn bình thường");
+      }
+    }
+    // KẾT THÚC PHẦN THÊM
     const createdFlock = await flockModel.create(data);
     return createdFlock;
   } catch (error) {
@@ -12,7 +62,6 @@ const createFlock = async (data) => {
     throw err;
   }
 };
-
 /**
  * Lấy chi tiết 1 đàn theo ID
  */

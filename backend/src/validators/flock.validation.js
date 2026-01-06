@@ -1,51 +1,58 @@
-import Joi from 'joi'
+import Joi from "joi";
 
 export const createFlockSchema = Joi.object({
-  importDate: Joi.date().required(),
   initialCount: Joi.number().integer().min(1).required(),
   speciesId: Joi.string().required(),
   areaId: Joi.string().required(),
   ownerId: Joi.string().required(),
   avgWeight: Joi.number().min(0).default(0),
-  status: Joi.string().valid('Raising', 'Sold', 'Closed').default('Raising'),
-  currentCount: Joi.number().integer().min(0).default(Joi.ref('initialCount'))
-})
+  price: Joi.number().min(0).default(0),
+  note: Joi.string().min(10).max(255).trim().optional().allow("", null),
+  status: Joi.string().valid("Raising", "Sold", "Closed").default("Raising"),
+  currentCount: Joi.number().integer().min(0).default(Joi.ref("initialCount")),
+});
 
 export const validateFlockCreate = (req, res, next) => {
   const { error, value } = createFlockSchema.validate(req.body, {
     abortEarly: false,
-    stripUnknown: true
-  })
+    stripUnknown: true,
+  });
 
   if (error) {
-    const message = error.details.map((e) => e.message).join(', ')
+    const message = error.details.map((e) => e.message).join(", ");
     return res.status(400).json({
       statusCode: 400,
-      message: 'Dữ liệu không hợp lệ: ' + message
-    })
+      message: "Dữ liệu không hợp lệ: " + message,
+    });
   }
 
-  req.body = value
-  next()
-}
+  req.body = value;
+  next();
+};
 /**
  * Schema validate khi cập nhật đàn
  */
 export const updateFlockSchema = Joi.object({
+  createdAt: Joi.date(), // mới thêm Team-86
+  supplierId: Joi.string(), // mới thêm Team-86
+  speciesId: Joi.string(), // mới thêm Team-86
+  initialCount: Joi.number().integer().min(1), // mới thêm Team-86
   currentCount: Joi.number().integer().min(0),
   avgWeight: Joi.number().min(0),
-  status: Joi.string().valid('Raising', 'Sold', 'Closed'),
-  updatedAt: Joi.date().default(() => new Date())
-})
+  areaId: Joi.string(), // mới thêm Team-86
+  note: Joi.string().allow("").max(255), // mới thêm Team-86
+  status: Joi.string().valid("Raising", "Sold", "Closed"),
+  updatedAt: Joi.date().default(() => new Date()),
+});
 
 /**
  * Middleware validate dữ liệu cập nhật
  */
 export const validateFlockUpdate = (req, res, next) => {
-  const { error } = updateFlockSchema.validate(req.body, { abortEarly: false })
+  const { error } = updateFlockSchema.validate(req.body, { abortEarly: false });
   if (error) {
-    const message = error.details.map((e) => e.message).join(', ')
-    return res.status(400).json({ message })
+    const message = error.details.map((e) => e.message).join(", ");
+    return res.status(400).json({ message });
   }
-  next()
-}
+  next();
+};

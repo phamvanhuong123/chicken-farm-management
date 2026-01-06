@@ -4,7 +4,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "npm start",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
     "clean": "rimraf build && mkdir build",
     "lint": "eslint src --ext js --report-unused-disable-directives --max-warnings 0",
     "build-babel": "babel ./src -d ./build/src",
@@ -19,8 +20,8 @@
     "@babel/runtime": "^7.28.4",
     "async-exit-hook": "^2.0.1",
     "bcrypt": "^6.0.0",
+    "cloudinary": "^2.8.0",
     "cors": "^2.8.5",
-    "cross-env": "^10.1.0",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "exceljs": "^4.4.0",
@@ -31,7 +32,9 @@
     "mongodb": "^6.20.0",
     "mongoose": "^8.19.2",
     "multer": "^2.0.2",
-    "nodemailer": "^7.0.10"
+    "nodemailer": "^7.0.10",
+    "pdfkit": "^0.17.2",
+    "streamifier": "^0.1.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.28.3",
@@ -40,10 +43,18 @@
     "@babel/node": "^7.28.0",
     "@babel/plugin-transform-runtime": "^7.28.5",
     "@babel/preset-env": "^7.28.5",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^25.0.3",
+    "@vitest/ui": "^4.0.15",
     "babel-plugin-module-resolver": "^5.0.2",
+    "baseline-browser-mapping": "^2.9.11",
+    "cross-env": "^10.1.0",
     "eslint": "^9.38.0",
+    "jsdom": "^27.3.0",
     "nodemon": "^3.1.10",
-    "rimraf": "^6.0.1"
+    "rimraf": "^6.0.1",
+    "vitest": "^4.0.15"
   },
   "keywords": [],
   "type": "commonjs"

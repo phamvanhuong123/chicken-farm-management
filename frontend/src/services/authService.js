@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { API_ROOT } from '~/utils/constants';
 
 function resolveApiUrl() {
   try {
@@ -16,7 +17,7 @@ function resolveApiUrl() {
     return window.__REACT_APP_API_URL__;
   }
 
-  return 'http://localhost:8071/auth';
+  return `${API_ROOT}/auth`;
 }
 
 const API_URL = resolveApiUrl();
